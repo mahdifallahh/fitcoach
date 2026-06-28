@@ -1,56 +1,65 @@
 # ──────────────────────────────────────────────────────────────────────────
 # Backend multi-stage Dockerfile.
-# Debian slim base: Prisma engines + (later) Puppeteer/Chromium work cleanly here.
-# Targets: development (hot reload) and production (slim runtime).
 # ──────────────────────────────────────────────────────────────────────────
 FROM node:20-bookworm-slim AS base
-# openssl/ca-certificates: Prisma + TLS · chromium + fonts: Puppeteer PDF (incl. Persian/Arabic shaping)
-# HTTPS mirror (port 443) + IPv4 + retries, and update+install retried as one
-# unit so a partial package index (flaky CDN) triggers a full retry rather than
-# an "Unable to locate package" failure.
-# Best-effort: never fails the build if the Debian mirror is down — Chromium is
-# optional (PdfService loads puppeteer-core lazily and degrades gracefully), and
-# Prisma uses libssl from the base image. Rebuild when the mirror is reachable to
-# bake Chromium + Persian fonts in.
-RUN printf 'Acquire::Retries "8";\nAcquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/80-net; \
-    sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true; \
-    for i in 1 2 3 4 5; do \
-      apt-get update && apt-get install -y --no-install-recommends \
-        openssl ca-certificates curl chromium fonts-liberation fonts-noto-core && break; \
-      echo "apt attempt $i failed; retrying..."; sleep 8; \
-    done; \
-    rm -rf /var/lib/apt/lists/* 2>/dev/null || true
+
+# ── Step 1: MANDATORY system deps ────────────────────────────────────────
+# openssl + ca-certificates are required for Prisma engine detection and TLS.
+# This step must succeed; it does not pull large optional packages.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssl ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# ── Step 2: OPTIONAL – Chromium + fonts for Puppeteer PDF ───────────────
+# Non-fatal: if the Debian mirror is unreachable the build still succeeds.
+# PdfService loads puppeteer-core lazily and returns a 503 when Chromium is absent.
+RUN printf 'Acquire::Retries "8";\nAcquire::ForceIPv4 "true";\n' \
+      > /etc/apt/apt.conf.d/80-net && \
+    sed -i 's|http://deb.debian.org|https://deb.debian.org|g' \
+      /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      chromium fonts-liberation fonts-noto-core && \
+    rm -rf /var/lib/apt/lists/* || \
+    { rm -rf /var/lib/apt/lists/* 2>/dev/null; \
+      echo "[dockerfile] Optional Chromium/fonts not installed — PDF will degrade gracefully"; }
+
 ENV PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 RUN npm install -g pnpm@10
 WORKDIR /app
 
-# ── Dependencies (full, incl. dev) ───────────────────────────────────────────
+# ── Dependencies + Prisma generate ───────────────────────────────────────
+# Copy the schema here so `prisma generate` can run while network + openssl
+# are reliably available. The generated client is then reused in later stages.
 FROM base AS deps
 COPY package.json pnpm-lock.yaml* ./
+COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm prisma generate
 
-# ── Development (used by docker-compose) ─────────────────────────────────────
+# ── Development (used by docker-compose) ─────────────────────────────────
 FROM base AS development
 ENV NODE_ENV=development
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm prisma generate
+# Prisma client already generated in deps stage — no re-download needed.
 EXPOSE 4000
 CMD ["sh", "docker-entrypoint.sh"]
 
-# ── Build (compile + prune to prod deps) ─────────────────────────────────────
-FROM base AS build
+# ── Build (compile TypeScript) ────────────────────────────────────────────
+FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm prisma generate && pnpm build
+RUN pnpm build
 
-# ── Production runtime ───────────────────────────────────────────────────────
-FROM base AS production
+# ── Production runtime ────────────────────────────────────────────────────
+FROM base AS runner
 ENV NODE_ENV=production
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./
 EXPOSE 4000
 CMD ["node", "dist/main.js"]

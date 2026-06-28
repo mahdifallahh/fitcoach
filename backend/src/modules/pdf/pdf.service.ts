@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { Injectable, Logger, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfigService } from '../../config/config.module';
@@ -83,13 +84,34 @@ export class PdfService implements OnModuleDestroy {
     }
   }
 
+  /** First existing Chromium/Chrome binary (env override first), else undefined. */
+  private resolveExecutablePath(): string | undefined {
+    const candidates = [
+      this.config.get('PUPPETEER_EXECUTABLE_PATH'),
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+    ].filter(Boolean) as string[];
+    return candidates.find((p) => existsSync(p));
+  }
+
   private async getBrowser(): Promise<{ newPage: () => Promise<any> }> {
     if (this.browser?.connected) return this.browser;
     if (this.launching) return this.launching;
+
+    const executablePath = this.resolveExecutablePath();
+    if (!executablePath) {
+      throw new ServiceUnavailableException({
+        code: 'PDF_UNAVAILABLE',
+        message: 'PDF rendering is unavailable: no Chromium binary found on the server.',
+      });
+    }
+
     this.launching = this.loadPuppeteer()
       .then((puppeteer) =>
         puppeteer.launch({
-          executablePath: this.config.get('PUPPETEER_EXECUTABLE_PATH'),
+          executablePath,
           headless: true,
           args: [
             '--no-sandbox',
@@ -102,12 +124,16 @@ export class PdfService implements OnModuleDestroy {
       .then((b: any) => {
         this.browser = b;
         this.launching = null;
-        this.logger.log('Chromium launched for PDF rendering');
+        this.logger.log(`Chromium launched for PDF rendering (${executablePath})`);
         return b;
       })
       .catch((e) => {
         this.launching = null;
-        throw e;
+        this.logger.error(`Chromium launch failed: ${e?.message ?? e}`);
+        throw new ServiceUnavailableException({
+          code: 'PDF_UNAVAILABLE',
+          message: 'PDF rendering is temporarily unavailable on this server.',
+        });
       });
     return this.launching;
   }
