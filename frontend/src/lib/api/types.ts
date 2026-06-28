@@ -1,0 +1,192 @@
+export type Role = 'COACH' | 'STUDENT';
+
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'EXPIRED' | 'CANCELED';
+export type SubscriptionPlan = 'M3' | 'M6' | 'M12';
+
+export interface CurrentUser {
+  id: string;
+  phone: string | null;
+  email: string | null;
+  role: Role;
+  locale: string;
+  coachProfile: { name: string; avatarUrl: string | null; bio: string | null } | null;
+  subscription: {
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan | null;
+    endsAt: string;
+  } | null;
+}
+
+export interface SocialLink {
+  type: string;
+  label?: string;
+  url: string;
+}
+
+export interface CoachProfile {
+  userId: string;
+  name: string;
+  bio: string | null;
+  avatarUrl: string | null;
+  socialLinks: SocialLink[];
+  tags: string[];
+}
+
+export interface Category {
+  id: string;
+  coachId: string;
+  name: string;
+}
+
+export interface Exercise {
+  id: string;
+  coachId: string;
+  categoryId: string | null;
+  name: string;
+  defaultSets: number;
+  defaultReps: string;
+  description: string | null;
+  gifUrl: string | null;
+  category?: { id: string; name: string } | null;
+}
+
+export interface UploadTarget {
+  uploadUrl: string;
+  key: string;
+  publicUrl: string;
+}
+
+export type ProgramStatus2 = 'DRAFT' | 'PUBLISHED';
+
+export interface ProgramListItem {
+  id: string;
+  name: string;
+  status: ProgramStatus2;
+  daysPerWeek: number;
+  updatedAt: string;
+  student: { phone: string | null; email: string | null };
+  _count: { days: number };
+}
+
+export interface ProgramExerciseDetail {
+  id: string;
+  sets: number;
+  reps: string;
+  notes: string | null;
+  order: number;
+  supersetGroupId: string | null;
+  supersetOrder: number | null;
+  exercise: {
+    id: string;
+    name: string;
+    gifUrl: string | null;
+    defaultSets: number;
+    defaultReps: string;
+    description: string | null;
+    category: { id: string; name: string } | null;
+  };
+}
+
+export interface ProgramDayDetail {
+  id: string;
+  dayIndex: number;
+  title: string | null;
+  exercises: ProgramExerciseDetail[];
+}
+
+export type PaymentGateway = 'ZARINPAL' | 'STRIPE';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+
+export interface BillingPlan {
+  id: SubscriptionPlan;
+  months: number;
+  priceIrr: number;
+  priceUsd: number;
+}
+
+export interface PaymentRecord {
+  id: string;
+  gateway: PaymentGateway;
+  plan: SubscriptionPlan;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  createdAt: string;
+}
+
+export interface BillingSummary {
+  subscription: {
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan | null;
+    startsAt: string;
+    endsAt: string;
+  } | null;
+  plans: BillingPlan[];
+  payments: PaymentRecord[];
+  simulateMode: boolean;
+}
+
+export interface StudentCoach {
+  coachId: string;
+  name: string;
+  avatarUrl: string | null;
+  contact: string;
+  programCount: number;
+}
+
+export interface StudentProgramListItem {
+  id: string;
+  name: string;
+  daysPerWeek: number;
+  updatedAt: string;
+  _count: { days: number };
+}
+
+export interface StudentViewerExercise {
+  id: string;
+  sets: number;
+  reps: string;
+  notes: string | null;
+  order: number;
+  supersetGroupId: string | null;
+  supersetOrder: number | null;
+  exercise: { id: string; name: string; gifUrl: string | null; description: string | null };
+}
+
+export interface StudentViewerDay {
+  id: string;
+  dayIndex: number;
+  title: string | null;
+  exercises: StudentViewerExercise[];
+}
+
+export interface StudentProgramDetail {
+  id: string;
+  name: string;
+  coachId: string;
+  daysPerWeek: number;
+  coach: { name: string; avatarUrl: string | null };
+  days: StudentViewerDay[];
+}
+
+export interface ProgramDetail {
+  id: string;
+  name: string;
+  status: ProgramStatus2;
+  daysPerWeek: number;
+  studentAge: number | null;
+  studentHeightCm: number | null;
+  studentWeightKg: number | null;
+  pdfUrl: string | null;
+  pdfStaleAt: string | null;
+  student: {
+    id: string;
+    phone: string | null;
+    email: string | null;
+    age: number | null;
+    heightCm: number | null;
+    weightKg: number | null;
+    userId: string | null;
+  };
+  days: ProgramDayDetail[];
+}
