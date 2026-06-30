@@ -98,8 +98,9 @@ Frontend `lib/api/client.ts` unwraps `data` and throws `ApiError(status, error)`
 - **Routing:** `app/[locale]/...` (next-intl, `localePrefix: 'always'`, default `fa`). `i18n/routing.ts`
   exports locale-aware `Link, useRouter, usePathname, redirect`. **Always import nav from `@/i18n/routing`,
   not `next/link`/`next/navigation`** (except `useParams`/`useSearchParams`).
-- **Pages:** `[locale]/page.tsx` (landing), `login`, `coach/{page,profile,exercises,programs/{page,new,[id]/edit},billing}`,
-  `student/{page,coaches/[coachId],programs/[id]}`.
+- **Pages:** `[locale]/page.tsx` (landing), `login`, `coach/{page,profile,exercises,programs/{page,new,[id]/edit},billing,requests}`,
+  `student/{page,coaches/[coachId],programs/[id]}`, and **public** `c/[handle]` + `c/[handle]/request`
+  (the public coach page + the auth-gated intake form).
 - **layout.tsx:** sets `<html dir lang>` + per-locale font; renders `AppProviders` (next-intl + theme +
   React Query + Toaster) and `ServiceWorkerRegister`. Exports `metadata` (manifest/icons) + `viewport` (themeColor).
 - **components/**
@@ -126,14 +127,15 @@ Frontend `lib/api/client.ts` unwraps `data` and throws `ApiError(status, error)`
 
 ## 7. Data model (Prisma — `backend/prisma/schema.prisma`)
 
-12 models. PK = cuid unless noted. Key fields + relations:
+13 models. PK = cuid unless noted. Key fields + relations:
 
 - **User** (`id`, `phone?`@unique, `email?`@unique, `passwordHash?` reserved, `role` Role, `locale`).
 - **OtpToken** (`identifier`, `channel` OtpChannel, `purpose` OtpPurpose, `codeHash`, `expiresAt`,
   `consumedAt?`, `attempts`) — codes/magic-links stored **hashed**, single-use, rate-limited.
 - **RefreshToken** (`userId`, `tokenHash`@unique, `userAgent?`, `expiresAt`, `revokedAt?`) — rotated on use.
-- **CoachProfile** (`userId` **@id**, `name`, `bio?`, `avatarUrl?`, `socialLinks` Json `[{type,label,url}]`,
-  `tags[]`) — owns categories/exercises/programs/students/subscriptions/payments.
+- **CoachProfile** (`userId` **@id**, `handle?`@unique (public page slug `/c/<handle>`), `name`, `bio?`,
+  `avatarUrl?`, `socialLinks` Json `[{type,label,url}]`, `tags[]`) — owns categories/exercises/programs/
+  students/subscriptions/payments/requests. Handle auto-generated at signup (`handle.util.ts`), editable.
 - **StudentProfile** (`id`, **`userId?`** null-until-claimed, `coachId`, `phone?`, `email?`, `age?`,
   `heightCm?`, `weightKg?`) — **@@unique([coachId,phone]) / ([coachId,email])**; indexes on phone/email/userId.
 - **ExerciseCategory** (`coachId`, `name`) — @@unique([coachId,name]).
@@ -148,11 +150,15 @@ Frontend `lib/api/client.ts` unwraps `data` and throws `ApiError(status, error)`
 - **Payment** (`coachId`, `subscriptionId?`, `gateway` PaymentGateway, `plan`, `amount` Int (minor units),
   `currency`, `status` PaymentStatus, `reference?` (authority/sessionId; @@unique([gateway,reference])),
   `raw` Json).
+- **ProgramRequest** (`coachId`, `studentUserId`, `studentProfileId?`, `fullName`, `phone?`, `weightKg?`,
+  `heightCm?`, `practiceHistory?`, `injuries?`, `description?`, `imageKeys[]` (private object keys),
+  `status` ProgramRequestStatus) — public-page intake; on submit links a StudentProfile via
+  `findOrCreateForProgram`. Photos live in the **private** `requests` bucket (coach views via presigned GET).
 
 **Enums:** `Role(COACH|STUDENT)`, `OtpChannel(SMS|EMAIL)`, `OtpPurpose(LOGIN|MAGIC_LINK)`,
 `ProgramStatus(DRAFT|PUBLISHED)`, `SubscriptionPlan(M3|M6|M12)`,
 `SubscriptionStatus(TRIALING|ACTIVE|EXPIRED|CANCELED)`, `PaymentGateway(ZARINPAL|STRIPE)`,
-`PaymentStatus(PENDING|PAID|FAILED|REFUNDED)`.
+`PaymentStatus(PENDING|PAID|FAILED|REFUNDED)`, `ProgramRequestStatus(PENDING|REVIEWED|DECLINED)`.
 
 Full ERD + linking-rule walkthrough: `docs/data-model.md`.
 
@@ -163,15 +169,23 @@ Full ERD + linking-rule walkthrough: `docs/data-model.md`.
 - **auth** (`@Public` except /me): `POST /auth/otp/request`, `POST /auth/otp/verify`,
   `POST /auth/magic-link/request`, `GET /auth/magic-link/consume`, `POST /auth/refresh`,
   `POST /auth/logout`, `GET /auth/me`.
-- **coach-profile** (`@Roles COACH`): `GET /coach/profile`, `PATCH /coach/profile`,
+- **coach-profile** (`@Roles COACH`): `GET /coach/profile`, `PATCH /coach/profile` (incl. public `handle`),
   `POST /coach/profile/avatar-upload-url`.
+- **public-coach** (`@Public`): `GET /public/coaches/:handle` → public page payload (name, phone, social,
+  avatar, bio, tags). Redis-cached.
 - **categories** (COACH): `GET /coach/categories`, `POST` *(gated)*, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
 - **exercises** (COACH): `GET /coach/exercises?search=&categoryId=`, `POST` *(gated)*,
   `POST /coach/exercises/gif-upload-url`, `GET/:id`, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
 - **programs** (COACH): `GET /coach/programs`, `POST` *(gated)*, `GET/:id`, `PATCH/:id` *(gated)*,
   `PATCH/:id/status` *(gated)*, `DELETE/:id` *(gated)*, `GET /coach/programs/:id/pdf?locale=fa|en` (pdf module).
 - **student** (`@Roles STUDENT`): `GET /student/coaches`, `GET /student/coaches/:coachId/programs`,
-  `GET /student/programs/:id` — **published-only**, ownership via claimed profile (drafts → 404).
+  `GET /student/programs/:id`, `GET /student/programs/:id/pdf?locale=` — **published-only**, ownership via
+  claimed profile (drafts → 404). The PDF path reuses the coach generation/cache via
+  `PdfService.getOrGenerateForStudent`.
+- **program-requests** — student: `POST /student/requests/image-upload-url` (presigned PUT → private bucket),
+  `POST /student/requests` (submit intake, links a StudentProfile), `GET /student/requests` (own). Coach:
+  `GET /coach/requests` (inbox, with presigned photo URLs + a prefill `contact`), `PATCH /coach/requests/:id`
+  (status REVIEWED/DECLINED).
 - **billing** (COACH): `GET /coach/billing`, `POST /coach/billing/checkout`,
   `POST /coach/billing/dev/complete/:paymentId` (non-prod simulate).
 - **gateway webhooks** (`@Public`): `GET /coach/billing/zarinpal/callback`, `POST /payments/stripe/webhook`.
@@ -185,6 +199,8 @@ Full ERD + linking-rule walkthrough: `docs/data-model.md`.
 - **Uploads (avatars/gifs):** client asks `*-upload-url` → backend returns presigned **PUT** URL (signed with the
   **public** S3 endpoint so the browser can reach it) → browser PUTs bytes to MinIO → client saves the returned
   `publicUrl` on the entity. `storage/storage.service.ts` keeps two S3 clients (internal for ops, public for presign).
+  Buckets `avatars/gifs/pdfs` are **public-read**; **`requests`** (intake photos) is **private** — the request
+  stores object **keys** and the coach inbox returns short-lived **presigned GET** URLs.
 - **PDF:** `pdf/` renders an RTL HTML template (`program-pdf.template.ts`) with Puppeteer → uploads to `pdfs`
   bucket → caches `Program.pdfUrl`; regenerates when `pdfStaleAt` is set (every program edit sets it).
   `puppeteer-core` is **lazy-loaded**; returns 503 if Chromium/dep absent (see §9 caveat).
@@ -258,8 +274,12 @@ needs a manual restart to pick up new modules.
 | Auth/guards | `backend/src/common/guards/*`, `modules/auth/*` |
 | Caching | `backend/src/common/cache/cache-keys.ts` + `RedisService.remember/invalidate` |
 | Uploads | `backend/src/modules/storage/*` + `frontend/src/lib/api/upload.ts` |
-| Program builder | `frontend/src/components/coach/program-builder/*` |
+| Program builder | `frontend/src/components/coach/program-builder/*` (prefill student via `?student=` on `/coach/programs/new`) |
 | Subscription gating | `common/guards/subscription.guard.ts` + `@RequiresActiveSubscription()` + `modules/subscriptions/*` |
+| Public coach page / handle | `modules/public-coach/*`, `common/utils/handle.util.ts`; UI `app/[locale]/c/[handle]/*` |
+| Program requests (intake) | `modules/program-requests/*`; UI `app/[locale]/c/[handle]/request`, `components/coach/requests-inbox.tsx` |
+| GIF lightbox / image enlarge | `frontend/src/components/shared/gif-lightbox.tsx` |
+| Post-login return-to | `components/auth/{auth-form,auth-guard}.tsx` (`?next=` safe internal path) |
 
 Related docs: `architecture.md`, `data-model.md`, `code-structure.md`, `setup.md`, `i18n-and-rtl.md`,
 `api.md`, `progress.md`, `decisions/` (ADRs).

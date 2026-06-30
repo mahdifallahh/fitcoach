@@ -14,6 +14,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { GifLightbox } from '@/components/shared/gif-lightbox';
 import { ExerciseFormDialog } from './exercise-form-dialog';
 import { CategoryManager } from './category-manager';
 
@@ -125,12 +126,16 @@ function ExerciseCard({
   return (
     <Card className="overflow-hidden">
       <CardContent className="flex gap-3 p-3">
-        <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+        <div className="size-20 shrink-0 overflow-hidden rounded-md bg-muted">
           {ex.gifUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={ex.gifUrl} alt="" className="size-full object-cover" />
+            <GifLightbox src={ex.gifUrl} alt={ex.name} className="size-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={ex.gifUrl} alt={ex.name} className="size-full object-cover" />
+            </GifLightbox>
           ) : (
-            <Dumbbell className="size-6 text-muted-foreground" />
+            <div className="flex size-full items-center justify-center">
+              <Dumbbell className="size-6 text-muted-foreground" />
+            </div>
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col">

@@ -21,7 +21,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-export function AuthForm({ role }: { role: Role }) {
+/** Only allow same-origin internal paths (avoid open-redirect / protocol-relative). */
+function safeNext(next?: string): string | null {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return null;
+  return next;
+}
+
+export function AuthForm({ role, next }: { role: Role; next?: string }) {
   const t = useTranslations('auth');
   const router = useRouter();
   const qc = useQueryClient();
@@ -58,7 +64,8 @@ export function AuthForm({ role }: { role: Role }) {
     try {
       const { user } = await authApi.verifyOtp(identifier, code, role);
       await qc.invalidateQueries({ queryKey: ME_QUERY_KEY });
-      router.replace(user.role === 'COACH' ? '/coach' : '/student');
+      const dest = safeNext(next) ?? (user.role === 'COACH' ? '/coach' : '/student');
+      router.replace(dest);
     } catch (err) {
       if (err instanceof ApiError && err.code.startsWith('OTP')) {
         toast.error(t('errorInvalidCode'));

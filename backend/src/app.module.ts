@@ -23,6 +23,8 @@ import { ProgramsModule } from './modules/programs/programs.module';
 import { PdfModule } from './modules/pdf/pdf.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { PublicCoachModule } from './modules/public-coach/public-coach.module';
+import { ProgramRequestsModule } from './modules/program-requests/program-requests.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
     PdfModule,
     SubscriptionsModule,
     PaymentsModule,
+    PublicCoachModule,
+    ProgramRequestsModule,
     HealthModule,
   ],
   providers: [

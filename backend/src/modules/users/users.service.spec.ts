@@ -9,7 +9,10 @@ describe('UsersService.createUser', () => {
   beforeEach(() => {
     tx = {
       user: { create: jest.fn().mockResolvedValue({ id: 'u1', role: Role.STUDENT }) },
-      coachProfile: { create: jest.fn().mockResolvedValue({}) },
+      coachProfile: {
+        create: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn().mockResolvedValue(null), // handle is free
+      },
       subscription: { create: jest.fn().mockResolvedValue({}) },
       studentProfile: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
     };
@@ -21,9 +24,11 @@ describe('UsersService.createUser', () => {
     tx.user.create.mockResolvedValue({ id: 'c1', role: Role.COACH });
     await service.createUser({ identifier: '+989120000000', channel: 'SMS', role: Role.COACH });
 
-    expect(tx.coachProfile.create).toHaveBeenCalledWith({
-      data: { userId: 'c1', name: '+989120000000' },
-    });
+    const coachData = tx.coachProfile.create.mock.calls[0][0].data;
+    expect(coachData.userId).toBe('c1');
+    expect(coachData.name).toBe('+989120000000');
+    // phone coaches must NOT leak their number into the public handle
+    expect(coachData.handle).toMatch(/^coach-[0-9a-f]{6}$/);
     const subData = tx.subscription.create.mock.calls[0][0].data;
     expect(subData.status).toBe(SubscriptionStatus.TRIALING);
     expect(subData.endsAt.getTime()).toBeGreaterThan(Date.now());

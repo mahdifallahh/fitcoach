@@ -4,12 +4,13 @@ import * as React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Loader2, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { Check, Copy, ExternalLink, Loader2, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import type { CoachProfile } from '@/lib/api/types';
 import { coachProfileApi } from '@/lib/api/coach-profile';
 import { useUpdateCoachProfile } from '@/lib/query/use-coach-profile';
+import { ApiError } from '@/lib/api/client';
 import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_BYTES, uploadFile } from '@/lib/api/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
 const schema = z.object({
+  handle: z
+    .string()
+    .regex(/^[a-z0-9-]{3,30}$/)
+    .or(z.literal('')),
   name: z.string().min(1).max(120),
   bio: z.string().max(2000).optional(),
   avatarUrl: z.string().nullable().optional(),
@@ -36,14 +41,17 @@ type FormValues = z.infer<typeof schema>;
 
 export function ProfileForm({ profile }: { profile: CoachProfile }) {
   const t = useTranslations('profile');
+  const locale = useLocale();
   const update = useUpdateCoachProfile();
   const fileRef = React.useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = React.useState(false);
   const [tagInput, setTagInput] = React.useState('');
+  const [copied, setCopied] = React.useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      handle: profile.handle ?? '',
       name: profile.name,
       bio: profile.bio ?? '',
       avatarUrl: profile.avatarUrl,
@@ -56,6 +64,17 @@ export function ProfileForm({ profile }: { profile: CoachProfile }) {
 
   const avatarUrl = watch('avatarUrl');
   const tags = watch('tags');
+  const handle = watch('handle');
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const publicUrl = handle ? `${origin}/${locale}/c/${handle}` : '';
+
+  async function copyLink() {
+    if (!publicUrl) return;
+    await navigator.clipboard.writeText(publicUrl).catch(() => undefined);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -83,6 +102,8 @@ export function ProfileForm({ profile }: { profile: CoachProfile }) {
   function onSubmit(values: FormValues) {
     update.mutate(
       {
+        // only send handle when set + changed (avoid clearing it with '')
+        ...(values.handle && values.handle !== profile.handle ? { handle: values.handle } : {}),
         name: values.name,
         bio: values.bio?.trim() ? values.bio : null,
         avatarUrl: values.avatarUrl ?? null,
@@ -91,13 +112,56 @@ export function ProfileForm({ profile }: { profile: CoachProfile }) {
       },
       {
         onSuccess: () => toast.success(t('saved')),
-        onError: () => toast.error(t('saveError')),
+        onError: (err) =>
+          toast.error(err instanceof ApiError && err.code === 'HANDLE_TAKEN' ? t('handleTaken') : t('saveError')),
       },
     );
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
+      {/* Public page */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="space-y-3 p-4">
+          <div>
+            <Label className="text-base">{t('publicLink')}</Label>
+            <p className="text-sm text-muted-foreground">{t('publicLinkHint')}</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="handle">{t('handle')}</Label>
+            <div className="flex items-center gap-1 rounded-md border bg-background ps-3 text-sm">
+              <span className="shrink-0 text-muted-foreground" dir="ltr">
+                /c/
+              </span>
+              <Input
+                id="handle"
+                dir="ltr"
+                className="border-0 px-1 shadow-none focus-visible:ring-0"
+                placeholder="my-handle"
+                {...register('handle')}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{t('handleHint')}</p>
+          </div>
+          {publicUrl && (
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="min-w-0 flex-1 truncate rounded bg-background px-2 py-1.5 text-xs" dir="ltr">
+                {publicUrl}
+              </code>
+              <Button type="button" variant="outline" size="sm" onClick={copyLink}>
+                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                {copied ? t('copied') : t('copy')}
+              </Button>
+              <Button asChild type="button" variant="ghost" size="sm">
+                <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-4" /> {t('openPublic')}
+                </a>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Avatar */}
       <div className="flex items-center gap-4">
         <div className="size-20 overflow-hidden rounded-full bg-muted">

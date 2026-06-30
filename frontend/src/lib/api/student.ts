@@ -6,4 +6,6 @@ export const studentApi = {
   coachPrograms: (coachId: string) =>
     api.get<StudentProgramListItem[]>(`/student/coaches/${coachId}/programs`),
   program: (id: string) => api.get<StudentProgramDetail>(`/student/programs/${id}`),
+  programPdf: (id: string, locale: 'fa' | 'en') =>
+    api.get<{ url: string; cached: boolean }>(`/student/programs/${id}/pdf?locale=${locale}`),
 };

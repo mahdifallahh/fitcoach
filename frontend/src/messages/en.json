@@ -78,7 +78,8 @@
     "profile": "Profile",
     "exercises": "Exercises",
     "programs": "Programs",
-    "billing": "Billing"
+    "billing": "Billing",
+    "requests": "Requests"
   },
   "billing": {
     "title": "Subscription",
@@ -131,7 +132,15 @@
     "save": "Save profile",
     "saving": "Saving…",
     "saved": "Profile saved",
-    "saveError": "Could not save profile"
+    "saveError": "Could not save profile",
+    "publicLink": "Public page",
+    "publicLinkHint": "Share this link anywhere — anyone can request a program from you.",
+    "handle": "Link handle",
+    "handleHint": "Lowercase letters, numbers and hyphens (3–30 chars).",
+    "copy": "Copy link",
+    "copied": "Copied!",
+    "openPublic": "Open",
+    "handleTaken": "That link is already taken."
   },
   "exercises": {
     "title": "Exercise library",
@@ -255,5 +264,51 @@
     "prev": "Previous",
     "next": "Next",
     "loadError": "Could not load the program"
+  },
+  "publicCoach": {
+    "requestProgram": "Request a program",
+    "notFound": "Coach not found.",
+    "contact": "Contact"
+  },
+  "request": {
+    "title": "Request a program",
+    "from": "from {name}",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "First and last name",
+    "phone": "Phone",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "history": "Training history",
+    "historyPlaceholder": "How long have you trained, your current routine…",
+    "injuries": "Injuries (optional)",
+    "description": "Notes (optional)",
+    "photos": "Photos (optional)",
+    "addPhotos": "Add photos",
+    "maxPhotos": "Up to 6 images",
+    "submit": "Send request",
+    "submitting": "Sending…",
+    "success": "Your request was sent",
+    "error": "Could not send your request",
+    "uploadError": "Upload failed",
+    "back": "Back"
+  },
+  "requests": {
+    "title": "Program requests",
+    "subtitle": "Intake forms your prospective students submitted.",
+    "empty": "No requests yet. Share your public page to receive some.",
+    "contact": "Contact",
+    "weight": "Weight",
+    "height": "Height",
+    "history": "Training history",
+    "injuries": "Injuries",
+    "notes": "Notes",
+    "photos": "Photos",
+    "startProgram": "Start program",
+    "markReviewed": "Mark reviewed",
+    "decline": "Decline",
+    "statusPENDING": "New",
+    "statusREVIEWED": "Reviewed",
+    "statusDECLINED": "Declined",
+    "actionError": "Action failed"
   }
 }

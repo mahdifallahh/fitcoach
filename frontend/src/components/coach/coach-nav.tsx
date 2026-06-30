@@ -1,12 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ClipboardList, CreditCard, Dumbbell, LayoutDashboard, User } from 'lucide-react';
+import { ClipboardList, CreditCard, Dumbbell, Inbox, LayoutDashboard, User } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 const items = [
   { href: '/coach', key: 'dashboard', icon: LayoutDashboard },
+  { href: '/coach/requests', key: 'requests', icon: Inbox },
   { href: '/coach/programs', key: 'programs', icon: ClipboardList },
   { href: '/coach/exercises', key: 'exercises', icon: Dumbbell },
   { href: '/coach/profile', key: 'profile', icon: User },

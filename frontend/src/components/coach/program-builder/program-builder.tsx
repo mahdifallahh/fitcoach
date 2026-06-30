@@ -27,7 +27,7 @@ import { blankState, daysToPayload, itemFromExercise, parseStat, stateFromProgra
 import { DayRow } from './day-row';
 import { ExercisePicker } from './exercise-picker';
 
-export function ProgramBuilder({ programId }: { programId?: string }) {
+export function ProgramBuilder({ programId, initialContact }: { programId?: string; initialContact?: string }) {
   const t = useTranslations('builder');
   const router = useRouter();
   const isEdit = !!programId;
@@ -47,6 +47,15 @@ export function ProgramBuilder({ programId }: { programId?: string }) {
       setReady(true);
     }
   }, [existing, ready, draft]);
+
+  // Prefill the student contact when arriving from a program request ("Start program").
+  const contactInit = React.useRef(false);
+  React.useEffect(() => {
+    if (!isEdit && initialContact && !contactInit.current) {
+      contactInit.current = true;
+      draft.setMeta('studentContact', initialContact);
+    }
+  }, [isEdit, initialContact, draft]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const state = draft.state;

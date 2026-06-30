@@ -9,7 +9,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AppConfigService } from '../../config/config.module';
 
-export type BucketKind = 'avatars' | 'gifs' | 'pdfs';
+export type BucketKind = 'avatars' | 'gifs' | 'pdfs' | 'requests';
 
 export interface UploadTarget {
   /** Presigned PUT URL the browser uploads the bytes to directly. */
@@ -62,6 +62,7 @@ export class StorageService {
       avatars: config.get('S3_BUCKET_AVATARS'),
       gifs: config.get('S3_BUCKET_GIFS'),
       pdfs: config.get('S3_BUCKET_PDFS'),
+      requests: config.get('S3_BUCKET_REQUESTS'),
     };
   }
 

@@ -66,10 +66,11 @@ services:
       mc mb --ignore-existing local/${S3_BUCKET_AVATARS};
       mc mb --ignore-existing local/${S3_BUCKET_GIFS};
       mc mb --ignore-existing local/${S3_BUCKET_PDFS};
+      mc mb --ignore-existing local/${S3_BUCKET_REQUESTS};
       mc anonymous set download local/${S3_BUCKET_AVATARS};
       mc anonymous set download local/${S3_BUCKET_GIFS};
       mc anonymous set download local/${S3_BUCKET_PDFS};
-      echo 'MinIO buckets ready';
+      echo 'MinIO buckets ready (requests stays private)';
       "
 
   backend:

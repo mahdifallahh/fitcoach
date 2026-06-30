@@ -10,10 +10,10 @@ export default async function LoginPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ role?: string }>;
+  searchParams: Promise<{ role?: string; next?: string }>;
 }) {
   const { locale } = await params;
-  const { role: roleParam } = await searchParams;
+  const { role: roleParam, next } = await searchParams;
   setRequestLocale(locale);
   const tc = await getTranslations('common');
 
@@ -31,7 +31,7 @@ export default async function LoginPage({
         </div>
       </header>
       <main className="container flex flex-1 items-center justify-center py-10">
-        <AuthForm role={role} />
+        <AuthForm role={role} next={next} />
       </main>
     </div>
   );

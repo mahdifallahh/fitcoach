@@ -25,11 +25,52 @@ export interface SocialLink {
 
 export interface CoachProfile {
   userId: string;
+  handle: string | null;
   name: string;
   bio: string | null;
   avatarUrl: string | null;
   socialLinks: SocialLink[];
   tags: string[];
+}
+
+export interface PublicCoach {
+  handle: string;
+  name: string;
+  bio: string | null;
+  avatarUrl: string | null;
+  tags: string[];
+  socialLinks: SocialLink[];
+  phone: string | null;
+  email: string | null;
+}
+
+export type ProgramRequestStatus = 'PENDING' | 'REVIEWED' | 'DECLINED';
+
+export interface CreateProgramRequestInput {
+  handle: string;
+  fullName: string;
+  weightKg?: number;
+  heightCm?: number;
+  practiceHistory?: string;
+  injuries?: string;
+  description?: string;
+  imageKeys?: string[];
+}
+
+/** A request as the coach sees it (with signed photo URLs + a prefill contact). */
+export interface CoachRequest {
+  id: string;
+  fullName: string;
+  phone: string | null;
+  weightKg: number | null;
+  heightCm: number | null;
+  practiceHistory: string | null;
+  injuries: string | null;
+  description: string | null;
+  imageUrls: string[];
+  contact: string;
+  status: ProgramRequestStatus;
+  createdAt: string;
 }
 
 export interface Category {

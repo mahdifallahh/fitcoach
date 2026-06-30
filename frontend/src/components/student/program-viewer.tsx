@@ -5,9 +5,12 @@ import { useTranslations } from 'next-intl';
 import { ChevronLeft, Dumbbell, Layers } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { useStudentProgram } from '@/lib/query/use-student';
+import { studentApi } from '@/lib/api/student';
 import type { StudentViewerExercise } from '@/lib/api/types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { GifLightbox } from '@/components/shared/gif-lightbox';
+import { DownloadPdfButton } from '@/components/coach/download-pdf-button';
 import { cn } from '@/lib/utils';
 
 interface Row {
@@ -64,9 +67,12 @@ export function ProgramViewer({ programId }: { programId: string }) {
         <ChevronLeft className="size-4 rtl-flip" /> {t('back')}
       </Link>
 
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">{data.name}</h1>
-        <p className="text-muted-foreground">{t('coachLabel', { name: data.coach.name })}</p>
+      <header className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold">{data.name}</h1>
+          <p className="text-muted-foreground">{t('coachLabel', { name: data.coach.name })}</p>
+        </div>
+        <DownloadPdfButton programId={programId} variant="outline" withLabel fetcher={studentApi.programPdf} />
       </header>
 
       {/* Day navigation */}
@@ -123,10 +129,10 @@ function ExerciseCard({ ex }: { ex: StudentViewerExercise }) {
   return (
     <div className="overflow-hidden rounded-2xl border bg-card">
       {ex.exercise.gifUrl ? (
-        <div className="flex max-h-72 justify-center bg-muted/40">
+        <GifLightbox src={ex.exercise.gifUrl} alt={ex.exercise.name} className="flex max-h-72 justify-center bg-muted/40">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={ex.exercise.gifUrl} alt={ex.exercise.name} className="max-h-72 w-auto object-contain" />
-        </div>
+        </GifLightbox>
       ) : (
         <div className="flex h-28 items-center justify-center bg-muted/40">
           <Dumbbell className="size-8 text-muted-foreground" />

@@ -56,6 +56,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum ProgramRequestStatus {
+  PENDING
+  REVIEWED
+  DECLINED
+}
+
 // ── Identity & auth ──────────────────────────────────────────────────────────
 model User {
   id           String   @id @default(cuid())
@@ -70,6 +76,7 @@ model User {
   coachProfile     CoachProfile?
   studentProfiles  StudentProfile[] // a student may be linked to several coaches' profiles
   refreshTokens    RefreshToken[]
+  programRequests  ProgramRequest[] // intake requests this user (as student) submitted
 
   @@index([phone])
   @@index([email])
@@ -107,6 +114,7 @@ model RefreshToken {
 // ── Coach domain ─────────────────────────────────────────────────────────────
 model CoachProfile {
   userId      String   @id
+  handle      String?  @unique // public page slug: /c/<handle>
   name        String
   bio         String?
   avatarUrl   String?
@@ -122,6 +130,7 @@ model CoachProfile {
   students         StudentProfile[]
   subscriptions    Subscription[]
   payments         Payment[]
+  requests         ProgramRequest[]
 }
 
 model ExerciseCategory {
@@ -274,4 +283,29 @@ model Payment {
 
   @@unique([gateway, reference])
   @@index([coachId])
+}
+
+// ── Program requests (public-page intake) ────────────────────────────────────
+model ProgramRequest {
+  id               String               @id @default(cuid())
+  coachId          String
+  studentUserId    String // the logged-in student who submitted
+  studentProfileId String? // the coach's StudentProfile this links to (find-or-create)
+  fullName         String
+  phone            String?
+  weightKg         Float?
+  heightCm         Float?
+  practiceHistory  String?
+  injuries         String?
+  description      String?
+  imageKeys        String[]             @default([]) // private object keys (bucket: requests)
+  status           ProgramRequestStatus @default(PENDING)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  coach   CoachProfile @relation(fields: [coachId], references: [userId], onDelete: Cascade)
+  student User         @relation(fields: [studentUserId], references: [id], onDelete: Cascade)
+
+  @@index([coachId, status])
+  @@index([studentUserId])
 }

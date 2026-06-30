@@ -3,6 +3,25 @@
 Living checklist mirroring the 9 build phases. Update statuses as work lands.
 Legend: ✅ done · 🚧 in progress · ⬜ not started
 
+## Post-launch — Public pages + program-request intake  ✅
+Growth/onboarding loop on top of the 9 phases (plan: `▶ CURRENT WORK` in the plan file).
+- ✅ Schema: `CoachProfile.handle` (unique, auto-generated `handle.util.ts`) + `ProgramRequest` model +
+  `ProgramRequestStatus` enum + migration `…_program_requests_and_handle`.
+- ✅ Private **`requests`** S3 bucket (intake photos): env + `minio-init` (no anonymous read); coach views via
+  presigned GET. `BucketKind` extended.
+- ✅ **public-coach** module: `@Public GET /public/coaches/:handle` (Redis-cached). **coach-profile** PATCH
+  accepts/validates `handle` (409 `HANDLE_TAKEN`), lazy back-fill on read.
+- ✅ **program-requests** module: student submit (+ image-upload-url, links a StudentProfile) / own list; coach
+  inbox (signed photo URLs + prefill contact) / status PATCH.
+- ✅ **Student PDF**: `GET /student/programs/:id/pdf` → `getOrGenerateForStudent` (reuses coach gen/cache;
+  ownership-enforced).
+- ✅ Frontend: shared **GIF lightbox** (viewer + library), **student PDF** button in viewer, **public coach page**
+  `/c/<handle>` + auth-gated **intake form** `/c/<handle>/request`, **post-login return** (`?next=`), **Requests
+  inbox** + nav, **public-link** card on the profile, builder **`?student=` prefill**.
+- ✅ **Verified live (Playwright + curl):** handle save → public page (logged-out) → Request → bounce to login →
+  student login → back to form → submit → coach inbox shows it → **Start program** opens builder prefilled.
+  Student PDF generates + blocks non-owners (404). Backend `pnpm build` + 40 tests green; frontend build clean.
+
 ## Phase 1 — Scaffold + Docker  ✅
 - ✅ Repo layout (`backend/`, `frontend/`, `docs/`, root compose)
 - ✅ `docker-compose.yml` (postgres, redis, minio, minio-init, backend, frontend) with healthchecks

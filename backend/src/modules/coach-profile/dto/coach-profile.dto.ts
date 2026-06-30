@@ -5,10 +5,12 @@ import {
   IsArray,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { HANDLE_REGEX } from '../../../common/utils/handle.util';
 
 export class SocialLinkDto {
   @ApiProperty({ example: 'instagram', description: 'Platform key (free-form)' })
@@ -31,6 +33,12 @@ export class SocialLinkDto {
 }
 
 export class UpdateCoachProfileDto {
+  @ApiPropertyOptional({ description: 'Public page handle (a–z, 0–9, hyphen; 3–30 chars)' })
+  @IsOptional()
+  @IsString()
+  @Matches(HANDLE_REGEX, { message: 'handle must be 3–30 chars of lowercase letters, digits or hyphens' })
+  handle?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

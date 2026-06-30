@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfigService } from '../../config/config.module';
 import { StorageService } from '../storage/storage.service';
 import { ProgramsService } from '../programs/programs.service';
+import { StudentsService } from '../students/students.service';
 import { renderProgramHtml, type PdfProgram } from './program-pdf.template';
 
 // puppeteer-core is loaded lazily (see loadPuppeteer) so the backend compiles and
@@ -21,7 +22,17 @@ export class PdfService implements OnModuleDestroy {
     private readonly config: AppConfigService,
     private readonly storage: StorageService,
     private readonly programs: ProgramsService,
+    private readonly students: StudentsService,
   ) {}
+
+  /**
+   * Student-facing PDF: verify the student owns this published program, then reuse
+   * the coach generation path (and its cache).
+   */
+  async getOrGenerateForStudent(studentUserId: string, programId: string, locale: 'fa' | 'en') {
+    const program = await this.students.getProgramForStudent(studentUserId, programId); // 404s if not owned/published
+    return this.getOrGenerate(program.coachId, programId, locale);
+  }
 
   /**
    * Returns the program's PDF URL, (re)generating on demand when missing or when

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, Role, SubscriptionStatus, User } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IdentifierChannel } from '../../common/utils/identifier.util';
+import { generateUniqueHandle } from '../../common/utils/handle.util';
 
 export const TRIAL_DAYS = 7;
 
@@ -73,8 +74,16 @@ export class UsersService {
       const user = await tx.user.create({ data });
 
       if (role === Role.COACH) {
+        const coachName = defaultCoachName(channel, identifier);
+        // Seed the public handle from the name only for email coaches; never from a
+        // phone number (it would leak the phone in the public URL) — those get coach-<rand>.
+        const handleSeed = channel === 'EMAIL' ? coachName : '';
+        const handle = await generateUniqueHandle(
+          handleSeed,
+          async (h) => (await tx.coachProfile.findUnique({ where: { handle: h }, select: { userId: true } })) !== null,
+        );
         await tx.coachProfile.create({
-          data: { userId: user.id, name: defaultCoachName(channel, identifier) },
+          data: { userId: user.id, name: coachName, handle },
         });
         await tx.subscription.create({
           data: {

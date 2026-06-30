@@ -2,6 +2,7 @@ import { api } from './client';
 import type { CoachProfile, SocialLink, UploadTarget } from './types';
 
 export interface UpdateCoachProfileInput {
+  handle?: string;
   name?: string;
   bio?: string | null;
   avatarUrl?: string | null;

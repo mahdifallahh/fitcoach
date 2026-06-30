@@ -11,10 +11,13 @@ export function DownloadPdfButton({
   programId,
   variant = 'ghost',
   withLabel = false,
+  fetcher,
 }: {
   programId: string;
   variant?: 'ghost' | 'outline';
   withLabel?: boolean;
+  /** Override the PDF source (e.g. the student endpoint). Defaults to the coach endpoint. */
+  fetcher?: (id: string, locale: 'fa' | 'en') => Promise<{ url: string; cached: boolean }>;
 }) {
   const t = useTranslations('programs');
   const locale = useLocale();
@@ -23,7 +26,8 @@ export function DownloadPdfButton({
   async function download() {
     setLoading(true);
     try {
-      const { url } = await programsApi.pdf(programId, locale === 'en' ? 'en' : 'fa');
+      const get = fetcher ?? programsApi.pdf;
+      const { url } = await get(programId, locale === 'en' ? 'en' : 'fa');
       window.open(url, '_blank', 'noopener');
     } catch {
       toast.error(t('pdfError'));

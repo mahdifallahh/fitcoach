@@ -25,6 +25,7 @@ export const envSchema = z.object({
   S3_BUCKET_AVATARS: z.string().default('avatars'),
   S3_BUCKET_GIFS: z.string().default('gifs'),
   S3_BUCKET_PDFS: z.string().default('pdfs'),
+  S3_BUCKET_REQUESTS: z.string().default('requests'), // private (intake photos)
 
   // JWT
   JWT_ACCESS_SECRET: z.string().min(1),
