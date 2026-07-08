@@ -9,6 +9,9 @@ const nextConfig = {
   // privileges — so enable it only when explicitly requested (set in Dockerfile).
   output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   reactStrictMode: true,
+  // Keep native/server-only packages out of the bundle so their runtime engines
+  // (Prisma query engine, Chromium launcher) load from node_modules at runtime.
+  serverExternalPackages: ['@prisma/client', 'puppeteer-core'],
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },

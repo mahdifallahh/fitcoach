@@ -26,9 +26,11 @@ export interface CreateProgramPayload {
   weightKg?: number;
   status?: ProgramStatus2;
   days: ProgramDayPayload[];
+  /** When set, the backend marks this ProgramRequest ACCEPTED on save. */
+  requestId?: string;
 }
 
-export type UpdateProgramPayload = Partial<Omit<CreateProgramPayload, 'studentContact'>>;
+export type UpdateProgramPayload = Partial<Omit<CreateProgramPayload, 'studentContact' | 'requestId'>>;
 
 export const programsApi = {
   list: () => api.get<ProgramListItem[]>('/coach/programs'),

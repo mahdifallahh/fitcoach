@@ -31,6 +31,7 @@ const schema = z.object({
   defaultSets: z.coerce.number().int().min(1).max(50),
   defaultReps: z.string().min(1).max(40),
   description: z.string().max(2000).optional(),
+  videoUrl: z.string().max(500).optional(),
   gifUrl: z.string().nullable().optional(),
 });
 type FormValues = z.infer<typeof schema>;
@@ -54,7 +55,7 @@ export function ExerciseFormDialog({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', categoryId: '', defaultSets: 3, defaultReps: '10', description: '', gifUrl: null },
+    defaultValues: { name: '', categoryId: '', defaultSets: 3, defaultReps: '10', description: '', videoUrl: '', gifUrl: null },
   });
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
   const gifUrl = watch('gifUrl');
@@ -68,6 +69,7 @@ export function ExerciseFormDialog({
       defaultSets: exercise?.defaultSets ?? 3,
       defaultReps: exercise?.defaultReps ?? '10',
       description: exercise?.description ?? '',
+      videoUrl: exercise?.videoUrl ?? '',
       gifUrl: exercise?.gifUrl ?? null,
     });
   }, [open, exercise, reset]);
@@ -96,6 +98,7 @@ export function ExerciseFormDialog({
       defaultSets: values.defaultSets,
       defaultReps: values.defaultReps,
       description: values.description?.trim() ? values.description : null,
+      videoUrl: values.videoUrl?.trim() ? values.videoUrl : null,
       gifUrl: values.gifUrl ?? null,
     };
     const opts = {
@@ -176,6 +179,11 @@ export function ExerciseFormDialog({
           <div className="space-y-2">
             <Label htmlFor="ex-desc">{t('description')}</Label>
             <Textarea id="ex-desc" {...register('description')} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ex-video">{t('videoUrl')}</Label>
+            <Input id="ex-video" dir="ltr" placeholder={t('videoUrlPlaceholder')} {...register('videoUrl')} />
           </div>
 
           <DialogFooter>

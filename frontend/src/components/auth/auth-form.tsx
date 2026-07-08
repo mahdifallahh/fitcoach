@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowRight, Loader2, Mail } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import { authApi } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
@@ -36,7 +36,6 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
   const [identifier, setIdentifier] = React.useState('');
   const [code, setCode] = React.useState('');
   const [sentTo, setSentTo] = React.useState('');
-  const [channel, setChannel] = React.useState<'SMS' | 'EMAIL'>('SMS');
   const [loading, setLoading] = React.useState(false);
 
   const errMsg = (err: unknown) =>
@@ -48,9 +47,15 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
     setLoading(true);
     try {
       const res = await authApi.requestOtp(identifier);
-      setChannel(res.channel);
       setSentTo(res.sentTo);
       setStep('code');
+      if (res.devCode) {
+        // Dev-only convenience: the backend echoed the code, so skip the manual
+        // copy-from-logs step and log straight in.
+        setCode(res.devCode);
+        await verify(undefined, res.devCode);
+        return;
+      }
     } catch (err) {
       toast.error(errMsg(err));
     } finally {
@@ -58,11 +63,12 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
     }
   }
 
-  async function verify(e?: React.FormEvent) {
+  async function verify(e?: React.FormEvent, codeOverride?: string) {
     e?.preventDefault();
+    const codeToVerify = codeOverride ?? code;
     setLoading(true);
     try {
-      const { user } = await authApi.verifyOtp(identifier, code, role);
+      const { user } = await authApi.verifyOtp(identifier, codeToVerify, role);
       await qc.invalidateQueries({ queryKey: ME_QUERY_KEY });
       const dest = safeNext(next) ?? (user.role === 'COACH' ? '/coach' : '/student');
       router.replace(dest);
@@ -72,18 +78,6 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
       } else {
         toast.error(errMsg(err));
       }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function sendMagicLink() {
-    setLoading(true);
-    try {
-      await authApi.requestMagicLink(identifier, role);
-      toast.success(t('magicLinkSent'));
-    } catch (err) {
-      toast.error(errMsg(err));
     } finally {
       setLoading(false);
     }
@@ -102,8 +96,9 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
               <Label htmlFor="identifier">{t('identifierLabel')}</Label>
               <Input
                 id="identifier"
-                inputMode="email"
-                autoComplete="username"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 dir="ltr"
                 placeholder={t('identifierPlaceholder')}
                 value={identifier}
@@ -143,16 +138,6 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
               <button type="button" className="text-primary hover:underline" onClick={() => sendCode()} disabled={loading}>
                 {t('resend')}
               </button>
-              {channel === 'EMAIL' && (
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center gap-1.5 text-primary hover:underline"
-                  onClick={sendMagicLink}
-                  disabled={loading}
-                >
-                  <Mail className="size-4" /> {t('magicLink')}
-                </button>
-              )}
               <button
                 type="button"
                 className="text-muted-foreground hover:underline"

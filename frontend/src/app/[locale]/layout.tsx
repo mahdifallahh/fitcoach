@@ -11,15 +11,15 @@ const vazirmatn = Vazirmatn({ subsets: ['arabic'], variable: '--font-vazir', dis
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
-  applicationName: 'FitCoach',
-  title: { default: 'FitCoach', template: '%s · FitCoach' },
+  applicationName: 'fitlo',
+  title: { default: 'fitlo', template: '%s · fitlo' },
   description: 'Bilingual fitness coaching & training program platform',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icons/icon-192.png',
     apple: '/icons/icon-192.png',
   },
-  appleWebApp: { capable: true, title: 'FitCoach', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'fitlo', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

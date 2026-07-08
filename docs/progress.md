@@ -3,6 +3,28 @@
 Living checklist mirroring the 9 build phases. Update statuses as work lands.
 Legend: ✅ done · 🚧 in progress · ⬜ not started
 
+## Post-launch — Intake form, payment, video links, phone-only, rebrand  ✅
+- ✅ **Auth is phone + OTP only** (email/magic-link removed from the UI).
+- ✅ **Rebrand** FitCoach → **fitlo / فیتلو** (messages, manifest, offline page, metadata).
+- ✅ **Student intake form** expanded: full name, age, weight, height, training history (years+months),
+  illness/injury, days per week, **3 labeled photos** (front/side/back), **payment receipt**. Coach sets
+  **card number + holder + program price** (`/coach/intake` "Student form"), shown to the student on the form.
+- ✅ **Request lifecycle:** student submits → coach inbox (all fields + signed photos) → **Write program**
+  (ACCEPTED → builder prefilled) or **Decline with a required reason**; student sees status + reason in
+  **My requests** (`/student/requests`). Migration `…_intake_form_card_price_video` (enum → PENDING/ACCEPTED/DECLINED).
+- ✅ **Exercise video link** (`videoUrl`, optional) — in the exercise form, the student viewer (watch link),
+  and the **PDF** (description + video link). 46 backend tests green (added PDF-template + handle tests).
+- ✅ Fixed: optional number inputs coerced empty → `undefined` (not `0`). Verified live (Playwright, 10/10 checks)
+  + backend curl smoke (card/price, photos, accept/decline+reason, student status).
+- ✅ **Accept-on-save:** "Write program" from the inbox no longer flips the request — it navigates with
+  `?student=&request=`; `CreateProgramDto.requestId` marks the request **ACCEPTED inside the program-create
+  transaction**, so it only counts once the program is actually saved (verified: PENDING before save →
+  ACCEPTED after → student sees it).
+- ✅ **Mobile-first audit** (390×844, fa/RTL, Playwright): all 15 key screens — landing, login, public page,
+  request form, coach dashboard/requests/programs/builder(+picker)/exercises(+dialog)/intake/profile/billing,
+  student home/my-requests/viewer — **zero horizontal overflow**, dialogs and forms stack full-width, tap
+  targets comfortable. Dev-mode service worker now auto-unregisters (stale-chunk crash fix, `fitlo-v2` cache).
+
 ## Post-launch — Public pages + program-request intake  ✅
 Growth/onboarding loop on top of the 9 phases (plan: `▶ CURRENT WORK` in the plan file).
 - ✅ Schema: `CoachProfile.handle` (unique, auto-generated `handle.util.ts`) + `ProgramRequest` model +
@@ -167,15 +189,38 @@ once Docker Hub recovers.
 ---
 
 ## Status summary
-Phases **1–9 implemented**. Fully live-verified: 1–4, 6, 7, 8, 9. Phase 5 (PDF) — render proven correct via
-the real template + browser; only baking system Chromium into the Docker image is pending a reachable Debian
-mirror. Real payment gateways need ZarinPal/Stripe credentials (the simulate flow stands in for dev, per the
-brief). Backend: **40 Jest tests green**. Both apps lint clean and build clean.
+Phases **1–9 implemented**, then **consolidated from two apps (NestJS + Next.js) into one Next.js app**
+(see the migration section below). Real payment gateways need ZarinPal/Stripe credentials (the simulate flow
+stands in for dev, per the brief). **46 Jest tests green** (now in `frontend/src/server`). App lints clean and
+builds clean.
 
-**Environment caveats encountered (not code issues):** intermittent outages of the Debian apt mirror and
-Docker Hub registry, plus Docker Desktop restarts. Worked around by lazy-loading Chromium, making the apt
-step non-fatal, and adding deps to the running container via in-container `pnpm install` + `prisma generate`
-(npmjs stayed reachable). Rebuild images normally once Docker Hub/Debian are reachable.
+---
+
+## Migration — NestJS API folded into the Next.js app  ✅ (verified in Docker)
+
+Collapsed the two-app stack into a **single Next.js app** (`frontend/`) that serves the UI *and* the REST API
+as Route Handlers. `backend/` and Redis were removed.
+
+- **Phase 1 — server infra:** `src/server/{config,prisma,storage,notifications,container}.ts`,
+  `http/{errors,envelope,route,rate-limit,upload}.ts`, `auth/{tokens,otp,session,service}.ts`, `utils/*`.
+  jose JWT, zod env (lazy), error shims with a `Symbol.for` brand. Prisma pinned to **5.22.0**.
+- **Phase 2 — auth routes:** `app/api/auth/{otp/request,otp/verify,refresh,logout,me}`; client `API_BASE=''`.
+  Verified E2E: OTP request (devCode) → verify (coach + trial, cookies) → me → refresh (rotate) → logout → 401.
+- **Phase 3 — feature services + routes:** coach-profile, categories, exercises, programs, students,
+  public-coach, program-requests, billing — ~34 routes, all curl-verified (incl. accept-on-save flipping a
+  request to ACCEPTED, decline-with-reason, role 403, dup 409, subscription reads).
+- **Phase 4 — cron + webhooks + PDF:** `instrumentation.ts` starts hourly `node-cron` (Edge-DCE-guarded);
+  ZarinPal callback (307 redirect) + Stripe webhook (raw body, 400 on bad sig); coach/student PDF routes.
+- **Phase 5 — consolidate:** single Docker image (Chromium + openssl + `prisma generate`), migrate-on-boot
+  entrypoint, one `app` service in compose (postgres + minio only), `backend/` deleted, docs updated.
+  **46 Jest specs ported** to `src/server`. `docker compose up --build` → app healthy on `:3000`, migrations
+  auto-applied, full OTP login works, **PDF renders end-to-end** (real 42 KB PDF served from MinIO).
+
+**Removed:** NestJS, Redis (reads hit Postgres directly; OTP rate-limit is in-memory), Swagger, the unused
+email magic-link endpoints, `NEXT_PUBLIC_API_URL`/`BACKEND_INTERNAL_URL`, CORS (API is same-origin).
+
+**Environment note:** host has native PostgreSQL on 5432 **and** 5433, so the Docker Postgres publishes on
+**5434**. Docker Desktop needed occasional restarts.
 - ⬜ Manifest, icons, service worker, offline fallback, installability
 - ⬜ Checkpoint: installable; app shell loads offline; Lighthouse PWA passes
 

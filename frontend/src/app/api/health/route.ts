@@ -1,6 +1,9 @@
-import { NextResponse } from 'next/server';
+import { ok } from '@/server/http/envelope';
 
-/** Liveness endpoint used by the container healthcheck. */
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/** Liveness endpoint used by the container healthcheck (no DB dependency). */
 export function GET() {
-  return NextResponse.json({ status: 'ok', timestamp: new Date().toISOString() });
+  return ok({ status: 'ok', timestamp: new Date().toISOString() });
 }

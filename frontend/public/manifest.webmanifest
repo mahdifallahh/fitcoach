@@ -1,6 +1,6 @@
 {
-  "name": "FitCoach — Coaching & Training Programs",
-  "short_name": "FitCoach",
+  "name": "fitlo — Coaching & Training Programs",
+  "short_name": "fitlo",
   "description": "Bilingual platform for coaches and athletes: build programs, manage your exercise library, follow workouts.",
   "start_url": "/",
   "scope": "/",

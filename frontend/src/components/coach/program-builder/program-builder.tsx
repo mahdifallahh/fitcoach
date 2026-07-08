@@ -27,7 +27,16 @@ import { blankState, daysToPayload, itemFromExercise, parseStat, stateFromProgra
 import { DayRow } from './day-row';
 import { ExercisePicker } from './exercise-picker';
 
-export function ProgramBuilder({ programId, initialContact }: { programId?: string; initialContact?: string }) {
+export function ProgramBuilder({
+  programId,
+  initialContact,
+  initialRequestId,
+}: {
+  programId?: string;
+  initialContact?: string;
+  /** When arriving from a program request: mark it ACCEPTED once the program is saved. */
+  initialRequestId?: string;
+}) {
   const t = useTranslations('builder');
   const router = useRouter();
   const isEdit = !!programId;
@@ -105,7 +114,11 @@ export function ProgramBuilder({ programId, initialContact }: { programId?: stri
       onError: () => toast.error(t('saveError')),
     };
     if (isEdit && programId) update.mutate({ id: programId, payload: common }, opts);
-    else create.mutate({ studentContact: state.meta.studentContact.trim(), ...common }, opts);
+    else
+      create.mutate(
+        { studentContact: state.meta.studentContact.trim(), requestId: initialRequestId, ...common },
+        opts,
+      );
   };
 
   if (isEdit && isError) {

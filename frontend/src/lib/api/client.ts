@@ -1,9 +1,10 @@
 /**
- * Typed API client. Talks to the NestJS backend with httpOnly cookies
- * (`credentials: 'include'`), unwraps the `{ success, data }` envelope, and
- * transparently refreshes the access token once on a 401.
+ * Typed API client. Talks to the same-origin Next.js Route Handlers under
+ * `/api/*` with httpOnly cookies (`credentials: 'include'`), unwraps the
+ * `{ success, data }` envelope, and transparently refreshes the access token
+ * once on a 401.
  */
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+const API_BASE = '';
 
 export interface ApiErrorShape {
   code: string;

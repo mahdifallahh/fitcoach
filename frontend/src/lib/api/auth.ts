@@ -4,6 +4,8 @@ import type { CurrentUser, Role } from './types';
 export interface RequestOtpResult {
   channel: 'SMS' | 'EMAIL';
   sentTo: string;
+  /** Dev-only: the backend echoes the code so the login form can auto-fill it. */
+  devCode?: string;
 }
 
 export const authApi = {
@@ -12,9 +14,6 @@ export const authApi = {
 
   verifyOtp: (identifier: string, code: string, role?: Role) =>
     api.post<{ user: CurrentUser }>('/auth/otp/verify', { identifier, code, role }),
-
-  requestMagicLink: (identifier: string, role?: Role) =>
-    api.post<{ sent: boolean }>('/auth/magic-link/request', { identifier, role }),
 
   me: () => api.get<CurrentUser>('/auth/me'),
 

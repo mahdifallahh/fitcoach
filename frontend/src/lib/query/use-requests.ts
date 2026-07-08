@@ -20,11 +20,15 @@ export function useCoachRequests() {
   return useQuery({ queryKey: COACH_REQUESTS_KEY, queryFn: () => requestsApi.listForCoach() });
 }
 
+export function useMyRequests() {
+  return useQuery({ queryKey: ['student', 'requests'], queryFn: () => requestsApi.mine() });
+}
+
 export function useSetRequestStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: ProgramRequestStatus }) =>
-      requestsApi.setStatus(id, status),
+    mutationFn: ({ id, status, declineReason }: { id: string; status: ProgramRequestStatus; declineReason?: string }) =>
+      requestsApi.setStatus(id, status, declineReason),
     onSuccess: () => qc.invalidateQueries({ queryKey: COACH_REQUESTS_KEY }),
   });
 }

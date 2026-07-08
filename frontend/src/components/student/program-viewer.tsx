@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronLeft, Dumbbell, Layers } from 'lucide-react';
+import { ChevronLeft, Dumbbell, Layers, PlayCircle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { useStudentProgram } from '@/lib/query/use-student';
 import { studentApi } from '@/lib/api/student';
@@ -144,6 +144,16 @@ function ExerciseCard({ ex }: { ex: StudentViewerExercise }) {
           <Badge className="shrink-0 text-sm">{t('setsReps', { sets: ex.sets, reps: ex.reps })}</Badge>
         </div>
         {ex.exercise.description && <p className="text-sm text-muted-foreground">{ex.exercise.description}</p>}
+        {ex.exercise.videoUrl && (
+          <a
+            href={ex.exercise.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            <PlayCircle className="size-4" /> {t('watchVideo')}
+          </a>
+        )}
         {ex.notes && <p className="text-sm font-medium text-primary/80">{ex.notes}</p>}
       </div>
     </div>

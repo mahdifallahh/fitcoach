@@ -8,6 +8,9 @@ export interface UpdateCoachProfileInput {
   avatarUrl?: string | null;
   socialLinks?: SocialLink[];
   tags?: string[];
+  cardNumber?: string | null;
+  cardHolder?: string | null;
+  programPrice?: number | null;
 }
 
 export const coachProfileApi = {

@@ -1,5 +1,5 @@
-/* FitCoach service worker — app-shell precache + offline fallback. */
-const VERSION = 'fitcoach-v1';
+/* fitlo service worker — app-shell precache + offline fallback. */
+const VERSION = 'fitlo-v2';
 const PRECACHE = [
   '/offline.html',
   '/manifest.webmanifest',

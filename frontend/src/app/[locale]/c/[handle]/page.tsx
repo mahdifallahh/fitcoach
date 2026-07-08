@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PublicCoachPage() {
   const t = useTranslations('publicCoach');
+  const tc = useTranslations('common');
   const params = useParams();
   const handle = String(params.handle);
   const { data, isLoading, isError } = usePublicCoach(handle);
@@ -21,7 +22,7 @@ export default function PublicCoachPage() {
     <div className="flex min-h-dvh flex-col">
       <header className="flex items-center justify-between border-b px-4 py-3">
         <Link href="/" className="text-lg font-bold text-primary">
-          FitCoach
+          {tc('appName')}
         </Link>
         <div className="flex items-center gap-1">
           <LocaleSwitcher />

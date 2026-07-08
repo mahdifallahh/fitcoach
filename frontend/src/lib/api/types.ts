@@ -31,6 +31,9 @@ export interface CoachProfile {
   avatarUrl: string | null;
   socialLinks: SocialLink[];
   tags: string[];
+  cardNumber: string | null;
+  cardHolder: string | null;
+  programPrice: number | null;
 }
 
 export interface PublicCoach {
@@ -40,21 +43,29 @@ export interface PublicCoach {
   avatarUrl: string | null;
   tags: string[];
   socialLinks: SocialLink[];
+  cardNumber: string | null;
+  cardHolder: string | null;
+  programPrice: number | null;
   phone: string | null;
   email: string | null;
 }
 
-export type ProgramRequestStatus = 'PENDING' | 'REVIEWED' | 'DECLINED';
+export type ProgramRequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED';
 
 export interface CreateProgramRequestInput {
   handle: string;
   fullName: string;
+  age?: number;
   weightKg?: number;
   heightCm?: number;
-  practiceHistory?: string;
-  injuries?: string;
-  description?: string;
-  imageKeys?: string[];
+  trainingYears?: number;
+  trainingMonths?: number;
+  medicalHistory?: string;
+  daysPerWeek?: number;
+  photoFrontKey?: string;
+  photoSideKey?: string;
+  photoBackKey?: string;
+  receiptKey?: string;
 }
 
 /** A request as the coach sees it (with signed photo URLs + a prefill contact). */
@@ -62,15 +73,32 @@ export interface CoachRequest {
   id: string;
   fullName: string;
   phone: string | null;
+  age: number | null;
   weightKg: number | null;
   heightCm: number | null;
-  practiceHistory: string | null;
-  injuries: string | null;
-  description: string | null;
-  imageUrls: string[];
+  trainingYears: number | null;
+  trainingMonths: number | null;
+  medicalHistory: string | null;
+  daysPerWeek: number | null;
+  photoFrontUrl: string | null;
+  photoSideUrl: string | null;
+  photoBackUrl: string | null;
+  receiptUrl: string | null;
   contact: string;
   status: ProgramRequestStatus;
+  declineReason: string | null;
   createdAt: string;
+}
+
+/** A request as the submitting student sees it (status + decline reason). */
+export interface StudentRequest {
+  id: string;
+  fullName: string;
+  daysPerWeek: number | null;
+  status: ProgramRequestStatus;
+  declineReason: string | null;
+  createdAt: string;
+  coach: { name: string; handle: string | null; avatarUrl: string | null };
 }
 
 export interface Category {
@@ -88,6 +116,7 @@ export interface Exercise {
   defaultReps: string;
   description: string | null;
   gifUrl: string | null;
+  videoUrl: string | null;
   category?: { id: string; name: string } | null;
 }
 
@@ -121,6 +150,7 @@ export interface ProgramExerciseDetail {
     id: string;
     name: string;
     gifUrl: string | null;
+    videoUrl: string | null;
     defaultSets: number;
     defaultReps: string;
     description: string | null;
@@ -191,7 +221,7 @@ export interface StudentViewerExercise {
   order: number;
   supersetGroupId: string | null;
   supersetOrder: number | null;
-  exercise: { id: string; name: string; gifUrl: string | null; description: string | null };
+  exercise: { id: string; name: string; gifUrl: string | null; videoUrl: string | null; description: string | null };
 }
 
 export interface StudentViewerDay {

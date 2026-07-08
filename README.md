@@ -1,65 +1,66 @@
-# FitCoach — Fitness Coach & Training Program Platform
+# fitlo — Fitness Coach & Training Program Platform
 
 A full-stack, mobile-first, **bilingual (Persian RTL / English LTR)** PWA for personal trainers and their
 students. Coaches manage an exercise library and author day-by-day training programs (with supersets and
 PDF export); students view the programs written for them. Coaches monetize via subscriptions (7-day trial →
-3 / 6 / 12-month plans) paid through **ZarinPal** (IRR) or **Stripe** (international).
+3 / 6 / 12-month plans) paid through **ZarinPal** (IRR) or **Stripe** (international). Each coach also gets a
+public link-in-bio page (`/c/<handle>`) where prospective students submit an intake request.
 
-> **Defining domain rule:** a coach can author a program for a student by entering just their phone/email —
-> _before that student has an account_. When the student later registers with the same phone/email, every
-> program previously written for them is automatically linked to their new account.
+> **Defining domain rule:** a coach can author a program for a student by entering just their phone —
+> _before that student has an account_. When the student later registers with the same phone, every program
+> previously written for them is automatically linked to their new account.
+
+It is a **single Next.js app**: the UI *and* the REST API (Route Handlers under `/api`) run in one process.
 
 ---
 
 ## Tech Stack
 
-| Layer          | Choice                                                                 |
-| -------------- | --------------------------------------------------------------------- |
-| Frontend       | Next.js (App Router) · TypeScript · PWA · Tailwind + shadcn/ui · Framer Motion · next-intl |
-| Backend        | NestJS (modular) · TypeScript · class-validator DTOs                   |
-| Database       | PostgreSQL + Prisma ORM                                                |
-| Cache / Queue  | Redis · BullMQ                                                         |
-| Object storage | S3-compatible (AWS S3 / MinIO) via `@aws-sdk/client-s3`                |
-| Payments       | ZarinPal (IRR) + Stripe (intl) behind one `PaymentProvider` interface |
-| Auth           | Passwordless — phone SMS OTP + email OTP/magic-link · JWT (httpOnly)   |
-| PDF            | Puppeteer (HTML → PDF, RTL-aware)                                      |
-| Containers     | Docker multi-stage builds + docker-compose                            |
+| Layer          | Choice                                                                       |
+| -------------- | ---------------------------------------------------------------------------- |
+| App            | Next.js 15 (App Router) · TypeScript · PWA · Tailwind + shadcn/ui · next-intl |
+| API            | Next.js Route Handlers (`src/app/api/**`) · plain service classes (`src/server`) · Zod |
+| Database       | PostgreSQL + Prisma ORM (5.22.0)                                              |
+| Object storage | S3-compatible (AWS S3 / MinIO) via `@aws-sdk/client-s3`                       |
+| Payments       | ZarinPal (IRR) + Stripe (intl) behind one `PaymentProvider` interface        |
+| Auth           | Passwordless — phone SMS OTP · JWT (httpOnly cookies, `jose`)                |
+| PDF            | Puppeteer (HTML → PDF, RTL-aware)                                            |
+| Scheduling     | `node-cron` (hourly subscription-expiry sweep)                              |
+| Containers     | Docker multi-stage build + docker-compose                                    |
 
-See [`docs/`](./docs) for architecture, data model, decisions (ADRs), and the live implementation progress.
+See [`docs/`](./docs) — start with [`docs/contextProject.md`](./docs/contextProject.md).
 
 ---
 
 ## Quick Start (Docker — recommended)
 
 ```bash
-cp .env.example .env          # adjust secrets if you like; defaults work for local
+cp .env.example .env          # defaults work for local
 docker compose up --build
 ```
 
-| Service        | URL                                            |
-| -------------- | ---------------------------------------------- |
-| Frontend (PWA) | http://localhost:3000                          |
-| Backend API    | http://localhost:4000/api                      |
-| API docs       | http://localhost:4000/api/docs (Swagger)       |
-| MinIO console  | http://localhost:9001 (minioadmin / minioadmin)|
+| Service        | URL                                             |
+| -------------- | ----------------------------------------------- |
+| App (UI + API) | http://localhost:3000 (default locale `/fa`)    |
+| API            | http://localhost:3000/api                       |
+| MinIO console  | http://localhost:9101 (minioadmin / minioadmin) |
 
-On first boot the backend runs Prisma migrations and seeds demo data automatically.
+On first boot the container applies Prisma migrations and seeds demo data automatically. In non-production
+the login form auto-fills the OTP (`devCode`), so signing in is a single click.
 
 ## Local Development (without Docker)
 
-You still need Postgres, Redis, and MinIO running (the easiest way is
-`docker compose up postgres redis minio minio-init`). Then:
+Run just the infra in Docker, then the app on the host:
 
 ```bash
-# Backend
-cd backend && pnpm install && pnpm prisma migrate dev && pnpm start:dev
+docker compose up -d postgres minio minio-init
 
-# Frontend (new terminal)
-cd frontend && pnpm install && pnpm dev
+cd frontend
+cp .env.example .env.local     # already points at the host-published infra ports
+pnpm install
+pnpm prisma migrate deploy
+pnpm dev
 ```
-
-Point `backend/.env` and `frontend/.env.local` at `localhost` instead of the compose service names
-(see each app's `.env.example`).
 
 ---
 
@@ -67,9 +68,11 @@ Point `backend/.env` and `frontend/.env.local` at `localhost` instead of the com
 
 ```
 .
-├── backend/      NestJS API (feature modules, Prisma, BullMQ workers)
-├── frontend/     Next.js App-Router PWA (locale routing, shadcn UI)
-├── docs/         Architecture, data model, ADRs, progress tracker
+├── frontend/     the single Next.js app (UI + /api Route Handlers, Prisma, PDF, cron)
+│   ├── src/server/   ported API services, http helpers, auth, container
+│   ├── src/app/      [locale]/ UI  +  api/**/route.ts
+│   └── prisma/       schema, migrations, seed
+├── docs/         architecture, data model, ADRs, progress tracker
 ├── docker-compose.yml
 └── .env.example
 ```
@@ -77,10 +80,12 @@ Point `backend/.env` and `frontend/.env.local` at `localhost` instead of the com
 ## Testing
 
 ```bash
-cd backend && pnpm test        # auth, subscription gating, payments, student linking
+cd frontend && pnpm test       # 46 Jest tests (auth/OTP, gating, payments, linking, PDF, utils)
+pnpm build                     # also the typecheck step
+pnpm lint
 ```
 
 ## Environment Variables
 
-Every variable is documented in [`.env.example`](./.env.example) (root/compose),
-[`backend/.env.example`](./backend/.env.example), and [`frontend/.env.example`](./frontend/.env.example).
+Every variable is documented in [`.env.example`](./.env.example) (root/compose) and
+[`frontend/.env.example`](./frontend/.env.example) (native dev).

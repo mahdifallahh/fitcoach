@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ClipboardList, CreditCard, Dumbbell, Inbox, LayoutDashboard, User } from 'lucide-react';
+import { ClipboardList, CreditCard, Dumbbell, FileText, Inbox, LayoutDashboard, User } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,7 @@ const items = [
   { href: '/coach/requests', key: 'requests', icon: Inbox },
   { href: '/coach/programs', key: 'programs', icon: ClipboardList },
   { href: '/coach/exercises', key: 'exercises', icon: Dumbbell },
+  { href: '/coach/intake', key: 'intake', icon: FileText },
   { href: '/coach/profile', key: 'profile', icon: User },
   { href: '/coach/billing', key: 'billing', icon: CreditCard },
 ] as const;

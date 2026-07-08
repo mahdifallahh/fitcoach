@@ -1,8 +1,9 @@
 # ──────────────────────────────────────────────────────────────────────────
-# Local development stack: Postgres, Redis, MinIO (+ bucket init), backend, frontend.
+# Local development stack: Postgres, MinIO (+ bucket init), and the single
+# fitlo Next.js app (UI + /api Route Handlers).
 # Usage:  cp .env.example .env  &&  docker compose up --build
 # ──────────────────────────────────────────────────────────────────────────
-name: fitcoach
+name: fitlo
 
 services:
   postgres:
@@ -20,19 +21,6 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 10
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
       retries: 10
 
   minio:
@@ -53,8 +41,8 @@ services:
       timeout: 5s
       retries: 10
 
-  # One-shot: waits for MinIO, creates buckets, and makes them publicly readable
-  # (objects are served via presigned URLs, but public-read simplifies GIF/avatar display in dev).
+  # One-shot: waits for MinIO, creates buckets, and makes avatars/gifs/pdfs
+  # publicly readable. `requests` (intake photos/receipts) stays private.
   minio-init:
     image: minio/mc:latest
     depends_on:
@@ -73,39 +61,7 @@ services:
       echo 'MinIO buckets ready (requests stays private)';
       "
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: development
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      NODE_ENV: development
-      PORT: ${BACKEND_PORT:-4000}
-    ports:
-      - "${BACKEND_PORT:-4000}:4000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - backend_node_modules:/app/node_modules
-      # Keep compiled output container-local: writing dist through the Windows
-      # bind mount during `nest --watch` recompiles is unreliable (partial writes).
-      - backend_dist:/app/dist
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
-  frontend:
+  app:
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -114,31 +70,30 @@ services:
     env_file: .env
     environment:
       NODE_ENV: development
-      PORT: ${FRONTEND_PORT:-3000}
+      PORT: ${APP_PORT:-3000}
       # Reliable file watching over Windows/Docker bind mounts (detects new files).
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${APP_PORT:-3000}:3000"
     depends_on:
-      backend:
+      postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     volumes:
       - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-      - frontend_next:/app/.next
+      - app_node_modules:/app/node_modules
+      - app_next:/app/.next
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 40s
+      start_period: 60s
 
 volumes:
   postgres_data:
-  redis_data:
   minio_data:
-  backend_node_modules:
-  backend_dist:
-  frontend_node_modules:
-  frontend_next:
+  app_node_modules:
+  app_next:

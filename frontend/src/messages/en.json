@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "FitCoach",
+    "appName": "fitlo",
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
@@ -44,8 +44,8 @@
     "loginTitle": "Sign in or sign up",
     "asCoach": "Continue as coach",
     "asStudent": "Continue as student",
-    "identifierLabel": "Phone number or email",
-    "identifierPlaceholder": "e.g. 09120000000 or you@mail.com",
+    "identifierLabel": "Phone number",
+    "identifierPlaceholder": "e.g. 09120000000",
     "sendCode": "Send code",
     "sending": "Sending...",
     "codeLabel": "Verification code",
@@ -54,10 +54,8 @@
     "verifying": "Verifying...",
     "sentTo": "Code sent to {target}",
     "resend": "Resend code",
-    "changeIdentifier": "Use a different phone/email",
-    "magicLink": "Email me a sign-in link instead",
-    "magicLinkSent": "A sign-in link was sent to your email",
-    "devHint": "Dev mode: the code is printed in the backend logs",
+    "changeIdentifier": "Use a different number",
+    "devHint": "Dev mode: you'll be signed in automatically",
     "errorGeneric": "Something went wrong. Please try again",
     "errorInvalidCode": "The code is invalid or expired"
   },
@@ -79,7 +77,8 @@
     "exercises": "Exercises",
     "programs": "Programs",
     "billing": "Billing",
-    "requests": "Requests"
+    "requests": "Requests",
+    "intake": "Student form"
   },
   "billing": {
     "title": "Subscription",
@@ -175,7 +174,9 @@
     "saveError": "Something went wrong",
     "manageCategories": "Manage categories",
     "invalidFile": "Please choose a GIF, PNG, JPG, or WebP image",
-    "fileTooLarge": "File is too large (max 8MB)"
+    "fileTooLarge": "File is too large (max 8MB)",
+    "videoUrl": "Video link (optional)",
+    "videoUrlPlaceholder": "YouTube, Aparat, or any video URL"
   },
   "categories": {
     "title": "Categories",
@@ -216,7 +217,7 @@
     "publish": "Publish",
     "saving": "Saving…",
     "details": "Program details",
-    "studentContact": "Student phone or email",
+    "studentContact": "Student phone",
     "contactHint": "The student doesn't need an account yet — programs link automatically when they sign up.",
     "name": "Program name",
     "namePlaceholder": "e.g. 12-week hypertrophy",
@@ -263,7 +264,8 @@
     "noExercises": "No exercises for this day.",
     "prev": "Previous",
     "next": "Next",
-    "loadError": "Could not load the program"
+    "loadError": "Could not load the program",
+    "watchVideo": "Watch video"
   },
   "publicCoach": {
     "requestProgram": "Request a program",
@@ -271,7 +273,7 @@
     "contact": "Contact"
   },
   "request": {
-    "title": "Request a program",
+    "title": "Program request",
     "from": "from {name}",
     "fullName": "Full name",
     "fullNamePlaceholder": "First and last name",
@@ -282,7 +284,7 @@
     "historyPlaceholder": "How long have you trained, your current routine…",
     "injuries": "Injuries (optional)",
     "description": "Notes (optional)",
-    "photos": "Photos (optional)",
+    "photos": "Photos (front / side / back)",
     "addPhotos": "Add photos",
     "maxPhotos": "Up to 6 images",
     "submit": "Send request",
@@ -290,7 +292,23 @@
     "success": "Your request was sent",
     "error": "Could not send your request",
     "uploadError": "Upload failed",
-    "back": "Back"
+    "back": "Back",
+    "coachCaption": "Your coach",
+    "age": "Age",
+    "trainingHistory": "Training history",
+    "years": "Years",
+    "months": "Months",
+    "daysPerWeek": "Days per week",
+    "medical": "Illness / injury (optional)",
+    "medicalPlaceholder": "Any conditions or injuries…",
+    "photoFront": "Front",
+    "photoSide": "Side",
+    "photoBack": "Back",
+    "paymentTitle": "Payment",
+    "price": "Price",
+    "toman": "Toman",
+    "payToCard": "Pay to this card:",
+    "receipt": "Receipt"
   },
   "requests": {
     "title": "Program requests",
@@ -309,6 +327,57 @@
     "statusPENDING": "New",
     "statusREVIEWED": "Reviewed",
     "statusDECLINED": "Declined",
-    "actionError": "Action failed"
+    "actionError": "Action failed",
+    "medical": "Illness / injury",
+    "photoFront": "Front",
+    "photoSide": "Side",
+    "photoBack": "Back",
+    "receipt": "Receipt",
+    "writeProgram": "Write program",
+    "confirmDecline": "Confirm decline",
+    "cancel": "Cancel",
+    "declineReasonLabel": "Decline reason",
+    "declineReasonPlaceholder": "Explain why (the student will see this)…",
+    "statusACCEPTED": "Accepted",
+    "ageValue": "Age {age}",
+    "daysValue": "{days} days/week",
+    "trainingValue": "{years}y {months}m"
+  },
+  "studentNav": {
+    "coaches": "Coaches",
+    "requests": "My requests"
+  },
+  "intake": {
+    "title": "Student intake form",
+    "subtitle": "Set your payment details; students fill the form from your public page.",
+    "paymentTitle": "Payment details",
+    "paymentHint": "Shown to students on the request form so they can pay and upload the receipt.",
+    "cardNumber": "Card number",
+    "cardHolder": "Card holder name",
+    "programPrice": "Program price (Toman)",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "saveError": "Could not save",
+    "formPreview": "What students fill in",
+    "field_fullName": "Full name",
+    "field_age": "Age",
+    "field_weight": "Weight",
+    "field_height": "Height",
+    "field_trainingHistory": "Training history",
+    "field_medical": "Illness / injury history",
+    "field_daysPerWeek": "Days per week",
+    "field_photos": "3 photos (front, side, back)",
+    "field_receipt": "Payment receipt"
+  },
+  "myRequests": {
+    "title": "My requests",
+    "subtitle": "Programs you've requested from coaches.",
+    "empty": "You haven't requested any programs yet.",
+    "statusPENDING": "Pending",
+    "statusACCEPTED": "Accepted",
+    "statusDECLINED": "Declined",
+    "acceptedNote": "Accepted — your coach is preparing your program.",
+    "declineReasonLabel": "Reason"
   }
 }
