@@ -2,9 +2,10 @@
 
 A full-stack, mobile-first, **bilingual (Persian RTL / English LTR)** PWA for personal trainers and their
 students. Coaches manage an exercise library and author day-by-day training programs (with supersets and
-PDF export); students view the programs written for them. Coaches monetize via subscriptions (7-day trial →
-3 / 6 / 12-month plans) paid through **ZarinPal** (IRR) or **Stripe** (international). Each coach also gets a
-public link-in-bio page (`/c/<handle>`) where prospective students submit an intake request.
+PDF export); students view the programs written for them. Coaches monetize via subscriptions (a
+coach-activated, one-time 15-day free trial → 3 / 6 / 12-month plans) paid through **ZarinPal** (IRR) or
+**Stripe** (international). Each coach also gets a public link-in-bio page (`/c/<handle>`) where prospective
+students submit an intake request.
 
 > **Defining domain rule:** a coach can author a program for a student by entering just their phone —
 > _before that student has an account_. When the student later registers with the same phone, every program
@@ -55,7 +56,7 @@ Run just the infra in Docker, then the app on the host:
 ```bash
 docker compose up -d postgres minio minio-init
 
-cd frontend
+cd app
 cp .env.example .env.local     # already points at the host-published infra ports
 pnpm install
 pnpm prisma migrate deploy
@@ -68,7 +69,7 @@ pnpm dev
 
 ```
 .
-├── frontend/     the single Next.js app (UI + /api Route Handlers, Prisma, PDF, cron)
+├── app/          the single Next.js app (UI + /api Route Handlers, Prisma, PDF, cron)
 │   ├── src/server/   ported API services, http helpers, auth, container
 │   ├── src/app/      [locale]/ UI  +  api/**/route.ts
 │   └── prisma/       schema, migrations, seed
@@ -80,7 +81,7 @@ pnpm dev
 ## Testing
 
 ```bash
-cd frontend && pnpm test       # 46 Jest tests (auth/OTP, gating, payments, linking, PDF, utils)
+cd app && pnpm test            # 48 Jest tests (auth/OTP, gating, payments, linking, PDF, utils)
 pnpm build                     # also the typecheck step
 pnpm lint
 ```
@@ -88,4 +89,4 @@ pnpm lint
 ## Environment Variables
 
 Every variable is documented in [`.env.example`](./.env.example) (root/compose) and
-[`frontend/.env.example`](./frontend/.env.example) (native dev).
+[`app/.env.example`](./app/.env.example) (native dev).

@@ -27,7 +27,7 @@ Thumbs.db
 !.vscode/extensions.json
 
 # Prisma
-backend/prisma/*.db
+app/prisma/*.db
 
 # Docker volumes (local)
 .docker-data/

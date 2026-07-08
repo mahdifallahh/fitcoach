@@ -190,16 +190,18 @@ once Docker Hub recovers.
 
 ## Status summary
 Phases **1–9 implemented**, then **consolidated from two apps (NestJS + Next.js) into one Next.js app**
-(see the migration section below). Real payment gateways need ZarinPal/Stripe credentials (the simulate flow
-stands in for dev, per the brief). **46 Jest tests green** (now in `frontend/src/server`). App lints clean and
+(see the migration section below), then the app directory itself was renamed `frontend/` → `app/` since it's
+no longer just a frontend. Real payment gateways need ZarinPal/Stripe credentials (the simulate flow stands
+in for dev, per the brief). Coaches now activate their own one-time 15-day free trial from the billing page
+(no subscription is auto-created at signup). **48 Jest tests green** (`app/src/server`). App lints clean and
 builds clean.
 
 ---
 
 ## Migration — NestJS API folded into the Next.js app  ✅ (verified in Docker)
 
-Collapsed the two-app stack into a **single Next.js app** (`frontend/`) that serves the UI *and* the REST API
-as Route Handlers. `backend/` and Redis were removed.
+Collapsed the two-app stack into a **single Next.js app** (originally `frontend/`, later renamed to `app/`)
+that serves the UI *and* the REST API as Route Handlers. `backend/` and Redis were removed.
 
 - **Phase 1 — server infra:** `src/server/{config,prisma,storage,notifications,container}.ts`,
   `http/{errors,envelope,route,rate-limit,upload}.ts`, `auth/{tokens,otp,session,service}.ts`, `utils/*`.
@@ -221,6 +223,25 @@ email magic-link endpoints, `NEXT_PUBLIC_API_URL`/`BACKEND_INTERNAL_URL`, CORS (
 
 **Environment note:** host has native PostgreSQL on 5432 **and** 5433, so the Docker Postgres publishes on
 **5434**. Docker Desktop needed occasional restarts.
+
+---
+
+## Post-migration polish  ✅
+
+- **App directory renamed** `frontend/` → `app/` (it's no longer just a frontend). Docker Compose build
+  context/volumes, Dockerfile, docs, and `package.json`'s `name` (`fitcoach-frontend` → `fitlo-app`) updated
+  to match. Windows note: a plain directory rename hit "Permission denied" (editor file-watch handles on
+  `src/`) and a separate `node_modules` path-length failure — worked around by deleting `node_modules`
+  (reproducible), moving the rest, then `cp -r` + delete for the locked `src/` folder.
+- **Trial flow reworked:** subscriptions are no longer auto-created at signup. `TRIAL_DAYS` raised 7 → 15.
+  Coaches activate their own **one-time** 15-day free trial from the billing page
+  (`POST /coach/billing/activate-trial` → `SubscriptionsService.activateTrial`; 409 `TRIAL_ALREADY_USED` if a
+  subscription row already exists, even an expired one). Billing page shows a dedicated "start your free
+  trial" card when `subscription` is `null`; the coach-layout banner distinguishes "never activated" from
+  "expired" wording. Verified end-to-end in Docker: signup → `subscription: null` → gated write → 402 →
+  activate → `endsAt` exactly 15 days out → gated write succeeds → re-activate → 409.
+- **Exercise description field** labeled "(optional)" in fa/en (validation was already optional; only the
+  label was missing the hint other optional fields have).
 - ⬜ Manifest, icons, service worker, offline fallback, installability
 - ⬜ Checkpoint: installable; app shell loads offline; Lighthouse PWA passes
 

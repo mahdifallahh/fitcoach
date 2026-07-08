@@ -10,10 +10,11 @@
 
 **fitlo** — a full-stack, mobile-first, **bilingual (fa-RTL default / en-LTR) PWA** where **coaches**
 write training programs + manage an exercise library, and **students** view the programs written for them.
-Monetization = coach-only subscriptions (7-day trial → 3M/6M/12M) via **ZarinPal (IRR)** or **Stripe (USD)**.
+Monetization = coach-only subscriptions (a coach-activated, one-time 15-day free trial → 3M/6M/12M) via
+**ZarinPal (IRR)** or **Stripe (USD)**.
 
 **Single-app architecture.** Originally two apps (NestJS API + Next.js UI); **now one Next.js app**
-(`frontend/`) that serves the UI *and* the REST API as Route Handlers under `src/app/api/**`. There is no
+(`app/`) that serves the UI *and* the REST API as Route Handlers under `src/app/api/**`. There is no
 `backend/` and no Redis. Same API paths, same `{ success, data|error }` envelope. Ported Nest services are
 plain classes under `src/server/<feature>/service.ts` wired via a singleton container.
 
@@ -45,7 +46,7 @@ d:/practice
 ├── docker-compose.yml         # postgres + minio(+init) + app; host infra ports REMAPPED (see §9)
 ├── .env / .env.example        # root compose env (consumed by the app container)
 ├── docs/                      # ← knowledge base (this file lives here)
-└── frontend/                  # the single Next.js app (UI + API)
+└── app/                        # the single Next.js app (UI + API)
     ├── Dockerfile             # multi-stage; installs chromium+fonts+openssl; prisma generate in deps
     ├── docker-entrypoint.sh   # dev boot: prisma generate → migrate deploy → seed → next dev
     ├── docker-entrypoint.prod.sh
@@ -62,7 +63,7 @@ d:/practice
 
 ---
 
-## 4. Server layer (`frontend/src/server`)
+## 4. Server layer (`app/src/server`)
 
 Ported Nest services became plain TS classes; only their imports changed (Nest exceptions → error shims,
 `AppConfigService` → `config.ts`, DI → the singleton container). Method bodies are unchanged.
@@ -114,21 +115,21 @@ carries a stable machine `code`.
 success: { "success": true, "data": <payload> }
 error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...", "details"?: any } }
 ```
-`src/server/http/envelope.ts` produces it; frontend `lib/api/client.ts` unwraps `data` and throws
+`src/server/http/envelope.ts` produces it; the UI's `lib/api/client.ts` unwraps `data` and throws
 `ApiError(status, error)` on failure (and auto-refreshes once on a 401).
 
 ---
 
-## 6. UI layer (`frontend/src`)
+## 6. UI layer (`app/src`)
 
-- **Routing:** `app/[locale]/...` (next-intl, `localePrefix: 'always'`, default `fa`). `i18n/routing.ts`
+- **Routing:** `src/app/[locale]/...` (next-intl, `localePrefix: 'always'`, default `fa`). `i18n/routing.ts`
   exports locale-aware `Link, useRouter, usePathname, redirect`. **Always import nav from `@/i18n/routing`,
   not `next/link`/`next/navigation`** (except `useParams`/`useSearchParams`).
 - **Pages:** `[locale]/page.tsx` (landing), `login` (**phone + OTP only**),
   `coach/{page,profile,exercises,programs/{page,new,[id]/edit},billing,requests,intake}`,
   `student/{page,coaches/[coachId],programs/[id],requests}`, and **public** `c/[handle]` +
   `c/[handle]/request` (public coach page + auth-gated intake form).
-- **API routes:** `app/api/**/route.ts` — one folder per endpoint, mirroring the §8 paths. Thin: import a
+- **API routes:** `src/app/api/**/route.ts` — one folder per endpoint, mirroring the §8 paths. Thin: import a
   service getter from `@/server/container` and wrap with `withRoute`.
 - **Brand:** app name is **fitlo** / **فیتلو** (`common.appName`); update there + `manifest.webmanifest` +
   `offline.html` + `layout.tsx` metadata if it changes.
@@ -146,7 +147,7 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 
 ---
 
-## 7. Data model (Prisma — `frontend/prisma/schema.prisma`)
+## 7. Data model (Prisma — `app/prisma/schema.prisma`)
 
 13 models. PK = cuid unless noted. Key fields + relations:
 
@@ -204,7 +205,8 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **program-requests** — student: `POST /student/requests/image-upload-url` (presigned PUT → private bucket),
   `POST /student/requests`, `GET /student/requests`. Coach: `GET /coach/requests` (inbox, presigned photo URLs
   + prefill `contact`), `PATCH /coach/requests/:id` (ACCEPTED/DECLINED; DECLINED requires `declineReason`).
-- **billing** (COACH): `GET /coach/billing`, `POST /coach/billing/checkout`,
+- **billing** (COACH): `GET /coach/billing`, `POST /coach/billing/activate-trial` (one-time free trial, 409
+  `TRIAL_ALREADY_USED` if a subscription row already exists), `POST /coach/billing/checkout`,
   `POST /coach/billing/dev/complete/:paymentId` (non-prod simulate).
 - **gateway webhooks** (public): `GET /coach/billing/zarinpal/callback` (redirect),
   `POST /payments/stripe/webhook` (raw body via `req.text()`).
@@ -216,16 +218,19 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **Auth:** phone→SMS OTP (mock provider logs the code; also echoed as `devCode` when not production →
   `auth-form.tsx` auto-fills + submits, one-click dev login). Access JWT cookie `access_token` (path `/`),
   opaque refresh `refresh_token` (path `/api/auth`, hashed in DB, rotated). First login creates the User
-  (+ coach trial / + student claim of unlinked profiles).
+  (coach gets a starter profile but **no subscription yet**; student claims unlinked profiles).
 - **Uploads:** client asks `*-upload-url` → presigned **PUT** URL (signed with the **public** S3 endpoint) →
   browser PUTs to MinIO → client saves the `publicUrl`. Buckets `avatars/gifs/pdfs` public-read; **`requests`**
   (intake photos) **private** — request stores object **keys**, coach inbox returns presigned GET URLs.
 - **PDF:** `server/pdf/` renders an RTL HTML template with Puppeteer → uploads to `pdfs` → caches
   `Program.pdfUrl`; regenerates when `pdfStaleAt` set (every edit). `puppeteer-core` lazy-loaded
   (`webpackIgnore`); returns **503** if Chromium absent. Docker image has Chromium → renders end-to-end.
-- **Subscriptions/payments:** trial at registration; `subscriptions` `isActive`/`activateOrExtend`/hourly
-  cron `expireDue`. `payments` has `PaymentProvider` + `ZarinpalProvider` (v4 REST) + `StripeProvider`
-  (Checkout + webhook); no gateway creds → in-app **simulate** flow.
+- **Subscriptions/payments:** no subscription is created at signup — the coach activates a **one-time,
+  15-day free trial** themselves from the billing page (`POST /coach/billing/activate-trial` →
+  `subscriptions.activateTrial`, blocked with 409 `TRIAL_ALREADY_USED` if a subscription row already exists,
+  even an expired one). `subscriptions` also has `isActive`/`activateOrExtend`/hourly cron `expireDue`.
+  `payments` has `PaymentProvider` + `ZarinpalProvider` (v4 REST) + `StripeProvider` (Checkout + webhook); no
+  gateway creds → in-app **simulate** flow.
 
 ---
 
@@ -241,19 +246,21 @@ default `/fa`). The container entrypoint runs `prisma generate` → `migrate dep
 `S3_PUBLIC_ENDPOINT=http://localhost:9100` (browser-reachable). Compose env (`env_file: .env`) wins over the
 bind-mounted `.env.local` (Next doesn't override real env vars), so the container talks to `postgres:5432`.
 
-**Native dev (fast iteration):** `cd frontend && cp .env.example .env.local` (already targets 5434/9100),
+**Native dev (fast iteration):** `cd app && cp .env.example .env.local` (already targets 5434/9100),
 `pnpm dev`. Run infra with `docker compose up -d postgres minio minio-init`.
 
 **Prisma pinned at 5.22.0** — do not bump to v6/v7 (generation breaks here). `@prisma/client` + `prisma`
 both `^5.22.0`.
 
-**Adding a dependency:** `pnpm add <pkg>` in `frontend/` (host), then `docker compose build app` (or
+**Adding a dependency:** `pnpm add <pkg>` in `app/` (host), then `docker compose build app` (or
 `docker compose exec app pnpm install`) + restart.
 
 **Windows bind-mount file watching misses NEW files.** After adding a new route file, **restart the container**
-(`docker compose restart app`). `WATCHPACK_POLLING=true` mitigates but isn't perfect.
+(`docker compose restart app`). `WATCHPACK_POLLING=true` mitigates but isn't perfect. Renaming/moving the
+top-level `app/` directory itself can hit Windows file locks from an open editor/IDE watching it — close
+editor tabs under the affected path first, or fall back to copy-then-delete instead of a plain rename.
 
-**Schema change:** edit `frontend/prisma/schema.prisma` → `pnpm prisma generate`. `prisma migrate dev` needs a
+**Schema change:** edit `app/prisma/schema.prisma` → `pnpm prisma generate`. `prisma migrate dev` needs a
 TTY (fails inside Docker) → generate SQL with `prisma migrate diff --from-schema-datasource … --to-schema-
 datamodel … --script`, hand-write `prisma/migrations/<ts>_<name>/migration.sql`, then `prisma migrate deploy`.
 
@@ -273,10 +280,10 @@ form auto-fills + submits it → one-click dev login. Never present when `NODE_E
 
 ## 10. Testing & quality
 
-- `cd frontend && pnpm test` — **46 Jest tests** in `src/server/**/*.spec.ts` (auth/OTP, identifier + handle
-  utils, exercise filter, program/superset shaping + ownership, subscription gating + activate/extend + expiry,
-  payment flow + idempotency, PDF template). ts-jest with `tsconfig.jest.json`; `server-only` stubbed via
-  `test/server-only.js`.
+- `cd app && pnpm test` — **48 Jest tests** in `src/server/**/*.spec.ts` (auth/OTP, identifier + handle
+  utils, exercise filter, program/superset shaping + ownership, subscription gating + activate/extend +
+  activateTrial + expiry, payment flow + idempotency, PDF template). ts-jest with `tsconfig.jest.json`;
+  `server-only` stubbed via `test/server-only.js`.
 - `pnpm build` (= typecheck + compile, incl. spec files) and `pnpm lint` clean.
 - **Live UI checks:** Playwright via host Edge (`channel: 'msedge'`); API checks via `curl` against `:3000`.
 
@@ -287,18 +294,18 @@ form auto-fills + submits it → one-click dev login. Never present when `NODE_E
 | Task | Start here |
 |---|---|
 | Add/modify an API endpoint | `src/server/<feature>/{service,schemas}.ts` + `src/app/api/<path>/route.ts` (wrap with `withRoute`) + add env to `src/server/config.ts` |
-| Change a DB shape | `frontend/prisma/schema.prisma` → `prisma generate` + migration → update service + `src/lib/api/types.ts` |
+| Change a DB shape | `app/prisma/schema.prisma` → `prisma generate` + migration → update service + `src/lib/api/types.ts` |
 | Add a UI string | `src/messages/{fa,en}.json` + `useTranslations` |
 | New page | `src/app/[locale]/...` (+ wrap in `CoachPageLayout`/`StudentPageLayout`) |
 | API call from UI | `src/lib/api/<feature>.ts` + `src/lib/query/use-<feature>.ts` |
 | Auth / cookies / JWT | `src/server/auth/*`, `src/server/http/route.ts` (`getSession`, `withRoute`) |
 | Uploads | `src/server/storage.ts` + `src/lib/api/upload.ts` |
 | Program builder | `src/components/coach/program-builder/*` (prefill student via `?student=`, request via `?request=` on `/coach/programs/new`) |
-| Subscription gating | `withRoute({ requiresSub: true })` + `src/server/subscriptions/*` |
-| Public coach page / handle | `src/server/public-coach/*`, `src/server/utils/handle.ts`; UI `app/[locale]/c/[handle]/*` |
-| Program requests (intake) | `src/server/program-requests/*`; UI `app/[locale]/c/[handle]/request`, `components/coach/requests-inbox.tsx` |
+| Subscription / trial gating | `withRoute({ requiresSub: true })` + `src/server/subscriptions/*` (`activateTrial` = the coach's one-time free trial) |
+| Public coach page / handle | `src/server/public-coach/*`, `src/server/utils/handle.ts`; UI `src/app/[locale]/c/[handle]/*` |
+| Program requests (intake) | `src/server/program-requests/*`; UI `src/app/[locale]/c/[handle]/request`, `components/coach/requests-inbox.tsx` |
 | Background cron / expiry | `src/instrumentation.ts` + `src/server/cron.ts` + `src/server/subscriptions/service.ts` |
-| Payments / webhooks | `src/server/payments/*`; routes `app/api/coach/billing/*`, `app/api/payments/stripe/webhook` |
+| Payments / webhooks / trial activation | `src/server/payments/*`, `src/server/subscriptions/service.ts`; routes `src/app/api/coach/billing/*` |
 
 Related docs: `architecture.md`, `data-model.md`, `code-structure.md`, `setup.md`, `i18n-and-rtl.md`,
 `api.md`, `progress.md`, `decisions/` (ADRs).

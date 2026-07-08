@@ -63,7 +63,7 @@ services:
 
   app:
     build:
-      context: ./frontend
+      context: ./app
       dockerfile: Dockerfile
       target: development
     restart: unless-stopped
@@ -82,7 +82,7 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./frontend:/app
+      - ./app:/app
       - app_node_modules:/app/node_modules
       - app_next:/app/.next
     healthcheck:

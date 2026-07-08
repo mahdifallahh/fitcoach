@@ -19,12 +19,12 @@ Other docs worth knowing about: `docs/architecture.md`, `docs/data-model.md`, `d
 **fitlo** — a full-stack, mobile-first, bilingual (Persian RTL default / English LTR) PWA for personal
 trainers and their students. Coaches manage an exercise library and author day-by-day training programs
 (with supersets) with PDF export; students view programs written for them. Coaches monetize via
-subscriptions (7-day trial → 3/6/12-month plans) paid through ZarinPal (IRR) or Stripe (international).
-Coaches also get a public link-in-bio page (`/c/<handle>`) where prospective students submit an intake
-request (stats, photos, payment receipt) that lands in the coach's inbox.
+subscriptions (a coach-activated 15-day free trial, one-time only → 3/6/12-month plans) paid through
+ZarinPal (IRR) or Stripe (international). Coaches also get a public link-in-bio page (`/c/<handle>`) where
+prospective students submit an intake request (stats, photos, payment receipt) that lands in the coach's inbox.
 
 **Single-app architecture.** This was originally two apps (NestJS API + Next.js UI); it is now **one Next.js
-app** (`frontend/`) that serves the UI *and* the REST API as Route Handlers under `src/app/api/**`. There is
+app** (`app/`) that serves the UI *and* the REST API as Route Handlers under `src/app/api/**`. There is
 no `backend/` and no Redis. The API keeps the exact same paths and `{ success, data | error }` envelope, so
 the typed client + TanStack Query hooks are unchanged. Ported Nest services live under `src/server/<feature>/
 service.ts` as plain classes wired through a tiny singleton container (`src/server/container.ts`).
@@ -55,7 +55,7 @@ Host-published infra ports are remapped to avoid local service collisions: Postg
 taken by host-native PostgreSQL on this machine), MinIO API `9100` / console `9101`. The container talks to
 infra on the default in-network ports (`postgres:5432`, `minio:9000`) — the remap only affects host access.
 
-### App (`cd frontend`)
+### App (`cd app`)
 
 ```bash
 pnpm dev                    # next dev (UI + /api)
@@ -80,7 +80,7 @@ docker compose exec app pnpm prisma migrate deploy  # apply a hand-written migra
 docker compose exec app pnpm prisma generate        # regenerate client after a schema change
 ```
 
-The container entrypoint (`frontend/docker-entrypoint.sh`) runs `prisma generate` → `prisma migrate deploy`
+The container entrypoint (`app/docker-entrypoint.sh`) runs `prisma generate` → `prisma migrate deploy`
 → best-effort `db:seed` → `pnpm dev` on every boot.
 
 **Windows bind-mount file watching misses newly created files.** After adding a new route/file, restart the
@@ -99,13 +99,13 @@ container — `WATCHPACK_POLLING` helps but doesn't always catch brand-new files
   `{success,data}` envelope). Auth/webhook routes set cookies / handle raw bodies manually. All API routes are
   `runtime = 'nodejs'`.
 - **Response envelope:** every endpoint returns `{ success: true, data }` or `{ success: false, error: {
-  code, message, details? } }` (see `src/server/http/envelope.ts`). The frontend's `lib/api/client.ts` (base
+  code, message, details? } }` (see `src/server/http/envelope.ts`). The UI's `lib/api/client.ts` (base
   URL `''` — same-origin) unwraps this and throws `ApiError`; it transparently refreshes once on a 401.
-- **UI:** Next.js App Router under `frontend/src/app/[locale]/...`, routed via `next-intl`
+- **UI:** Next.js App Router under `src/app/[locale]/...`, routed via `next-intl`
   (`i18n/routing.ts` — always import `Link`/`useRouter`/`usePathname` from there, not `next/link`). Data
   layer: typed `lib/api/*.ts` modules + TanStack Query hooks in `lib/query/*.ts`. All UI copy lives in
   `messages/{fa,en}.json` — zero hardcoded strings in components; add new copy to both files.
-- **Prisma schema** (`frontend/prisma/schema.prisma`) is the single source of truth for the data model; run
+- **Prisma schema** (`app/prisma/schema.prisma`) is the single source of truth for the data model; run
   `prisma:generate` after any change and add a migration. `prisma migrate dev` needs a TTY (fails inside
   Docker) — use `migrate diff --script` + hand-write the migration file, then `migrate deploy` (see
   contextProject.md §9). Pin Prisma at **5.22.0** (v6/v7 break generation here).

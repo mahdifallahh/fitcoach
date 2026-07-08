@@ -1,6 +1,10 @@
 # API Overview
 
-Base URL: `http://localhost:4000/api`. Interactive reference (always current): **Swagger at `/api/docs`**.
+Base URL: same-origin `http://localhost:3000/api` (the app serves the UI and the API from one process — no
+separate backend, no CORS). There is no interactive docs generator (Swagger was dropped with NestJS).
+
+**The authoritative, up-to-date endpoint list is [`contextProject.md` §8](./contextProject.md#8-api-surface-all-under-api-same-origin).**
+This file only covers the conventions that apply across every endpoint.
 
 All responses use the envelope:
 ```jsonc
@@ -10,40 +14,10 @@ All responses use the envelope:
 { "success": false, "error": { "code": "STRING_CODE", "message": "...", "details": { } } }
 ```
 
-Auth uses **httpOnly cookies** (`access_token`, `refresh_token`). Clients send credentials with each request;
-no Authorization header juggling on the browser.
+Auth uses **httpOnly cookies** (`access_token` path `/`, `refresh_token` path `/api/auth`). Clients send
+credentials with each request (`credentials: 'include'`); no Authorization header juggling in the browser.
+`lib/api/client.ts` transparently retries once with a refreshed access token on a 401.
 
-## Surface (high level)
-
-| Area | Method & path | Notes |
-| --- | --- | --- |
-| Health | `GET /health` | DB/Redis/S3 readiness |
-| Auth | `POST /auth/otp/request` | body: `{ identifier, channel }` → sends code |
-| | `POST /auth/otp/verify` | body: `{ identifier, code, role? }` → sets cookies |
-| | `POST /auth/magic-link/request` | email magic link |
-| | `GET /auth/magic-link/consume` | `?token=` → sets cookies |
-| | `POST /auth/refresh` | rotates refresh, issues new access |
-| | `POST /auth/logout` | revokes refresh, clears cookies |
-| | `GET /auth/me` | current user + profile |
-| Coach profile | `GET/PUT /coach/profile` | bio, avatar, social links, tags |
-| Categories | `GET/POST /coach/categories`, `PATCH/DELETE /coach/categories/:id` | per-coach |
-| Exercises | `GET/POST /coach/exercises`, `PATCH/DELETE /coach/exercises/:id` | search + category filter |
-| Uploads | `POST /storage/presign` | presigned PUT URL for gifs/avatars |
-| Programs | `GET/POST /coach/programs`, `GET/PATCH/DELETE /coach/programs/:id` | nested days/exercises/supersets |
-| | `POST /coach/programs/:id/publish` | draft → published |
-| | `GET /coach/programs/:id/pdf` | cached PDF (regenerates if stale) |
-| Students (coach view) | `GET/POST /coach/students` | create-by-phone/email |
-| Student panel | `GET /student/coaches` | coaches who authored programs for me |
-| | `GET /student/coaches/:coachId/programs` | their programs for me |
-| | `GET /student/programs/:id` | program viewer payload |
-| Subscriptions | `GET /coach/subscription` | current status |
-| | `GET /coach/plans` | plans + pricing |
-| Payments | `POST /payments/checkout` | `{ plan, gateway }` → redirect/checkout URL |
-| | `GET /payments/zarinpal/verify` | ZarinPal callback |
-| | `POST /payments/stripe/webhook` | Stripe webhook (raw body) |
-| | `GET /coach/payments` | payment history |
-
-> Write endpoints under `/coach/*` (categories, exercises, programs) require an **active subscription**
-> (trial or paid). When expired they return `403 SUBSCRIPTION_REQUIRED` — read endpoints remain available.
-
-Detailed request/response schemas, examples, and try-it-out live in Swagger.
+Write endpoints under `/coach/*` (categories, exercises, programs) require an **active subscription** — a
+coach-activated one-time 15-day free trial, or a paid plan. When there is none (never activated, or expired)
+they return **402** `SUBSCRIPTION_REQUIRED` — read endpoints remain available.
