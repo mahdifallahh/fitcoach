@@ -13,19 +13,110 @@
     "lightMode": "Light",
     "darkMode": "Dark",
     "systemMode": "System",
-    "language": "Language"
+    "language": "Language",
+    "retry": "Retry",
+    "menu": "Menu",
+    "close": "Close"
+  },
+  "pwa": {
+    "installTitle": "Install the app",
+    "installText": "Add fitlo to your home screen for faster access.",
+    "install": "Install",
+    "later": "Later",
+    "gotIt": "Got it",
+    "iosHint": "In Safari, tap the Share button and choose “Add to Home Screen”."
+  },
+  "footer": {
+    "tagline": "The bilingual coaching & training-program platform — for coaches and their athletes.",
+    "exploreHeading": "Explore",
+    "accountHeading": "Sign in",
+    "about": "About us",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "coachLogin": "Coach login",
+    "studentLogin": "Student login",
+    "copyright": "© {year} fitlo — All rights reserved.",
+    "madeWith": "Built for coaches, RTL-first"
+  },
+  "about": {
+    "title": "About fitlo",
+    "intro": "fitlo is a tool for fitness coaches who want to write professional training programs and support their athletes — without scattered files and lost DMs.",
+    "missionHeading": "Why we built fitlo",
+    "mission": "Most coaches lose hours to repetitive work: rebuilding the same programs, sending files over chat, and chasing client details. fitlo brings it into one place so your attention stays on what actually matters — training quality and client progress.",
+    "valuesHeading": "What makes fitlo different",
+    "value1": "Persian and RTL from the ground up — not a half-translated foreign tool.",
+    "value2": "Write a program against a phone number; the student doesn't need an account yet.",
+    "value3": "Your own exercise library with GIFs and video links, plus a clean PDF export.",
+    "value4": "A public page for every coach, collecting student requests directly.",
+    "ctaTitle": "Ready to get started?",
+    "ctaCoach": "Coach login",
+    "ctaStudent": "Student login"
+  },
+  "forms": {
+    "fieldRequired": "This field is required",
+    "fieldInvalid": "This value isn't valid",
+    "hasErrors": "Please fill in the required fields"
   },
   "landing": {
+    "metaTitle": "fitlo — Coaching & Training Program Platform",
     "title": "Train smarter. Coach better.",
     "subtitle": "A bilingual platform for personal trainers and their athletes — build programs, manage your exercise library, and keep clients on track.",
     "coachCta": "I'm a coach",
     "studentCta": "I'm a student",
+    "nav": {
+      "blog": "Blog"
+    },
     "features": {
       "programs": "Day-by-day program builder with supersets",
       "library": "Your own exercise library with GIFs",
       "pdf": "One-tap PDF export",
       "bilingual": "Persian & English, RTL-ready"
+    },
+    "howTitle": "How it works",
+    "howSubtitle": "Whether you coach or train, get going in three simple steps.",
+    "coachSteps": {
+      "heading": "For coaches",
+      "s1Title": "Build your library & programs",
+      "s1Text": "Add your exercises once, then write day-by-day programs with supersets and export a clean PDF.",
+      "s2Title": "Write against a phone number",
+      "s2Text": "The student doesn't need an account yet — programs link automatically when they sign up with that number.",
+      "s3Title": "Share your public link",
+      "s3Text": "Post your link-in-bio and collect student requests straight in your inbox."
+    },
+    "studentSteps": {
+      "heading": "For students",
+      "s1Title": "Request from a coach's link",
+      "s1Text": "Open the coach's public page, fill in your details, and send a program request.",
+      "s2Title": "Wait for approval",
+      "s2Text": "Track your request status in your panel; if it's declined, you'll see the reason.",
+      "s3Title": "Follow your program",
+      "s3Text": "Programs appear automatically once published, and you can download them as a PDF."
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "q1": "Do I need to install anything?",
+      "a1": "No. fitlo is a web app that runs in your browser — you can also add it to your phone's home screen.",
+      "q2": "How do I sign in?",
+      "a2": "With just your phone number and an SMS code. No password required.",
+      "q3": "How much does it cost?",
+      "a3": "Coaches get a 15-day free trial, then can subscribe for 3, 6, or 12 months. It's free for students.",
+      "q4": "What if a coach wrote a program before I signed up?",
+      "a4": "Just register with the same number the coach entered — every program links to your account automatically."
+    },
+    "ctaTitle": "Start free today",
+    "footer": {
+      "copyright": "© {year} fitlo"
     }
+  },
+  "blog": {
+    "indexTitle": "The fitlo blog",
+    "indexSubtitle": "Practical guides and tips on online coaching, program design, and growing your coaching business.",
+    "minRead": "{min} min read",
+    "readMore": "Read more",
+    "backToBlog": "Back to blog",
+    "ctaTitle": "Ready to get started?",
+    "ctaText": "Build your exercise library, write programs, and share your public link with students — start free.",
+    "ctaButton": "Start free"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -57,7 +148,8 @@
     "changeIdentifier": "Use a different number",
     "devHint": "Dev mode: you'll be signed in automatically",
     "errorGeneric": "Something went wrong. Please try again",
-    "errorInvalidCode": "The code is invalid or expired"
+    "errorInvalidCode": "The code is invalid or expired",
+    "sessionError": "Couldn't verify your session. Please sign in again."
   },
   "dashboard": {
     "coachTitle": "Coach dashboard",
@@ -69,7 +161,36 @@
     "active": "Active subscription",
     "expired": "Subscription expired",
     "logout": "Log out",
-    "comingSoon": "This area is coming soon"
+    "comingSoon": "This area is coming soon",
+    "logoutError": "Log out failed"
+  },
+  "onboarding": {
+    "title": "Getting started",
+    "progress": "{done} of {total} steps done",
+    "dismiss": "Dismiss",
+    "step1Title": "Complete your profile",
+    "step1Text": "Add a photo and bio so you look professional to students.",
+    "step2Title": "Add your first exercise",
+    "step2Text": "Build your exercise library so you can write programs fast.",
+    "step3Title": "Write your first program",
+    "step3Text": "Create and publish a day-by-day program for a student.",
+    "step4Title": "Set your payment details",
+    "step4Text": "Add your card number and price so students see them on the request form."
+  },
+  "coachHome": {
+    "noSub": "No subscription",
+    "quickActions": "Quick actions",
+    "action_writeProgram": "Write a program",
+    "action_addExercise": "Add exercise",
+    "action_requests": "Requests",
+    "action_publicLink": "Public page"
+  },
+  "studentHome": {
+    "helpTitle": "How it works",
+    "helpDismiss": "Dismiss",
+    "help1": "Programs your coaches write for you appear here automatically.",
+    "help2": "To get a new program, open a coach's public link and send a request.",
+    "help3": "Track your request status under \"My requests\"."
   },
   "coachNav": {
     "dashboard": "Dashboard",
@@ -118,7 +239,8 @@
     "bannerExpired": "Your trial has ended. Subscribe to create or edit programs (your existing data stays viewable).",
     "bannerCta": "View plans",
     "bannerNoTrial": "You haven't activated your free trial yet. Activate 15 free days to start building programs.",
-    "bannerTrialCta": "Activate free trial"
+    "bannerTrialCta": "Activate free trial",
+    "loadError": "Could not load billing info"
   },
   "profile": {
     "title": "Coach profile",
@@ -147,7 +269,32 @@
     "copy": "Copy link",
     "copied": "Copied!",
     "openPublic": "Open",
-    "handleTaken": "That link is already taken."
+    "handleTaken": "That link is already taken.",
+    "loadError": "Could not load your profile",
+    "copyError": "Could not copy the link"
+  },
+  "publicPage": {
+    "title": "Your public page",
+    "what": "This is the page students see — your name, photo, bio and contact links — and where they send you a program request.",
+    "linkLabel": "Your link",
+    "noHandle": "You don't have a handle yet, so your public page isn't live. Pick one and save your profile.",
+    "unsaved": "Your new handle isn't saved yet — until you save, the link above still points to the old one.",
+    "preview": "Preview",
+    "previewTitle": "Public page preview",
+    "previewNote": "Exactly what a student sees.",
+    "copy": "Copy link",
+    "copied": "Copied!",
+    "copyError": "Could not copy the link",
+    "share": "Share",
+    "open": "Open",
+    "checklistTitle": "Page readiness",
+    "checklistProgress": "{done} of {total}",
+    "item_handle": "Link handle",
+    "item_avatar": "Profile photo",
+    "item_bio": "Bio",
+    "item_payment": "Program price & card number",
+    "fix": "Set up",
+    "tip": "Put the link in your Instagram bio, story highlights and pinned post so requests land straight in your inbox."
   },
   "exercises": {
     "title": "Exercise library",
@@ -184,7 +331,15 @@
     "invalidFile": "Please choose a GIF, PNG, JPG, or WebP image",
     "fileTooLarge": "File is too large (max 8MB)",
     "videoUrl": "Video link (optional)",
-    "videoUrlPlaceholder": "YouTube, Aparat, or any video URL"
+    "videoUrlPlaceholder": "YouTube, Aparat, or any video URL",
+    "deleteError": "Could not delete the exercise",
+    "loadError": "Could not load exercises",
+    "helpTitle": "How this section works",
+    "help1": "Add each exercise once, then reuse it across every program you write.",
+    "help2": "Categories (e.g. Chest, Legs, Back) keep your exercises tidy so you can find them fast — create them from <action>Manage categories</action>.",
+    "help3": "Attach a GIF and a video link to any exercise so your students can see the correct form.",
+    "categoryHint": "Optional — used to organize and quickly filter your exercises.",
+    "categoryHintEmpty": "You haven't created any categories yet. It's optional — add them from \"Manage categories\" on the exercises page."
   },
   "categories": {
     "title": "Categories",
@@ -199,7 +354,21 @@
     "created": "Category created",
     "renamed": "Category renamed",
     "deleted": "Category deleted",
-    "deleteConfirm": "Delete this category? Exercises stay but become uncategorized."
+    "deleteConfirm": "Delete this category? Exercises stay but become uncategorized.",
+    "saveError": "Could not save changes",
+    "deleteError": "Could not delete the category",
+    "loadError": "Could not load categories",
+    "what": "Categories exist purely to organize your own exercises (e.g. Chest, Legs). You use them to filter quickly while writing a program — students never see them.",
+    "suggestionsLabel": "Quick add:",
+    "suggestions": [
+      "Chest",
+      "Back",
+      "Legs",
+      "Shoulders",
+      "Arms",
+      "Core",
+      "Cardio"
+    ]
   },
   "programs": {
     "title": "Programs",
@@ -216,7 +385,9 @@
     "deleted": "Program deleted",
     "updatedAt": "Updated {date}",
     "pdf": "PDF",
-    "pdfError": "Could not generate the PDF"
+    "pdfError": "Could not generate the PDF",
+    "deleteError": "Could not delete the program",
+    "loadError": "Could not load programs"
   },
   "builder": {
     "newTitle": "New program",
@@ -258,6 +429,8 @@
     "coachesTitle": "Your coaches",
     "coachesSubtitle": "Coaches who have written training programs for you.",
     "noCoaches": "No programs yet. When a coach writes one for your phone or email, it shows up here automatically.",
+    "loadCoachesError": "Could not load your coaches",
+    "loadProgramsError": "Could not load programs",
     "programsCount": "{count, plural, one {# program} other {# programs}}",
     "back": "Back",
     "programsOf": "Programs by {name}",
@@ -278,7 +451,9 @@
   "publicCoach": {
     "requestProgram": "Request a program",
     "notFound": "Coach not found.",
-    "contact": "Contact"
+    "contact": "Contact",
+    "metaTitle": "{name} — Coach on fitlo",
+    "metaDescription": "Request a personalized training program from {name} on fitlo."
   },
   "request": {
     "title": "Program request",
@@ -336,6 +511,7 @@
     "statusREVIEWED": "Reviewed",
     "statusDECLINED": "Declined",
     "actionError": "Action failed",
+    "loadError": "Could not load requests",
     "medical": "Illness / injury",
     "photoFront": "Front",
     "photoSide": "Side",
@@ -367,6 +543,7 @@
     "saving": "Saving…",
     "saved": "Saved",
     "saveError": "Could not save",
+    "loadError": "Could not load settings",
     "formPreview": "What students fill in",
     "field_fullName": "Full name",
     "field_age": "Age",
@@ -386,6 +563,60 @@
     "statusACCEPTED": "Accepted",
     "statusDECLINED": "Declined",
     "acceptedNote": "Accepted — your coach is preparing your program.",
-    "declineReasonLabel": "Reason"
+    "declineReasonLabel": "Reason",
+    "loadError": "Could not load your requests"
+  },
+  "adminNav": {
+    "overview": "Dashboard",
+    "coaches": "Coaches",
+    "payments": "Payments"
+  },
+  "admin": {
+    "loadError": "Could not load the data",
+    "overviewTitle": "Admin panel",
+    "overviewSubtitle": "The whole platform at a glance.",
+    "coaches": "Coaches",
+    "students": "Students",
+    "programs": "Programs",
+    "publishedCount": "{count} published",
+    "requests": "Requests",
+    "pendingCount": "{count} pending",
+    "exercises": "Exercises",
+    "subscriptions": "Subscriptions",
+    "sub_TRIALING": "Trialing",
+    "sub_ACTIVE": "Active",
+    "sub_EXPIRED": "Expired",
+    "sub_CANCELED": "Canceled",
+    "revenue": "Revenue (paid)",
+    "noRevenue": "No successful payments yet.",
+    "paymentsCount": "{count} payments",
+    "recentUsers": "Recent signups",
+    "role_COACH": "Coach",
+    "role_STUDENT": "Student",
+    "role_ADMIN": "Admin",
+    "coachesTitle": "Coaches",
+    "coachesSubtitle": "Each coach's subscription and usage — grant or cut access.",
+    "searchCoaches": "Search name, handle or phone…",
+    "noCoaches": "No coaches found.",
+    "noSub": "No subscription",
+    "daysLabel": "Days",
+    "grantDays": "Grant days",
+    "granted": "Granted {days} days of access",
+    "expireNow": "Cut access",
+    "expireConfirm": "Cut “{name}”’s access now? (they become read-only)",
+    "expired": "Subscription expired",
+    "badDays": "Invalid number of days",
+    "actionError": "Action failed",
+    "openPublicPage": "Public page",
+    "countPrograms": "{count} programs",
+    "countStudents": "{count} students",
+    "countExercises": "{count} exercises",
+    "paymentsTitle": "Payments",
+    "paymentsSubtitle": "Latest transactions across the platform.",
+    "noPayments": "No payments yet.",
+    "pay_PENDING": "Pending",
+    "pay_PAID": "Paid",
+    "pay_FAILED": "Failed",
+    "pay_REFUNDED": "Refunded"
   }
 }

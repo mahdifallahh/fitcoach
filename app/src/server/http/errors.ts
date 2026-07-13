@@ -16,7 +16,7 @@ export interface ErrorPayload {
  * lives in the global symbol registry, so `isAppError` recognizes an AppError
  * no matter which copy of the class created it.
  */
-const APP_ERROR = Symbol.for('fitlo.AppError');
+const APP_ERROR = Symbol.for("fitlo.AppError");
 
 export class AppError extends Error {
   readonly [APP_ERROR] = true;
@@ -26,7 +26,9 @@ export class AppError extends Error {
 
   constructor(status: number, payload: ErrorPayload | string) {
     const p: ErrorPayload =
-      typeof payload === 'string' ? { code: statusToCode(status), message: payload } : payload;
+      typeof payload === "string"
+        ? { code: statusToCode(status), message: payload }
+        : payload;
     super(p.message);
     this.status = status;
     this.code = p.code ?? statusToCode(status);
@@ -38,7 +40,7 @@ export class AppError extends Error {
 export function isAppError(err: unknown): err is AppError {
   return (
     !!err &&
-    typeof err === 'object' &&
+    typeof err === "object" &&
     (err as Record<symbol, unknown>)[APP_ERROR] === true
   );
 }
@@ -83,15 +85,15 @@ export class ServiceUnavailableException extends AppError {
 
 export function statusToCode(status: number): string {
   const map: Record<number, string> = {
-    400: 'BAD_REQUEST',
-    401: 'UNAUTHORIZED',
-    402: 'PAYMENT_REQUIRED',
-    403: 'FORBIDDEN',
-    404: 'NOT_FOUND',
-    409: 'CONFLICT',
-    422: 'UNPROCESSABLE_ENTITY',
-    429: 'TOO_MANY_REQUESTS',
-    503: 'SERVICE_UNAVAILABLE',
+    400: "BAD_REQUEST",
+    401: "UNAUTHORIZED",
+    402: "PAYMENT_REQUIRED",
+    403: "FORBIDDEN",
+    404: "NOT_FOUND",
+    409: "CONFLICT",
+    422: "UNPROCESSABLE_ENTITY",
+    429: "TOO_MANY_REQUESTS",
+    503: "SERVICE_UNAVAILABLE",
   };
-  return map[status] ?? 'ERROR';
+  return map[status] ?? "ERROR";
 }

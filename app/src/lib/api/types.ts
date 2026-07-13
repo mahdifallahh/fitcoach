@@ -1,4 +1,4 @@
-export type Role = 'COACH' | 'STUDENT';
+export type Role = 'COACH' | 'STUDENT' | 'ADMIN';
 
 export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'EXPIRED' | 'CANCELED';
 export type SubscriptionPlan = 'M3' | 'M6' | 'M12';
@@ -260,4 +260,55 @@ export interface ProgramDetail {
     userId: string | null;
   };
   days: ProgramDayDetail[];
+}
+
+// ── Admin panel ──────────────────────────────────────────────────────────────
+export interface AdminOverview {
+  totals: {
+    coaches: number;
+    students: number;
+    programs: number;
+    publishedPrograms: number;
+    requests: number;
+    pendingRequests: number;
+    exercises: number;
+  };
+  /** Counts keyed by SubscriptionStatus (missing key = 0). */
+  subscriptions: Record<string, number>;
+  revenue: { currency: string; total: number; payments: number }[];
+  recentUsers: {
+    id: string;
+    phone: string | null;
+    email: string | null;
+    role: Role;
+    createdAt: string;
+  }[];
+}
+
+export interface AdminCoach {
+  userId: string;
+  name: string;
+  handle: string | null;
+  phone: string | null;
+  email: string | null;
+  joinedAt: string;
+  subscription: {
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan | null;
+    endsAt: string;
+    live: boolean;
+  } | null;
+  counts: { programs: number; students: number; exercises: number };
+}
+
+export interface AdminPayment {
+  id: string;
+  plan: SubscriptionPlan | null;
+  gateway: PaymentGateway;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  reference: string | null;
+  createdAt: string;
+  coach: { name: string; handle: string | null };
 }

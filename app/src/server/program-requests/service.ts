@@ -1,9 +1,12 @@
-import 'server-only';
-import { ProgramRequestStatus, type PrismaClient } from '@prisma/client';
-import { StorageService } from '../storage';
-import { StudentsService } from '../students/service';
-import { BadRequestException, NotFoundException } from '../http/errors';
-import type { CreateProgramRequestDto, UpdateRequestStatusDto } from './schemas';
+import "server-only";
+import { ProgramRequestStatus, type PrismaClient } from "@prisma/client";
+import { StorageService } from "../storage";
+import { StudentsService } from "../students/service";
+import { BadRequestException, NotFoundException } from "../http/errors";
+import type {
+  CreateProgramRequestDto,
+  UpdateRequestStatusDto,
+} from "./schemas";
 
 export class ProgramRequestsService {
   constructor(
@@ -14,7 +17,7 @@ export class ProgramRequestsService {
 
   /** Presigned PUT target for an intake photo (private `requests` bucket). */
   async imageUploadUrl(studentUserId: string, contentType: string) {
-    const target = await this.storage.createUploadTarget('requests', {
+    const target = await this.storage.createUploadTarget("requests", {
       keyPrefix: `intake/${studentUserId}`,
       contentType,
     });
@@ -27,14 +30,22 @@ export class ProgramRequestsService {
       where: { handle: dto.handle },
       select: { userId: true },
     });
-    if (!coach) throw new NotFoundException({ code: 'COACH_NOT_FOUND', message: 'Coach not found' });
+    if (!coach)
+      throw new NotFoundException({
+        code: "COACH_NOT_FOUND",
+        message: "Coach not found",
+      });
 
     const user = await this.prisma.user.findUnique({
       where: { id: studentUserId },
       select: { phone: true, email: true },
     });
     const contact = user?.phone ?? user?.email;
-    if (!contact) throw new BadRequestException({ code: 'CONTACT_REQUIRED', message: 'Account has no phone or email' });
+    if (!contact)
+      throw new BadRequestException({
+        code: "CONTACT_REQUIRED",
+        message: "Account has no phone or email",
+      });
 
     return this.prisma.$transaction(async (tx) => {
       // Link (or create) the coach's StudentProfile for this student, carrying stats over.
@@ -71,8 +82,10 @@ export class ProgramRequestsService {
   listForStudent(studentUserId: string) {
     return this.prisma.programRequest.findMany({
       where: { studentUserId },
-      orderBy: { createdAt: 'desc' },
-      include: { coach: { select: { name: true, handle: true, avatarUrl: true } } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        coach: { select: { name: true, handle: true, avatarUrl: true } },
+      },
     });
   }
 
@@ -80,26 +93,37 @@ export class ProgramRequestsService {
   async listForCoach(coachId: string) {
     const requests = await this.prisma.programRequest.findMany({
       where: { coachId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { student: { select: { phone: true, email: true } } },
     });
     return Promise.all(
       requests.map(async (r) => {
-        const sign = (key: string | null) => (key ? this.storage.presignGet('requests', key, 600) : Promise.resolve(null));
-        const [photoFrontUrl, photoSideUrl, photoBackUrl, receiptUrl] = await Promise.all([
-          sign(r.photoFrontKey),
-          sign(r.photoSideKey),
-          sign(r.photoBackKey),
-          sign(r.receiptKey),
-        ]);
-        const { student, photoFrontKey, photoSideKey, photoBackKey, receiptKey, ...rest } = r;
+        const sign = (key: string | null) =>
+          key
+            ? this.storage.presignGet("requests", key, 600)
+            : Promise.resolve(null);
+        const [photoFrontUrl, photoSideUrl, photoBackUrl, receiptUrl] =
+          await Promise.all([
+            sign(r.photoFrontKey),
+            sign(r.photoSideKey),
+            sign(r.photoBackKey),
+            sign(r.receiptKey),
+          ]);
+        const {
+          student,
+          photoFrontKey,
+          photoSideKey,
+          photoBackKey,
+          receiptKey,
+          ...rest
+        } = r;
         return {
           ...rest,
           photoFrontUrl,
           photoSideUrl,
           photoBackUrl,
           receiptUrl,
-          contact: r.phone ?? student.phone ?? student.email ?? '',
+          contact: r.phone ?? student.phone ?? student.email ?? "",
         };
       }),
     );
@@ -107,17 +131,30 @@ export class ProgramRequestsService {
 
   /** Coach accepts (→ writes a program) or declines a request with a reason (ownership enforced). */
   async updateStatus(coachId: string, id: string, dto: UpdateRequestStatusDto) {
-    if (dto.status === ProgramRequestStatus.DECLINED && !dto.declineReason?.trim()) {
-      throw new BadRequestException({ code: 'REASON_REQUIRED', message: 'A decline reason is required' });
+    if (
+      dto.status === ProgramRequestStatus.DECLINED &&
+      !dto.declineReason?.trim()
+    ) {
+      throw new BadRequestException({
+        code: "REASON_REQUIRED",
+        message: "A decline reason is required",
+      });
     }
     const res = await this.prisma.programRequest.updateMany({
       where: { id, coachId },
       data: {
         status: dto.status,
-        declineReason: dto.status === ProgramRequestStatus.DECLINED ? dto.declineReason!.trim() : null,
+        declineReason:
+          dto.status === ProgramRequestStatus.DECLINED
+            ? dto.declineReason!.trim()
+            : null,
       },
     });
-    if (res.count === 0) throw new NotFoundException({ code: 'REQUEST_NOT_FOUND', message: 'Request not found' });
+    if (res.count === 0)
+      throw new NotFoundException({
+        code: "REQUEST_NOT_FOUND",
+        message: "Request not found",
+      });
     return this.prisma.programRequest.findUnique({ where: { id } });
   }
 }

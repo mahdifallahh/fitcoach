@@ -1,7 +1,11 @@
-import 'server-only';
-import { SubscriptionStatus, type PrismaClient, type SubscriptionPlan } from '@prisma/client';
-import { PLANS, TRIAL_DAYS, addMonths } from './plans';
-import { ConflictException } from '../http/errors';
+import "server-only";
+import {
+  SubscriptionStatus,
+  type PrismaClient,
+  type SubscriptionPlan,
+} from "@prisma/client";
+import { PLANS, TRIAL_DAYS, addMonths } from "./plans";
+import { ConflictException } from "../http/errors";
 
 export class SubscriptionsService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -10,7 +14,7 @@ export class SubscriptionsService {
   getCurrent(coachId: string) {
     return this.prisma.subscription.findFirst({
       where: { coachId },
-      orderBy: { endsAt: 'desc' },
+      orderBy: { endsAt: "desc" },
     });
   }
 
@@ -25,8 +29,8 @@ export class SubscriptionsService {
     const current = await this.getCurrent(coachId);
     if (current) {
       throw new ConflictException({
-        code: 'TRIAL_ALREADY_USED',
-        message: 'Your free trial has already been used',
+        code: "TRIAL_ALREADY_USED",
+        message: "Your free trial has already been used",
       });
     }
     const now = new Date();
@@ -44,7 +48,9 @@ export class SubscriptionsService {
   async isActive(coachId: string): Promise<boolean> {
     const sub = await this.getCurrent(coachId);
     if (!sub) return false;
-    const live = sub.status === SubscriptionStatus.TRIALING || sub.status === SubscriptionStatus.ACTIVE;
+    const live =
+      sub.status === SubscriptionStatus.TRIALING ||
+      sub.status === SubscriptionStatus.ACTIVE;
     return live && sub.endsAt.getTime() > Date.now();
   }
 
@@ -65,7 +71,13 @@ export class SubscriptionsService {
       });
     }
     return this.prisma.subscription.create({
-      data: { coachId, plan, status: SubscriptionStatus.ACTIVE, startsAt: now, endsAt },
+      data: {
+        coachId,
+        plan,
+        status: SubscriptionStatus.ACTIVE,
+        startsAt: now,
+        endsAt,
+      },
     });
   }
 
@@ -73,7 +85,9 @@ export class SubscriptionsService {
   async expireDue(): Promise<number> {
     const { count } = await this.prisma.subscription.updateMany({
       where: {
-        status: { in: [SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE] },
+        status: {
+          in: [SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE],
+        },
         endsAt: { lt: new Date() },
       },
       data: { status: SubscriptionStatus.EXPIRED },

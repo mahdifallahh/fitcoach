@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
-import { authApi } from '@/lib/api/auth';
+import { authApi, roleHome } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
 import type { Role } from '@/lib/api/types';
 import { ME_QUERY_KEY } from '@/lib/query/use-auth';
@@ -70,7 +70,7 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
     try {
       const { user } = await authApi.verifyOtp(identifier, codeToVerify, role);
       await qc.invalidateQueries({ queryKey: ME_QUERY_KEY });
-      const dest = safeNext(next) ?? (user.role === 'COACH' ? '/coach' : '/student');
+      const dest = safeNext(next) ?? roleHome(user.role);
       router.replace(dest);
     } catch (err) {
       if (err instanceof ApiError && err.code.startsWith('OTP')) {

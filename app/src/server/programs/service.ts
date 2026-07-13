@@ -1,18 +1,30 @@
-import 'server-only';
-import { Prisma, ProgramStatus, type PrismaClient } from '@prisma/client';
-import { StudentsService } from '../students/service';
-import { BadRequestException, NotFoundException } from '../http/errors';
-import type { CreateProgramDto, ProgramDayInputDto, UpdateProgramDto } from './schemas';
+import "server-only";
+import { Prisma, ProgramStatus, type PrismaClient } from "@prisma/client";
+import { StudentsService } from "../students/service";
+import { BadRequestException, NotFoundException } from "../http/errors";
+import type {
+  CreateProgramDto,
+  ProgramDayInputDto,
+  UpdateProgramDto,
+} from "./schemas";
 
 const fullInclude = {
   student: {
-    select: { id: true, phone: true, email: true, age: true, heightCm: true, weightKg: true, userId: true },
+    select: {
+      id: true,
+      phone: true,
+      email: true,
+      age: true,
+      heightCm: true,
+      weightKg: true,
+      userId: true,
+    },
   },
   days: {
-    orderBy: { dayIndex: 'asc' },
+    orderBy: { dayIndex: "asc" },
     include: {
       exercises: {
-        orderBy: [{ order: 'asc' }, { supersetOrder: 'asc' }],
+        orderBy: [{ order: "asc" }, { supersetOrder: "asc" }],
         include: {
           exercise: {
             select: {
@@ -41,7 +53,7 @@ export class ProgramsService {
   list(coachId: string) {
     return this.prisma.program.findMany({
       where: { coachId },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
       include: {
         student: { select: { phone: true, email: true } },
         _count: { select: { days: true } },
@@ -54,7 +66,11 @@ export class ProgramsService {
       where: { id, coachId },
       include: fullInclude,
     });
-    if (!program) throw new NotFoundException({ code: 'PROGRAM_NOT_FOUND', message: 'Program not found' });
+    if (!program)
+      throw new NotFoundException({
+        code: "PROGRAM_NOT_FOUND",
+        message: "Program not found",
+      });
     return program;
   }
 
@@ -86,7 +102,7 @@ export class ProgramsService {
       if (dto.requestId) {
         await tx.programRequest.updateMany({
           where: { id: dto.requestId, coachId },
-          data: { status: 'ACCEPTED', declineReason: null },
+          data: { status: "ACCEPTED", declineReason: null },
         });
       }
       return created;
@@ -108,11 +124,17 @@ export class ProgramsService {
         where: { id },
         data: {
           ...(dto.name !== undefined ? { name: dto.name } : {}),
-          ...(dto.daysPerWeek !== undefined ? { daysPerWeek: dto.daysPerWeek } : {}),
+          ...(dto.daysPerWeek !== undefined
+            ? { daysPerWeek: dto.daysPerWeek }
+            : {}),
           ...(dto.status !== undefined ? { status: dto.status } : {}),
           ...(dto.age !== undefined ? { studentAge: dto.age } : {}),
-          ...(dto.heightCm !== undefined ? { studentHeightCm: dto.heightCm } : {}),
-          ...(dto.weightKg !== undefined ? { studentWeightKg: dto.weightKg } : {}),
+          ...(dto.heightCm !== undefined
+            ? { studentHeightCm: dto.heightCm }
+            : {}),
+          ...(dto.weightKg !== undefined
+            ? { studentWeightKg: dto.weightKg }
+            : {}),
           pdfStaleAt: new Date(), // content changed → PDF must be regenerated
           ...(dto.days ? { days: this.buildDaysCreate(dto.days) } : {}),
         },
@@ -135,7 +157,9 @@ export class ProgramsService {
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────
-  private buildDaysCreate(days: ProgramDayInputDto[]): Prisma.ProgramDayCreateNestedManyWithoutProgramInput {
+  private buildDaysCreate(
+    days: ProgramDayInputDto[],
+  ): Prisma.ProgramDayCreateNestedManyWithoutProgramInput {
     return {
       create: days.map((d) => ({
         dayIndex: d.dayIndex,
@@ -156,18 +180,32 @@ export class ProgramsService {
   }
 
   private async assertOwned(coachId: string, id: string) {
-    const found = await this.prisma.program.findFirst({ where: { id, coachId }, select: { id: true } });
-    if (!found) throw new NotFoundException({ code: 'PROGRAM_NOT_FOUND', message: 'Program not found' });
+    const found = await this.prisma.program.findFirst({
+      where: { id, coachId },
+      select: { id: true },
+    });
+    if (!found)
+      throw new NotFoundException({
+        code: "PROGRAM_NOT_FOUND",
+        message: "Program not found",
+      });
   }
 
-  private async assertExercisesOwned(coachId: string, days: ProgramDayInputDto[]) {
-    const ids = [...new Set(days.flatMap((d) => d.exercises.map((e) => e.exerciseId)))];
+  private async assertExercisesOwned(
+    coachId: string,
+    days: ProgramDayInputDto[],
+  ) {
+    const ids = [
+      ...new Set(days.flatMap((d) => d.exercises.map((e) => e.exerciseId))),
+    ];
     if (ids.length === 0) return;
-    const owned = await this.prisma.exercise.count({ where: { id: { in: ids }, coachId } });
+    const owned = await this.prisma.exercise.count({
+      where: { id: { in: ids }, coachId },
+    });
     if (owned !== ids.length) {
       throw new BadRequestException({
-        code: 'EXERCISE_NOT_OWNED',
-        message: 'One or more exercises do not belong to you',
+        code: "EXERCISE_NOT_OWNED",
+        message: "One or more exercises do not belong to you",
       });
     }
   }

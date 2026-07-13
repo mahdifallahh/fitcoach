@@ -1,6 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const IMAGE_CONTENT_TYPES = ['image/gif', 'image/png', 'image/jpeg', 'image/webp'] as const;
+export const IMAGE_CONTENT_TYPES = [
+  "image/gif",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+] as const;
 
 /** Body for the presigned image-upload endpoints. */
 export const imageUploadSchema = z.object({

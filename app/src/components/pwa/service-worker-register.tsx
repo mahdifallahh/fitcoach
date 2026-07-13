@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 /**
  * Registers the app-shell service worker (offline support + installability) —
@@ -9,14 +9,15 @@ import { useEffect } from 'react';
  */
 export function ServiceWorkerRegister() {
   useEffect(() => {
-    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
+      return;
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== "production") {
       navigator.serviceWorker
         .getRegistrations()
         .then((regs) => Promise.all(regs.map((r) => r.unregister())))
         .catch(() => undefined);
-      if ('caches' in window) {
+      if ("caches" in window) {
         caches
           .keys()
           .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
@@ -25,7 +26,7 @@ export function ServiceWorkerRegister() {
       return;
     }
 
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
       /* registration failures are non-fatal */
     });
   }, []);

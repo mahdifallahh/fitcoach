@@ -1,24 +1,28 @@
-import 'server-only';
-import { getConfig } from './config';
-import { getPrisma } from './prisma';
-import { StorageService } from './storage';
-import { createNotificationsService, NotificationsService } from './notifications';
-import { TokenService } from './auth/tokens';
-import { OtpService } from './auth/otp';
-import { UsersService } from './users/service';
-import { SubscriptionsService } from './subscriptions/service';
-import { AuthService } from './auth/service';
-import { CoachProfileService } from './coach-profile/service';
-import { CategoriesService } from './categories/service';
-import { ExercisesService } from './exercises/service';
-import { StudentsService } from './students/service';
-import { ProgramsService } from './programs/service';
-import { PublicCoachService } from './public-coach/service';
-import { ProgramRequestsService } from './program-requests/service';
-import { ZarinpalProvider } from './payments/providers/zarinpal';
-import { StripeProvider } from './payments/providers/stripe';
-import { PaymentsService } from './payments/service';
-import { PdfService } from './pdf/service';
+import "server-only";
+import { getConfig } from "./config";
+import { getPrisma } from "./prisma";
+import { StorageService } from "./storage";
+import {
+  createNotificationsService,
+  NotificationsService,
+} from "./notifications";
+import { TokenService } from "./auth/tokens";
+import { OtpService } from "./auth/otp";
+import { UsersService } from "./users/service";
+import { SubscriptionsService } from "./subscriptions/service";
+import { AuthService } from "./auth/service";
+import { CoachProfileService } from "./coach-profile/service";
+import { CategoriesService } from "./categories/service";
+import { ExercisesService } from "./exercises/service";
+import { StudentsService } from "./students/service";
+import { ProgramsService } from "./programs/service";
+import { PublicCoachService } from "./public-coach/service";
+import { ProgramRequestsService } from "./program-requests/service";
+import { ZarinpalProvider } from "./payments/providers/zarinpal";
+import { StripeProvider } from "./payments/providers/stripe";
+import { PaymentsService } from "./payments/service";
+import { PdfService } from "./pdf/service";
+import { AdminService } from "./admin/service";
 
 /**
  * Central DI container. Everything is a lazily-constructed singleton memoized on
@@ -44,6 +48,7 @@ interface Container {
   stripe?: StripeProvider;
   payments?: PaymentsService;
   pdf?: PdfService;
+  admin?: AdminService;
 }
 
 const g = globalThis as unknown as { __fitloContainer?: Container };
@@ -84,7 +89,10 @@ export function getAuth(): AuthService {
 }
 
 export function getCoachProfile(): CoachProfileService {
-  return (c.coachProfile ??= new CoachProfileService(getPrisma(), getStorage()));
+  return (c.coachProfile ??= new CoachProfileService(
+    getPrisma(),
+    getStorage(),
+  ));
 }
 
 export function getCategories(): CategoriesService {
@@ -108,7 +116,11 @@ export function getPublicCoach(): PublicCoachService {
 }
 
 export function getProgramRequests(): ProgramRequestsService {
-  return (c.programRequests ??= new ProgramRequestsService(getPrisma(), getStorage(), getStudents()));
+  return (c.programRequests ??= new ProgramRequestsService(
+    getPrisma(),
+    getStorage(),
+    getStudents(),
+  ));
 }
 
 export function getZarinpal(): ZarinpalProvider {
@@ -130,7 +142,17 @@ export function getPayments(): PaymentsService {
 }
 
 export function getPdf(): PdfService {
-  return (c.pdf ??= new PdfService(getPrisma(), getConfig(), getStorage(), getPrograms(), getStudents()));
+  return (c.pdf ??= new PdfService(
+    getPrisma(),
+    getConfig(),
+    getStorage(),
+    getPrograms(),
+    getStudents(),
+  ));
+}
+
+export function getAdmin(): AdminService {
+  return (c.admin ??= new AdminService(getPrisma()));
 }
 
 // Re-export the shared singletons for convenience in route handlers/services.

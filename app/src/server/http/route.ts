@@ -1,12 +1,16 @@
-import 'server-only';
-import type { NextRequest, NextResponse } from 'next/server';
-import type { ZodType } from 'zod';
-import type { Role } from '@prisma/client';
-import { ok, mapError } from './envelope';
-import { ForbiddenException, HttpException, UnauthorizedException } from './errors';
-import { getSession } from '../auth/session';
-import { getSubscriptions } from '../container';
-import type { AuthUser } from '../auth/types';
+import "server-only";
+import type { NextRequest, NextResponse } from "next/server";
+import type { ZodType } from "zod";
+import type { Role } from "@prisma/client";
+import { ok, mapError } from "./envelope";
+import {
+  ForbiddenException,
+  HttpException,
+  UnauthorizedException,
+} from "./errors";
+import { getSession } from "../auth/session";
+import { getSubscriptions } from "../container";
+import type { AuthUser } from "../auth/types";
 
 export interface RouteContext<B> {
   req: NextRequest;
@@ -51,19 +55,31 @@ export function withRoute<B = undefined>(
       if (!options.public) {
         user = await getSession(req);
         if (!user) {
-          throw new UnauthorizedException({ code: 'UNAUTHENTICATED', message: 'Not authenticated' });
+          throw new UnauthorizedException({
+            code: "UNAUTHENTICATED",
+            message: "Not authenticated",
+          });
         }
         if (options.role) {
-          const roles = Array.isArray(options.role) ? options.role : [options.role];
+          const roles = Array.isArray(options.role)
+            ? options.role
+            : [options.role];
           if (!roles.includes(user.role)) {
-            throw new ForbiddenException({ code: 'FORBIDDEN_ROLE', message: 'Insufficient role' });
+            throw new ForbiddenException({
+              code: "FORBIDDEN_ROLE",
+              message: "Insufficient role",
+            });
           }
         }
-        if (options.requiresSub && user.role === 'COACH' && !(await getSubscriptions().isActive(user.id))) {
+        if (
+          options.requiresSub &&
+          user.role === "COACH" &&
+          !(await getSubscriptions().isActive(user.id))
+        ) {
           throw new HttpException(
             {
-              code: 'SUBSCRIPTION_REQUIRED',
-              message: 'An active subscription is required to create or edit.',
+              code: "SUBSCRIPTION_REQUIRED",
+              message: "An active subscription is required to create or edit.",
             },
             402,
           );

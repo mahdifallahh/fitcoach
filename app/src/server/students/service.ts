@@ -1,7 +1,13 @@
-import 'server-only';
-import { Prisma, ProgramStatus, Role, type PrismaClient, type StudentProfile } from '@prisma/client';
-import { normalizeIdentifier } from '../utils/identifier';
-import { BadRequestException, NotFoundException } from '../http/errors';
+import "server-only";
+import {
+  Prisma,
+  ProgramStatus,
+  Role,
+  type PrismaClient,
+  type StudentProfile,
+} from "@prisma/client";
+import { normalizeIdentifier } from "../utils/identifier";
+import { BadRequestException, NotFoundException } from "../http/errors";
 
 export interface StudentStats {
   age?: number | null;
@@ -13,12 +19,20 @@ export interface StudentStats {
 const studentProgramInclude = {
   coach: { select: { name: true, avatarUrl: true } },
   days: {
-    orderBy: { dayIndex: 'asc' },
+    orderBy: { dayIndex: "asc" },
     include: {
       exercises: {
-        orderBy: [{ order: 'asc' }, { supersetOrder: 'asc' }],
+        orderBy: [{ order: "asc" }, { supersetOrder: "asc" }],
         include: {
-          exercise: { select: { id: true, name: true, gifUrl: true, videoUrl: true, description: true } },
+          exercise: {
+            select: {
+              id: true,
+              name: true,
+              gifUrl: true,
+              videoUrl: true,
+              description: true,
+            },
+          },
         },
       },
     },
@@ -31,7 +45,7 @@ export class StudentsService {
   list(coachId: string) {
     return this.prisma.studentProfile.findMany({
       where: { coachId },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
       include: { _count: { select: { programs: true } } },
     });
   }
@@ -48,14 +62,18 @@ export class StudentsService {
     tx: Prisma.TransactionClient | PrismaClient = this.prisma,
   ): Promise<StudentProfile> {
     const { channel, value } = normalizeIdentifier(contact);
-    if (!value || value === '+') {
-      throw new BadRequestException({ code: 'CONTACT_REQUIRED', message: 'A phone or email is required' });
+    if (!value || value === "+") {
+      throw new BadRequestException({
+        code: "CONTACT_REQUIRED",
+        message: "A phone or email is required",
+      });
     }
-    const match = channel === 'EMAIL' ? { email: value } : { phone: value };
+    const match = channel === "EMAIL" ? { email: value } : { phone: value };
 
     // Link to an existing student account if one already registered with this contact.
     const existingUser = await tx.user.findUnique({ where: match });
-    const userId = existingUser?.role === Role.STUDENT ? existingUser.id : undefined;
+    const userId =
+      existingUser?.role === Role.STUDENT ? existingUser.id : undefined;
 
     const statData = {
       ...(stats.age !== undefined ? { age: stats.age } : {}),
@@ -63,11 +81,16 @@ export class StudentsService {
       ...(stats.weightKg !== undefined ? { weightKg: stats.weightKg } : {}),
     };
 
-    const existing = await tx.studentProfile.findFirst({ where: { coachId, ...match } });
+    const existing = await tx.studentProfile.findFirst({
+      where: { coachId, ...match },
+    });
     if (existing) {
       return tx.studentProfile.update({
         where: { id: existing.id },
-        data: { ...statData, ...(userId && !existing.userId ? { userId } : {}) },
+        data: {
+          ...statData,
+          ...(userId && !existing.userId ? { userId } : {}),
+        },
       });
     }
     return tx.studentProfile.create({
@@ -80,15 +103,30 @@ export class StudentsService {
   /** Coaches who have published ≥1 program for this student, with a program count. */
   async listCoaches(studentUserId: string) {
     const programs = await this.prisma.program.findMany({
-      where: { status: ProgramStatus.PUBLISHED, student: { userId: studentUserId } },
+      where: {
+        status: ProgramStatus.PUBLISHED,
+        student: { userId: studentUserId },
+      },
       select: {
         coachId: true,
-        coach: { select: { name: true, avatarUrl: true, user: { select: { phone: true, email: true } } } },
+        coach: {
+          select: {
+            name: true,
+            avatarUrl: true,
+            user: { select: { phone: true, email: true } },
+          },
+        },
       },
     });
     const byCoach = new Map<
       string,
-      { coachId: string; name: string; avatarUrl: string | null; contact: string; programCount: number }
+      {
+        coachId: string;
+        name: string;
+        avatarUrl: string | null;
+        contact: string;
+        programCount: number;
+      }
     >();
     for (const p of programs) {
       const existing = byCoach.get(p.coachId);
@@ -99,7 +137,7 @@ export class StudentsService {
           coachId: p.coachId,
           name: p.coach.name,
           avatarUrl: p.coach.avatarUrl,
-          contact: p.coach.user.email ?? p.coach.user.phone ?? '',
+          contact: p.coach.user.email ?? p.coach.user.phone ?? "",
           programCount: 1,
         });
       }
@@ -110,19 +148,37 @@ export class StudentsService {
   /** Published programs a given coach wrote for this student. */
   listCoachPrograms(studentUserId: string, coachId: string) {
     return this.prisma.program.findMany({
-      where: { coachId, status: ProgramStatus.PUBLISHED, student: { userId: studentUserId } },
-      orderBy: { updatedAt: 'desc' },
-      select: { id: true, name: true, daysPerWeek: true, updatedAt: true, _count: { select: { days: true } } },
+      where: {
+        coachId,
+        status: ProgramStatus.PUBLISHED,
+        student: { userId: studentUserId },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        daysPerWeek: true,
+        updatedAt: true,
+        _count: { select: { days: true } },
+      },
     });
   }
 
   /** Full program for the calm viewer — must be published and owned by this student. */
   async getProgramForStudent(studentUserId: string, programId: string) {
     const program = await this.prisma.program.findFirst({
-      where: { id: programId, status: ProgramStatus.PUBLISHED, student: { userId: studentUserId } },
+      where: {
+        id: programId,
+        status: ProgramStatus.PUBLISHED,
+        student: { userId: studentUserId },
+      },
       include: studentProgramInclude,
     });
-    if (!program) throw new NotFoundException({ code: 'PROGRAM_NOT_FOUND', message: 'Program not found' });
+    if (!program)
+      throw new NotFoundException({
+        code: "PROGRAM_NOT_FOUND",
+        message: "Program not found",
+      });
     return program;
   }
 }

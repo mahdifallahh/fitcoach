@@ -16,6 +16,7 @@ import { Loader2, Plus, Save, Send } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import type { Exercise, ProgramStatus2 } from '@/lib/api/types';
 import { useProgram, useCreateProgram, useUpdateProgram } from '@/lib/query/use-programs';
+import { apiErrorMessage } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,7 @@ export function ProgramBuilder({
   initialRequestId?: string;
 }) {
   const t = useTranslations('builder');
+  const tf = useTranslations('forms');
   const router = useRouter();
   const isEdit = !!programId;
 
@@ -49,6 +51,7 @@ export function ProgramBuilder({
   const [ready, setReady] = React.useState(!isEdit);
   const [activeIdx, setActiveIdx] = React.useState(0);
   const [picker, setPicker] = React.useState<{ open: boolean; targetRowUid?: string }>({ open: false });
+  const [attempted, setAttempted] = React.useState(false);
 
   React.useEffect(() => {
     if (existing && !ready) {
@@ -93,6 +96,7 @@ export function ProgramBuilder({
   const pending = create.isPending || update.isPending;
 
   const save = (status: ProgramStatus2) => {
+    setAttempted(true);
     if (!state.meta.studentContact.trim() || !state.meta.name.trim()) {
       toast.error(t('missingMeta'));
       return;
@@ -111,7 +115,7 @@ export function ProgramBuilder({
         toast.success(status === 'PUBLISHED' ? t('published') : t('savedDraft'));
         router.push('/coach/programs');
       },
-      onError: () => toast.error(t('saveError')),
+      onError: (err: unknown) => toast.error(apiErrorMessage(err, t('saveError'))),
     };
     if (isEdit && programId) update.mutate({ id: programId, payload: common }, opts);
     else
@@ -162,6 +166,9 @@ export function ProgramBuilder({
               value={state.meta.studentContact}
               onChange={(e) => draft.setMeta('studentContact', e.target.value)}
             />
+            {attempted && !state.meta.studentContact.trim() && (
+              <p className="text-sm text-destructive">{tf('fieldRequired')}</p>
+            )}
             {!isEdit && <p className="text-xs text-muted-foreground">{t('contactHint')}</p>}
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -172,6 +179,7 @@ export function ProgramBuilder({
               value={state.meta.name}
               onChange={(e) => draft.setMeta('name', e.target.value)}
             />
+            {attempted && !state.meta.name.trim() && <p className="text-sm text-destructive">{tf('fieldRequired')}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:grid-cols-4">
             <Field label={t('age')} value={state.meta.age} onChange={(v) => draft.setMeta('age', v)} />

@@ -54,4 +54,13 @@ describe('UsersService.createUser', () => {
       data: { userId: 's2' },
     });
   });
+
+  it('creates ADMIN with no coach profile and no student claiming', async () => {
+    tx.user.create.mockResolvedValue({ id: 'a1', role: Role.ADMIN });
+    await service.createUser({ identifier: '+989120009999', channel: 'SMS', role: Role.ADMIN });
+
+    expect(tx.coachProfile.create).not.toHaveBeenCalled();
+    expect(tx.subscription.create).not.toHaveBeenCalled();
+    expect(tx.studentProfile.updateMany).not.toHaveBeenCalled();
+  });
 });

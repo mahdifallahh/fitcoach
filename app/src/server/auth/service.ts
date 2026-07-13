@@ -49,18 +49,39 @@ export class AuthService {
     const { channel, value } = normalizeIdentifier(identifier);
     await this.otp.verifyLoginCode(value, code);
 
+    // Platform owners are designated by env, never by the requested role.
+    const isOwner = channel === "SMS" && this.adminPhones().includes(value);
+
     let user = await this.users.findByIdentifier(value, channel);
     if (!user) {
-      if (!role) {
+      const effectiveRole: Role | undefined = isOwner ? "ADMIN" : role;
+      if (!effectiveRole) {
         throw new BadRequestException({
           code: "ROLE_REQUIRED",
           message: "Role is required for new accounts",
         });
       }
-      user = await this.users.createUser({ identifier: value, channel, role });
+      user = await this.users.createUser({
+        identifier: value,
+        channel,
+        role: effectiveRole,
+      });
+    } else if (isOwner && user.role !== "ADMIN") {
+      // The phone was added to ADMIN_PHONES after this account existed → promote.
+      user = await this.users.setRole(user.id, "ADMIN");
     }
 
     return this.issueSession(user.id, user.role, userAgent);
+  }
+
+  /** Normalized owner phones from ADMIN_PHONES (comma-separated). */
+  private adminPhones(): string[] {
+    return this.config
+      .get("ADMIN_PHONES")
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => normalizeIdentifier(p).value);
   }
 
   /** Rotate the refresh token and mint a fresh access token. */

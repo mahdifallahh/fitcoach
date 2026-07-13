@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { ProgramStatus } from '@prisma/client';
+import { z } from "zod";
+import { ProgramStatus } from "@prisma/client";
 
 export const programExerciseInputSchema = z.object({
   exerciseId: z.string().min(1),
@@ -41,7 +41,9 @@ export const updateProgramSchema = z.object({
   days: z.array(programDayInputSchema).max(14).optional(),
 });
 
-export const setStatusSchema = z.object({ status: z.nativeEnum(ProgramStatus) });
+export const setStatusSchema = z.object({
+  status: z.nativeEnum(ProgramStatus),
+});
 
 export type ProgramDayInputDto = z.infer<typeof programDayInputSchema>;
 export type CreateProgramDto = z.infer<typeof createProgramSchema>;

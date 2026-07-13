@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getPayments } from '@/server/container';
+import { getConfig, getPayments } from '@/server/container';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +10,12 @@ export async function GET(req: NextRequest) {
   const authority = sp.get('Authority') ?? '';
   const status = sp.get('Status') ?? '';
   const locale = sp.get('locale') === 'en' ? 'en' : 'fa';
-  const url = await getPayments().handleZarinpalCallback(authority, status, locale);
-  return NextResponse.redirect(url);
+  try {
+    const url = await getPayments().handleZarinpalCallback(authority, status, locale);
+    return NextResponse.redirect(url);
+  } catch (err) {
+    console.error('[zarinpal] callback error:', err);
+    const appUrl = getConfig().get('APP_PUBLIC_URL');
+    return NextResponse.redirect(`${appUrl}/${locale}/coach/billing?status=failed`);
+  }
 }

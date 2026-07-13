@@ -1,6 +1,6 @@
-import 'server-only';
-import cron from 'node-cron';
-import { getSubscriptions } from './container';
+import "server-only";
+import cron from "node-cron";
+import { getSubscriptions } from "./container";
 
 let started = false;
 
@@ -13,14 +13,14 @@ export function startCron(): void {
   started = true;
 
   // Hourly: flip lapsed trials/plans to EXPIRED (coach becomes read-only).
-  cron.schedule('0 * * * *', async () => {
+  cron.schedule("0 * * * *", async () => {
     try {
       const n = await getSubscriptions().expireDue();
       if (n) console.log(`[cron] expired ${n} subscription(s)`);
     } catch (e) {
-      console.error('[cron] expiry sweep failed:', e);
+      console.error("[cron] expiry sweep failed:", e);
     }
   });
 
-  console.log('[cron] scheduled hourly subscription expiry sweep');
+  console.log("[cron] scheduled hourly subscription expiry sweep");
 }

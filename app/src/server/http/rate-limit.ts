@@ -1,12 +1,12 @@
-import 'server-only';
-import type { NextRequest } from 'next/server';
-import { HttpException } from './errors';
+import "server-only";
+import type { NextRequest } from "next/server";
+import { HttpException } from "./errors";
 
 /** Best-effort client IP for rate-limiting (proxied via x-forwarded-for). */
 export function clientIp(req: NextRequest): string {
-  const fwd = req.headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
 }
 
 interface WindowState {
@@ -20,10 +20,16 @@ interface WindowState {
  * process-local (no Redis) — the app runs as a single Node server. Guarded on
  * `globalThis` so dev hot-reload doesn't reset the counters.
  */
-const g = globalThis as unknown as { __fitloRateStore?: Map<string, WindowState> };
+const g = globalThis as unknown as {
+  __fitloRateStore?: Map<string, WindowState>;
+};
 const store = (g.__fitloRateStore ??= new Map<string, WindowState>());
 
-export async function rateLimit(bucket: string, limit: number, windowSec: number): Promise<void> {
+export async function rateLimit(
+  bucket: string,
+  limit: number,
+  windowSec: number,
+): Promise<void> {
   const now = Date.now();
   const existing = store.get(bucket);
 
@@ -39,7 +45,10 @@ export async function rateLimit(bucket: string, limit: number, windowSec: number
   existing.count += 1;
   if (existing.count > limit) {
     throw new HttpException(
-      { code: 'RATE_LIMITED', message: 'Too many requests, please try again shortly' },
+      {
+        code: "RATE_LIMITED",
+        message: "Too many requests, please try again shortly",
+      },
       429,
     );
   }

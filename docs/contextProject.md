@@ -125,25 +125,49 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **Routing:** `src/app/[locale]/...` (next-intl, `localePrefix: 'always'`, default `fa`). `i18n/routing.ts`
   exports locale-aware `Link, useRouter, usePathname, redirect`. **Always import nav from `@/i18n/routing`,
   not `next/link`/`next/navigation`** (except `useParams`/`useSearchParams`).
-- **Pages:** `[locale]/page.tsx` (landing), `login` (**phone + OTP only**),
+- **Pages:** `[locale]/page.tsx` (marketing landing: hero → features → how-it-works → FAQ → CTA → footer),
+  `blog/` + `blog/[slug]` (bilingual content, statically prerendered), `login` (**phone + OTP only**),
   `coach/{page,profile,exercises,programs/{page,new,[id]/edit},billing,requests,intake}`,
-  `student/{page,coaches/[coachId],programs/[id],requests}`, and **public** `c/[handle]` +
-  `c/[handle]/request` (public coach page + auth-gated intake form).
+  `student/{page,coaches/[coachId],programs/[id],requests}`, and **public** `c/[handle]` (server-rendered,
+  indexable) + `c/[handle]/request` (auth-gated intake form). `error.tsx` is the locale error boundary.
 - **API routes:** `src/app/api/**/route.ts` — one folder per endpoint, mirroring the §8 paths. Thin: import a
   service getter from `@/server/container` and wrap with `withRoute`.
 - **Brand:** app name is **fitlo** / **فیتلو** (`common.appName`); update there + `manifest.webmanifest` +
   `offline.html` + `layout.tsx` metadata if it changes.
-- **components/** `ui/` shadcn primitives; `shared/` (`dashboard-shell`, `locale-switcher`, `theme-toggle`,
-  `gif-lightbox`); `auth/` (`auth-form` 2-step OTP w/ dev auto-login, `auth-guard`, `logout-button`);
-  `coach/` (`coach-page-layout`, `coach-nav`, `profile-form`, `exercise-library`, `program-list`,
-  `billing-view`, `subscription-banner`, `download-pdf-button`, `requests-inbox`, `intake-settings`,
-  **`program-builder/`** — the centerpiece); `student/` (`student-page-layout`, `student-nav`, `coaches-list`,
-  `coach-programs`, `program-viewer`, `my-requests`); `providers/`; `pwa/`.
+- **Onboarding (users get lost without it):** `coach/getting-started.tsx` is a data-driven first-run checklist
+  (profile → first exercise → first program → payment details) that auto-hides when complete or dismissed
+  (`localStorage: fitlo:onboarding-dismissed`); the coach dashboard also has a quick-actions grid.
+  `student/student-help.tsx` is a dismissible "how it works" card. The landing explains both roles in 3 steps.
+- **components/** `ui/` shadcn primitives; `shared/` (`dashboard-shell`, `public-header`, `locale-switcher`,
+  `theme-toggle`, `gif-lightbox`, `error-state`, `field-error`, `json-ld`); `auth/` (`auth-form` 2-step OTP w/
+  dev auto-login, `auth-guard`, `logout-button`); `coach/` (`coach-page-layout`, `coach-nav`, `getting-started`,
+  `profile-form`, `exercise-library`, `program-list`, `billing-view`, `subscription-banner`,
+  `download-pdf-button`, `requests-inbox`, `intake-settings`, **`program-builder/`** — the centerpiece);
+  `student/` (`student-page-layout`, `student-nav`, `student-help`, `coaches-list`, `coach-programs`,
+  `program-viewer`, `my-requests`); `providers/`; `pwa/`.
 - **lib/api/**: `client.ts` (fetch wrapper: base URL **`''`** same-origin, `credentials:'include'`, envelope
   unwrap, **auto-refresh on 401**), per-feature modules, `upload.ts` (presigned-PUT helper), `types.ts`.
 - **lib/query/**: TanStack hooks per feature. **messages/** `fa.json`/`en.json` — **all UI strings; zero
   hardcoded text.** Adding a string = add to both files + `useTranslations('namespace')`.
 - **RTL:** logical Tailwind props (`ps-/pe-/ms-/me-/start-/end-`) + `rtl-flip` for directional icons.
+
+### SEO & performance
+- **`lib/site.ts`** is the single source of truth for the public origin: `SITE_URL` comes from
+  **`NEXT_PUBLIC_SITE_URL`** (set it to the real domain in production — canonical URLs, sitemap, robots and OG
+  tags all derive from it). It also exports `localeUrl()` and `languageAlternates()` (fa/en + `x-default`).
+- **`src/app/robots.ts`** (allows public pages, disallows `/api`, coach/student panels, login, intake) and
+  **`src/app/sitemap.ts`** (landing + blog index + every post, per locale, with hreflang alternates).
+- **Metadata:** `layout.tsx` sets `metadataBase` + defaults; each public page exports `generateMetadata` with a
+  locale-specific title/description, canonical, hreflang alternates and OG tags. **JSON-LD** via
+  `components/shared/json-ld.tsx`: Organization + WebSite + FAQPage (landing), Article (blog post),
+  ProfilePage + Person (`/c/<handle>`).
+- **`lib/blog.ts`** holds the posts as typed, bilingual content blocks (`p` / `h2` / `ul`) — no markdown
+  dependency and nothing is `dangerouslySetInnerHTML`'d. Add a post by appending to `POSTS`; the blog index,
+  static params and sitemap all pick it up automatically.
+- **Indexable public surface:** landing, blog, and each coach's `/c/<handle>` page (server-rendered so crawlers
+  see the content, not an empty client shell). The app panels stay out of the index.
+- **Bundle:** `next.config.mjs` enables `optimizePackageImports: ['lucide-react']` (tree-shakes icon barrel
+  imports), `poweredByHeader: false`, and AVIF/WebP image formats. Landing + blog are statically prerendered.
 
 ---
 
@@ -179,7 +203,7 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   in the **private** `requests` bucket. Coach accepts (**→ status flips to ACCEPTED only when the program is
   saved**, via `requestId` on program create) or declines with a reason the student sees.
 
-**Enums:** `Role(COACH|STUDENT)`, `OtpChannel(SMS|EMAIL)`, `OtpPurpose(LOGIN|MAGIC_LINK)`,
+**Enums:** `Role(COACH|STUDENT|ADMIN)`, `OtpChannel(SMS|EMAIL)`, `OtpPurpose(LOGIN|MAGIC_LINK)`,
 `ProgramStatus(DRAFT|PUBLISHED)`, `SubscriptionPlan(M3|M6|M12)`,
 `SubscriptionStatus(TRIALING|ACTIVE|EXPIRED|CANCELED)`, `PaymentGateway(ZARINPAL|STRIPE)`,
 `PaymentStatus(PENDING|PAID|FAILED|REFUNDED)`, `ProgramRequestStatus(PENDING|ACCEPTED|DECLINED)`.
@@ -210,6 +234,13 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   `POST /coach/billing/dev/complete/:paymentId` (non-prod simulate).
 - **gateway webhooks** (public): `GET /coach/billing/zarinpal/callback` (redirect),
   `POST /payments/stripe/webhook` (raw body via `req.text()`).
+- **admin** (ADMIN — owner panel at `/[locale]/admin`): `GET /admin/overview` (totals, subscription
+  breakdown, revenue by currency, recent signups), `GET /admin/coaches?search=` (coaches + latest
+  subscription + usage counts), `POST /admin/coaches/:id/subscription` (`{action:'grant',days}` extends —
+  stacking on a live end date — or `{action:'expire'}` cuts access now), `GET /admin/payments` (latest 50).
+  **Who is admin:** phones listed in the `ADMIN_PHONES` env (comma-separated, normalized) — logging in with
+  one of them creates/promotes the account to ADMIN (`AuthService.verifyOtp`); there is no admin signup UI.
+  ADMIN accounts get no coach profile and no student claiming.
 - **health:** `GET /api/health` (liveness; container healthcheck).
 
 *(gated)* = `requiresSub: true` → 402 when trial/plan lapsed.
@@ -306,6 +337,7 @@ form auto-fills + submits it → one-click dev login. Never present when `NODE_E
 | Program requests (intake) | `src/server/program-requests/*`; UI `src/app/[locale]/c/[handle]/request`, `components/coach/requests-inbox.tsx` |
 | Background cron / expiry | `src/instrumentation.ts` + `src/server/cron.ts` + `src/server/subscriptions/service.ts` |
 | Payments / webhooks / trial activation | `src/server/payments/*`, `src/server/subscriptions/service.ts`; routes `src/app/api/coach/billing/*` |
+| Admin / owner panel | `src/server/admin/*` + `src/app/api/admin/*`; UI `src/app/[locale]/admin/*` + `components/admin/*`; who-is-admin = `ADMIN_PHONES` env (promotion in `src/server/auth/service.ts`) |
 
 Related docs: `architecture.md`, `data-model.md`, `code-structure.md`, `setup.md`, `i18n-and-rtl.md`,
 `api.md`, `progress.md`, `decisions/` (ADRs).

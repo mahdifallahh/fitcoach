@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { X, ZoomIn } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { X, ZoomIn } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Wraps a thumbnail; clicking opens a fullscreen overlay with the enlarged image.
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
  */
 export function GifLightbox({
   src,
-  alt = '',
+  alt = "",
   className,
   children,
 }: {
@@ -23,12 +23,12 @@ export function GifLightbox({
 
   React.useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', onKey);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
   }, [open]);
@@ -38,8 +38,8 @@ export function GifLightbox({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={cn('group relative block cursor-zoom-in', className)}
-        aria-label={alt || 'View image'}
+        className={cn("group relative block cursor-zoom-in", className)}
+        aria-label={alt || "View image"}
       >
         {children}
         <span className="pointer-events-none absolute end-2 top-2 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100">

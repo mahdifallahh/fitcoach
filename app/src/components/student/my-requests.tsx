@@ -1,18 +1,29 @@
-'use client';
+"use client";
 
-import { useFormatter, useTranslations } from 'next-intl';
-import { Inbox } from 'lucide-react';
-import { useMyRequests } from '@/lib/query/use-requests';
-import type { StudentRequest } from '@/lib/api/types';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useFormatter, useTranslations } from "next-intl";
+import { Inbox } from "lucide-react";
+import { useMyRequests } from "@/lib/query/use-requests";
+import type { StudentRequest } from "@/lib/api/types";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/shared/error-state";
 
 export function MyRequests() {
-  const t = useTranslations('myRequests');
+  const t = useTranslations("myRequests");
+  const tc = useTranslations("common");
   const format = useFormatter();
-  const { data, isLoading } = useMyRequests();
+  const { data, isLoading, isError, refetch } = useMyRequests();
 
+  if (isError) {
+    return (
+      <ErrorState
+        message={t("loadError")}
+        onRetry={() => refetch()}
+        retryLabel={tc("retry")}
+      />
+    );
+  }
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -27,19 +38,25 @@ export function MyRequests() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('subtitle')}</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {!data || data.length === 0 ? (
         <div className="flex flex-col items-center rounded-xl border border-dashed py-16 text-center text-muted-foreground">
           <Inbox className="mb-2 size-8" />
-          <p>{t('empty')}</p>
+          <p>{t("empty")}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {data.map((req) => (
-            <RequestRow key={req.id} req={req} formatted={format.dateTime(new Date(req.createdAt), { dateStyle: 'medium' })} />
+            <RequestRow
+              key={req.id}
+              req={req}
+              formatted={format.dateTime(new Date(req.createdAt), {
+                dateStyle: "medium",
+              })}
+            />
           ))}
         </div>
       )}
@@ -47,9 +64,15 @@ export function MyRequests() {
   );
 }
 
-function RequestRow({ req, formatted }: { req: StudentRequest; formatted: string }) {
-  const t = useTranslations('myRequests');
-  const variant = req.status === 'ACCEPTED' ? 'default' : 'secondary';
+function RequestRow({
+  req,
+  formatted,
+}: {
+  req: StudentRequest;
+  formatted: string;
+}) {
+  const t = useTranslations("myRequests");
+  const variant = req.status === "ACCEPTED" ? "default" : "secondary";
 
   return (
     <Card>
@@ -61,10 +84,12 @@ function RequestRow({ req, formatted }: { req: StudentRequest; formatted: string
           </div>
           <Badge variant={variant}>{t(`status${req.status}`)}</Badge>
         </div>
-        {req.status === 'ACCEPTED' && <p className="text-sm text-primary">{t('acceptedNote')}</p>}
-        {req.status === 'DECLINED' && req.declineReason && (
+        {req.status === "ACCEPTED" && (
+          <p className="text-sm text-primary">{t("acceptedNote")}</p>
+        )}
+        {req.status === "DECLINED" && req.declineReason && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {t('declineReasonLabel')}: {req.declineReason}
+            {t("declineReasonLabel")}: {req.declineReason}
           </p>
         )}
       </CardContent>

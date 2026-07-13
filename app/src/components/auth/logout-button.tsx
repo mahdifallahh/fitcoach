@@ -2,6 +2,7 @@
 
 import { LogOut } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { useRouter } from '@/i18n/routing';
 import { useLogout } from '@/lib/query/use-auth';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,12 @@ export function LogoutButton() {
       size="sm"
       className="gap-1.5"
       disabled={logout.isPending}
-      onClick={() => logout.mutate(undefined, { onSuccess: () => router.replace('/') })}
+      onClick={() =>
+        logout.mutate(undefined, {
+          onSuccess: () => router.replace('/'),
+          onError: () => toast.error(t('logoutError')),
+        })
+      }
     >
       <LogOut className="size-4 rtl-flip" />
       <span>{t('logout')}</span>

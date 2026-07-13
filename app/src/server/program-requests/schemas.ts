@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const createProgramRequestSchema = z.object({
   handle: z.string().min(1).max(40),
@@ -17,9 +17,11 @@ export const createProgramRequestSchema = z.object({
 });
 
 export const updateRequestStatusSchema = z.object({
-  status: z.enum(['ACCEPTED', 'DECLINED']),
+  status: z.enum(["ACCEPTED", "DECLINED"]),
   declineReason: z.string().max(1000).optional(),
 });
 
-export type CreateProgramRequestDto = z.infer<typeof createProgramRequestSchema>;
+export type CreateProgramRequestDto = z.infer<
+  typeof createProgramRequestSchema
+>;
 export type UpdateRequestStatusDto = z.infer<typeof updateRequestStatusSchema>;

@@ -1,6 +1,6 @@
-import 'server-only';
-import type { PrismaClient } from '@prisma/client';
-import { NotFoundException } from '../http/errors';
+import "server-only";
+import type { PrismaClient } from "@prisma/client";
+import { NotFoundException } from "../http/errors";
 
 export class PublicCoachService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -22,7 +22,11 @@ export class PublicCoachService {
         user: { select: { phone: true, email: true } },
       },
     });
-    if (!profile) throw new NotFoundException({ code: 'COACH_NOT_FOUND', message: 'Coach not found' });
+    if (!profile)
+      throw new NotFoundException({
+        code: "COACH_NOT_FOUND",
+        message: "Coach not found",
+      });
     return {
       handle: profile.handle,
       name: profile.name,

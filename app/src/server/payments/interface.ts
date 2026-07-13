@@ -1,4 +1,4 @@
-import type { PaymentGateway, SubscriptionPlan } from '@prisma/client';
+import type { PaymentGateway, SubscriptionPlan } from "@prisma/client";
 
 export interface CheckoutInput {
   paymentId: string;

@@ -11,8 +11,8 @@ grepping the whole codebase for orientation. Update it when you change architect
 or touch the data model — it decays fast if left stale.
 
 Other docs worth knowing about: `docs/architecture.md`, `docs/data-model.md`, `docs/code-structure.md`,
-`docs/setup.md`, `docs/i18n-and-rtl.md`, `docs/api.md`, `docs/progress.md` (living per-phase build checklist),
-`docs/decisions/` (ADRs).
+`docs/setup.md`, `docs/i18n-and-rtl.md`, `docs/logoContext.md` (brand assets + light/dark primary colors),
+`docs/api.md`, `docs/progress.md` (living per-phase build checklist), `docs/decisions/` (ADRs).
 
 ## What this is
 
@@ -105,6 +105,14 @@ container — `WATCHPACK_POLLING` helps but doesn't always catch brand-new files
   (`i18n/routing.ts` — always import `Link`/`useRouter`/`usePathname` from there, not `next/link`). Data
   layer: typed `lib/api/*.ts` modules + TanStack Query hooks in `lib/query/*.ts`. All UI copy lives in
   `messages/{fa,en}.json` — zero hardcoded strings in components; add new copy to both files.
+- **SEO:** `lib/site.ts` derives everything from **`NEXT_PUBLIC_SITE_URL`** (set it to the real domain in prod).
+  `app/robots.ts` + `app/sitemap.ts` are generated; public pages export `generateMetadata` (canonical, hreflang
+  fa/en/x-default, OG) and emit JSON-LD via `shared/json-ld.tsx`. The indexable surface is the landing, the
+  blog (`lib/blog.ts` — typed bilingual content blocks; append to `POSTS` to add one), and each coach's
+  server-rendered `/c/<handle>` page. Coach/student panels are disallowed in robots.
+- **Onboarding:** new users get lost without it — `coach/getting-started.tsx` is a data-driven first-run
+  checklist and `student/student-help.tsx` a dismissible explainer; the landing spells out both roles in 3 steps.
+  Keep these in sync when you add a core coach step.
 - **Prisma schema** (`app/prisma/schema.prisma`) is the single source of truth for the data model; run
   `prisma:generate` after any change and add a migration. `prisma migrate dev` needs a TTY (fails inside
   Docker) — use `migrate diff --script` + hand-write the migration file, then `migrate deploy` (see

@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
-import { useLocale } from 'next-intl';
-import { Languages } from 'lucide-react';
-import { usePathname, useRouter, routing, localeLabels, type Locale } from '@/i18n/routing';
-import { Button } from '@/components/ui/button';
+import { useLocale } from "next-intl";
+import { Languages } from "lucide-react";
+import {
+  usePathname,
+  useRouter,
+  routing,
+  localeLabels,
+  type Locale,
+} from "@/i18n/routing";
+import { Button } from "@/components/ui/button";
 
 /** Switches locale while preserving the current path (next-intl navigation). */
 export function LocaleSwitcher() {

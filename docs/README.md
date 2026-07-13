@@ -10,6 +10,7 @@ This folder is the project's living knowledge base. Start here.
 | [code-structure.md](./code-structure.md) | Folder conventions & coding standards for the app |
 | [setup.md](./setup.md) | Running locally and via Docker, env vars, common tasks |
 | [i18n-and-rtl.md](./i18n-and-rtl.md) | How bilingual fa/en + RTL/LTR and theming work |
+| [logoContext.md](./logoContext.md) | The FITLO logo: assets, usage rules, and light/dark primary colors |
 | [api.md](./api.md) | API surface overview (full reference in contextProject.md §8) |
 | [progress.md](./progress.md) | **Living checklist** of the 9 build phases + the NestJS→Next.js migration |
 | [decisions/](./decisions) | Architecture Decision Records (ADRs) |

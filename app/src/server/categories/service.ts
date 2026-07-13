@@ -1,6 +1,6 @@
-import 'server-only';
-import { Prisma, type PrismaClient } from '@prisma/client';
-import { ConflictException, NotFoundException } from '../http/errors';
+import "server-only";
+import { Prisma, type PrismaClient } from "@prisma/client";
+import { ConflictException, NotFoundException } from "../http/errors";
 
 export class CategoriesService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -8,13 +8,15 @@ export class CategoriesService {
   list(coachId: string) {
     return this.prisma.exerciseCategory.findMany({
       where: { coachId },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
   async create(coachId: string, name: string) {
     try {
-      return await this.prisma.exerciseCategory.create({ data: { coachId, name } });
+      return await this.prisma.exerciseCategory.create({
+        data: { coachId, name },
+      });
     } catch (e) {
       throw this.mapError(e);
     }
@@ -23,7 +25,10 @@ export class CategoriesService {
   async rename(coachId: string, id: string, name: string) {
     await this.assertOwned(coachId, id);
     try {
-      return await this.prisma.exerciseCategory.update({ where: { id }, data: { name } });
+      return await this.prisma.exerciseCategory.update({
+        where: { id },
+        data: { name },
+      });
     } catch (e) {
       throw this.mapError(e);
     }
@@ -37,13 +42,25 @@ export class CategoriesService {
   }
 
   private async assertOwned(coachId: string, id: string) {
-    const found = await this.prisma.exerciseCategory.findFirst({ where: { id, coachId } });
-    if (!found) throw new NotFoundException({ code: 'CATEGORY_NOT_FOUND', message: 'Category not found' });
+    const found = await this.prisma.exerciseCategory.findFirst({
+      where: { id, coachId },
+    });
+    if (!found)
+      throw new NotFoundException({
+        code: "CATEGORY_NOT_FOUND",
+        message: "Category not found",
+      });
   }
 
   private mapError(e: unknown) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-      return new ConflictException({ code: 'CATEGORY_EXISTS', message: 'A category with this name already exists' });
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return new ConflictException({
+        code: "CATEGORY_EXISTS",
+        message: "A category with this name already exists",
+      });
     }
     return e;
   }

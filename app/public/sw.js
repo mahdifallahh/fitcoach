@@ -1,10 +1,11 @@
 /* fitlo service worker — app-shell precache + offline fallback. */
-const VERSION = 'fitlo-v2';
+const VERSION = 'fitlo-v3'; // bump whenever a precached asset (offline.html, icons) changes
 const PRECACHE = [
   '/offline.html',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
 ];
 
 self.addEventListener('install', (event) => {

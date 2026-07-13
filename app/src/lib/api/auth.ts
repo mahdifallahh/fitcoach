@@ -19,3 +19,9 @@ export const authApi = {
 
   logout: () => api.post<{ success: boolean }>('/auth/logout'),
 };
+
+/** Home route for each role — used after login and by the client route guard. */
+export function roleHome(role: Role): string {
+  if (role === 'ADMIN') return '/admin';
+  return role === 'COACH' ? '/coach' : '/student';
+}

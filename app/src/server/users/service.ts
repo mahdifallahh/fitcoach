@@ -1,7 +1,7 @@
-import 'server-only';
-import { Prisma, Role, type PrismaClient, type User } from '@prisma/client';
-import type { IdentifierChannel } from '../utils/identifier';
-import { generateUniqueHandle } from '../utils/handle';
+import "server-only";
+import { Prisma, Role, type PrismaClient, type User } from "@prisma/client";
+import type { IdentifierChannel } from "../utils/identifier";
+import { generateUniqueHandle } from "../utils/handle";
 
 interface CreateUserInput {
   identifier: string; // normalized
@@ -13,9 +13,12 @@ interface CreateUserInput {
 export class UsersService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  findByIdentifier(value: string, channel: IdentifierChannel): Promise<User | null> {
+  findByIdentifier(
+    value: string,
+    channel: IdentifierChannel,
+  ): Promise<User | null> {
     return this.prisma.user.findUnique({
-      where: channel === 'EMAIL' ? { email: value } : { phone: value },
+      where: channel === "EMAIL" ? { email: value } : { phone: value },
     });
   }
 
@@ -29,7 +32,7 @@ export class UsersService {
       where: { id },
       include: {
         coachProfile: {
-          include: { subscriptions: { orderBy: { endsAt: 'desc' }, take: 1 } },
+          include: { subscriptions: { orderBy: { endsAt: "desc" }, take: 1 } },
         },
       },
     });
@@ -63,8 +66,8 @@ export class UsersService {
     const { identifier, channel, role, locale } = input;
     const data: Prisma.UserCreateInput = {
       role,
-      locale: locale ?? 'fa',
-      ...(channel === 'EMAIL' ? { email: identifier } : { phone: identifier }),
+      locale: locale ?? "fa",
+      ...(channel === "EMAIL" ? { email: identifier } : { phone: identifier }),
     };
 
     return this.prisma.$transaction(async (tx) => {
@@ -74,20 +77,31 @@ export class UsersService {
         const coachName = defaultCoachName(channel, identifier);
         // Seed the public handle from the name only for email coaches; never from a
         // phone number (it would leak the phone in the public URL) — those get coach-<rand>.
-        const handleSeed = channel === 'EMAIL' ? coachName : '';
+        const handleSeed = channel === "EMAIL" ? coachName : "";
         const handle = await generateUniqueHandle(
           handleSeed,
-          async (h) => (await tx.coachProfile.findUnique({ where: { handle: h }, select: { userId: true } })) !== null,
+          async (h) =>
+            (await tx.coachProfile.findUnique({
+              where: { handle: h },
+              select: { userId: true },
+            })) !== null,
         );
         await tx.coachProfile.create({
           data: { userId: user.id, name: coachName, handle },
         });
-      } else {
+      } else if (role === Role.STUDENT) {
         await this.claimStudentProfiles(tx, user.id, channel, identifier);
       }
+      // ADMIN gets neither a coach profile nor student claiming — it's a pure
+      // platform-owner account.
 
       return user;
     });
+  }
+
+  /** Promote/demote a user (used to elevate ADMIN_PHONES owners on login). */
+  setRole(id: string, role: Role): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data: { role } });
   }
 
   /**
@@ -100,7 +114,8 @@ export class UsersService {
     channel: IdentifierChannel,
     identifier: string,
   ): Promise<number> {
-    const match = channel === 'EMAIL' ? { email: identifier } : { phone: identifier };
+    const match =
+      channel === "EMAIL" ? { email: identifier } : { phone: identifier };
     const result = await tx.studentProfile.updateMany({
       where: { userId: null, ...match },
       data: { userId },
@@ -109,7 +124,10 @@ export class UsersService {
   }
 }
 
-function defaultCoachName(channel: IdentifierChannel, identifier: string): string {
-  if (channel === 'EMAIL') return identifier.split('@')[0];
+function defaultCoachName(
+  channel: IdentifierChannel,
+  identifier: string,
+): string {
+  if (channel === "EMAIL") return identifier.split("@")[0];
   return identifier;
 }

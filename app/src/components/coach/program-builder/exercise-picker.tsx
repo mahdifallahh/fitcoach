@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/shared/error-state';
 
 export function ExercisePicker({
   open,
@@ -26,11 +27,12 @@ export function ExercisePicker({
   title: string;
 }) {
   const t = useTranslations('exercises');
+  const tc = useTranslations('common');
   const { data: categories } = useCategories();
   const [search, setSearch] = React.useState('');
   const [categoryId, setCategoryId] = React.useState('');
   const ds = useDebounce(search, 250);
-  const { data: exercises, isLoading } = useExercises({
+  const { data: exercises, isLoading, isError, refetch } = useExercises({
     search: ds || undefined,
     categoryId: categoryId || undefined,
   });
@@ -58,7 +60,11 @@ export function ExercisePicker({
         </div>
 
         <ul className="max-h-80 space-y-1 overflow-y-auto">
-          {isLoading ? (
+          {isError ? (
+            <li>
+              <ErrorState message={t('loadError')} onRetry={() => refetch()} retryLabel={tc('retry')} compact />
+            </li>
+          ) : isLoading ? (
             Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)
           ) : !exercises || exercises.length === 0 ? (
             <li className="py-8 text-center text-sm text-muted-foreground">{t('emptyFiltered')}</li>

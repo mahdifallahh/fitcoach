@@ -84,3 +84,12 @@ export const api = {
   put: <T>(path: string, body?: unknown) => rawRequest<T>(path, { method: 'PUT', body }),
   delete: <T>(path: string, body?: unknown) => rawRequest<T>(path, { method: 'DELETE', body }),
 };
+
+/**
+ * The server's own message when the failure is an `ApiError` (already a clear,
+ * specific sentence — e.g. "One or more exercises do not belong to you"),
+ * otherwise a translated fallback for network/unexpected errors.
+ */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  return err instanceof ApiError ? err.message : fallback;
+}

@@ -1,30 +1,46 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
-import { Dumbbell, FolderCog, Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import type { Exercise } from '@/lib/api/types';
-import { useExercises, useDeleteExercise } from '@/lib/query/use-exercises';
-import { useCategories } from '@/lib/query/use-categories';
-import { useDebounce } from '@/lib/hooks/use-debounce';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { GifLightbox } from '@/components/shared/gif-lightbox';
-import { ExerciseFormDialog } from './exercise-form-dialog';
-import { CategoryManager } from './category-manager';
+import * as React from "react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import {
+  Dumbbell,
+  FolderCog,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
+import type { Exercise } from "@/lib/api/types";
+import { useExercises, useDeleteExercise } from "@/lib/query/use-exercises";
+import { useCategories } from "@/lib/query/use-categories";
+import { useDebounce } from "@/lib/hooks/use-debounce";
+import { apiErrorMessage } from "@/lib/api/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { GifLightbox } from "@/components/shared/gif-lightbox";
+import { ErrorState } from "@/components/shared/error-state";
+import { HelpCallout } from "@/components/shared/help-callout";
+import { ExerciseFormDialog } from "./exercise-form-dialog";
+import { CategoryManager } from "./category-manager";
 
 export function ExerciseLibrary() {
-  const t = useTranslations('exercises');
+  const t = useTranslations("exercises");
+  const tc = useTranslations("common");
   const { data: categories } = useCategories();
-  const [search, setSearch] = React.useState('');
-  const [categoryId, setCategoryId] = React.useState('');
+  const [search, setSearch] = React.useState("");
+  const [categoryId, setCategoryId] = React.useState("");
   const debouncedSearch = useDebounce(search, 300);
-  const { data: exercises, isLoading } = useExercises({
+  const {
+    data: exercises,
+    isLoading,
+    isError,
+    refetch,
+  } = useExercises({
     search: debouncedSearch || undefined,
     categoryId: categoryId || undefined,
   });
@@ -45,28 +61,52 @@ export function ExerciseLibrary() {
     setFormOpen(true);
   }
   function onDelete(ex: Exercise) {
-    if (!confirm(t('deleteConfirmBody', { name: ex.name }))) return;
-    remove.mutate(ex.id, { onSuccess: () => toast.success(t('deleted')) });
+    if (!confirm(t("deleteConfirmBody", { name: ex.name }))) return;
+    remove.mutate(ex.id, {
+      onSuccess: () => toast.success(t("deleted")),
+      onError: (err) => toast.error(apiErrorMessage(err, t("deleteError"))),
+    });
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" aria-label={t('manageCategories')} onClick={() => setCatOpen(true)}>
+          <Button variant="outline" onClick={() => setCatOpen(true)}>
             <FolderCog className="size-4" />
-            <span className="hidden sm:inline">{t('manageCategories')}</span>
+            {t("manageCategories")}
           </Button>
           <Button onClick={openCreate}>
             <Plus className="size-4" />
-            {t('new')}
+            {t("new")}
           </Button>
         </div>
       </div>
+
+      {/* First-run help: what the library is for and where categories live */}
+      <HelpCallout
+        storageKey="fitlo:help-exercises"
+        title={t("helpTitle")}
+        items={[
+          t("help1"),
+          t.rich("help2", {
+            action: (chunks) => (
+              <button
+                type="button"
+                onClick={() => setCatOpen(true)}
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                {chunks}
+              </button>
+            ),
+          }),
+          t("help3"),
+        ]}
+      />
 
       {/* Toolbar */}
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -74,13 +114,17 @@ export function ExerciseLibrary() {
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="ps-9"
-            placeholder={t('search')}
+            placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select className="sm:w-56" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-          <option value="">{t('allCategories')}</option>
+        <Select
+          className="sm:w-56"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
+          <option value="">{t("allCategories")}</option>
           {categories?.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -90,23 +134,42 @@ export function ExerciseLibrary() {
       </div>
 
       {/* Content */}
-      {isLoading ? (
+      {isError ? (
+        <ErrorState
+          message={t("loadError")}
+          onRetry={() => refetch()}
+          retryLabel={tc("retry")}
+        />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full" />
           ))}
         </div>
       ) : !exercises || exercises.length === 0 ? (
-        <EmptyState message={isFiltered ? t('emptyFiltered') : t('empty')} />
+        <EmptyState message={isFiltered ? t("emptyFiltered") : t("empty")} />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {exercises.map((ex) => (
-            <ExerciseCard key={ex.id} ex={ex} setsReps={t('setsReps', { sets: ex.defaultSets, reps: ex.defaultReps })} onEdit={() => openEdit(ex)} onDelete={() => onDelete(ex)} />
+            <ExerciseCard
+              key={ex.id}
+              ex={ex}
+              setsReps={t("setsReps", {
+                sets: ex.defaultSets,
+                reps: ex.defaultReps,
+              })}
+              onEdit={() => openEdit(ex)}
+              onDelete={() => onDelete(ex)}
+            />
           ))}
         </div>
       )}
 
-      <ExerciseFormDialog open={formOpen} onOpenChange={setFormOpen} exercise={editing} />
+      <ExerciseFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        exercise={editing}
+      />
       <CategoryManager open={catOpen} onOpenChange={setCatOpen} />
     </div>
   );
@@ -130,7 +193,11 @@ function ExerciseCard({
           {ex.gifUrl ? (
             <GifLightbox src={ex.gifUrl} alt={ex.name} className="size-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ex.gifUrl} alt={ex.name} className="size-full object-cover" />
+              <img
+                src={ex.gifUrl}
+                alt={ex.name}
+                className="size-full object-cover"
+              />
             </GifLightbox>
           ) : (
             <div className="flex size-full items-center justify-center">
