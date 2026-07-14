@@ -166,6 +166,8 @@ export interface ProgramDayDetail {
 }
 
 export type PaymentGateway = 'ZARINPAL' | 'STRIPE';
+/** Gateways offered for new checkouts (Stripe is disabled — historical rows only). */
+export type CheckoutGateway = 'ZARINPAL';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
 
 export interface BillingPlan {

@@ -11,7 +11,7 @@
 **fitlo** — a full-stack, mobile-first, **bilingual (fa-RTL default / en-LTR) PWA** where **coaches**
 write training programs + manage an exercise library, and **students** view the programs written for them.
 Monetization = coach-only subscriptions (a coach-activated, one-time 15-day free trial → 3M/6M/12M) via
-**ZarinPal (IRR)** or **Stripe (USD)**.
+**ZarinPal (IRR)** (Stripe is present in code but disabled for checkout).
 
 **Single-app architecture.** Originally two apps (NestJS API + Next.js UI); **now one Next.js app**
 (`app/`) that serves the UI *and* the REST API as Route Handlers under `src/app/api/**`. There is no
@@ -212,8 +212,10 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 
 ## 8. API surface (all under `/api`, same-origin)
 
-- **auth** (public except /me): `POST /auth/otp/request`, `POST /auth/otp/verify`, `POST /auth/refresh`,
-  `POST /auth/logout`, `GET /auth/me`. (Email magic-link endpoints were dropped — UI is phone-only.)
+- **auth** (public except /me, /set-password): `POST /auth/check` (`{exists,hasPassword}` — the login form
+  branches on this), `POST /auth/login` (`{identifier,password}` → 401 `BAD_CREDENTIALS`), `POST /auth/otp/request`,
+  `POST /auth/otp/verify` (returns `isNew` → new accounts are prompted to set a password),
+  `POST /auth/set-password` (authed; scrypt hash), `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`.
 - **coach-profile** (COACH): `GET /coach/profile`, `PATCH /coach/profile` (incl. public `handle`, card/price),
   `POST /coach/profile/avatar-upload-url`.
 - **public-coach** (public): `GET /public/coaches/:handle` → public page payload.
@@ -246,10 +248,15 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 *(gated)* = `requiresSub: true` → 402 when trial/plan lapsed.
 
 ### Key flows
-- **Auth:** phone→SMS OTP (mock provider logs the code; also echoed as `devCode` when not production →
-  `auth-form.tsx` auto-fills + submits, one-click dev login). Access JWT cookie `access_token` (path `/`),
-  opaque refresh `refresh_token` (path `/api/auth`, hashed in DB, rotated). First login creates the User
-  (coach gets a starter profile but **no subscription yet**; student claims unlinked profiles).
+- **Auth:** the login form (`auth-form.tsx`) first calls `/auth/check`. **Known account with a password** →
+  password step (`/auth/login`), with a "use a one-time code" escape hatch. **Unknown, or no password yet** →
+  SMS OTP (`/auth/otp/*`); a brand-new account then lands on a **set-password** step so the next sign-in is a
+  single field. Passwords are **scrypt** hashes (`utils/crypto.ts`); wrong-password and unknown-user return the
+  same `BAD_CREDENTIALS` (no enumeration). SMS provider: **mock** (dev, logs the code + echoes `devCode` for
+  one-click login) or **`smsir`** (production — SMS.ir Verify template API, selected by `SMS_PROVIDER=smsir` +
+  `SMSIR_API_KEY`/`SMSIR_TEMPLATE_ID`). Access JWT cookie `access_token` (path `/`), opaque refresh
+  `refresh_token` (path `/api/auth`, hashed in DB, rotated). First login creates the User (coach gets a starter
+  profile but **no subscription yet**; student claims unlinked profiles; owner phones from `ADMIN_PHONES` → ADMIN).
 - **Uploads:** client asks `*-upload-url` → presigned **PUT** URL (signed with the **public** S3 endpoint) →
   browser PUTs to MinIO → client saves the `publicUrl`. Buckets `avatars/gifs/pdfs` public-read; **`requests`**
   (intake photos) **private** — request stores object **keys**, coach inbox returns presigned GET URLs.
@@ -260,8 +267,10 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   15-day free trial** themselves from the billing page (`POST /coach/billing/activate-trial` →
   `subscriptions.activateTrial`, blocked with 409 `TRIAL_ALREADY_USED` if a subscription row already exists,
   even an expired one). `subscriptions` also has `isActive`/`activateOrExtend`/hourly cron `expireDue`.
-  `payments` has `PaymentProvider` + `ZarinpalProvider` (v4 REST) + `StripeProvider` (Checkout + webhook); no
-  gateway creds → in-app **simulate** flow.
+  `payments` has `PaymentProvider` + `ZarinpalProvider` (v4 REST). **ZarinPal is the only checkout gateway** —
+  Stripe is disabled (allowed gateways live in `server/payments/gateways.ts`; the `StripeProvider` + webhook
+  route are kept for historical `Payment` rows and easy re-enable, but no new Stripe checkout is offered). No
+  ZarinPal creds → in-app **simulate** flow.
 
 ---
 

@@ -1,9 +1,11 @@
 import { z } from "zod";
-import { PaymentGateway, SubscriptionPlan } from "@prisma/client";
+import { SubscriptionGateway } from "./gateways";
+import { SubscriptionPlan } from "@prisma/client";
 
 export const checkoutSchema = z.object({
   plan: z.nativeEnum(SubscriptionPlan),
-  gateway: z.nativeEnum(PaymentGateway),
+  // Only ZarinPal is offered today — Stripe is disabled (see ./gateways).
+  gateway: z.enum(SubscriptionGateway),
   locale: z.enum(["fa", "en"]).optional(),
 });
 

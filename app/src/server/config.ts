@@ -38,10 +38,21 @@ export const envSchema = z.object({
   // Auth / OTP
   OTP_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
-  SMS_PROVIDER: z.string().default("mock"),
+  // "mock" (dev: logs the code) | "smsir" (production: SMS.ir Verify API)
+  SMS_PROVIDER: z.enum(["mock", "smsir"]).default("mock"),
   EMAIL_PROVIDER: z.string().default("mock"),
   SMS_API_KEY: z.string().optional(),
   SMS_SENDER: z.string().optional(),
+
+  // SMS.ir (required when SMS_PROVIDER=smsir). The template must be approved in
+  // the SMS.ir panel and contain the parameter named by SMSIR_PARAM_NAME.
+  SMSIR_API_KEY: z.string().optional(),
+  // Empty env string → undefined, so a blank var isn't coerced to 0 (invalid).
+  SMSIR_TEMPLATE_ID: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().positive().optional(),
+  ),
+  SMSIR_PARAM_NAME: z.string().default("Code"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().optional(),
   SMTP_USER: z.string().optional(),

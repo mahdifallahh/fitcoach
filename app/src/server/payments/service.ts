@@ -12,6 +12,7 @@ import { PLANS } from "../subscriptions/plans";
 import { BadRequestException, NotFoundException } from "../http/errors";
 import { ZarinpalProvider } from "./providers/zarinpal";
 import { StripeProvider } from "./providers/stripe";
+import type { SubscriptionGateway } from "./gateways";
 
 export class PaymentsService {
   constructor(
@@ -42,7 +43,7 @@ export class PaymentsService {
       subscription,
       plans,
       payments,
-      simulateMode: !this.bothConfigured(),
+      simulateMode: !this.gatewayConfigured(),
     };
   }
 
@@ -50,7 +51,7 @@ export class PaymentsService {
   async createCheckout(
     coachId: string,
     plan: SubscriptionPlan,
-    gateway: PaymentGateway,
+    gateway: SubscriptionGateway,
     locale: string,
   ) {
     if (!PLANS[plan])
@@ -58,7 +59,7 @@ export class PaymentsService {
         code: "BAD_PLAN",
         message: "Unknown plan",
       });
-    const { amount, currency } = this.amountFor(plan, gateway);
+    const { amount, currency } = this.amountFor(plan);
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -71,8 +72,7 @@ export class PaymentsService {
       },
     });
 
-    const provider =
-      gateway === PaymentGateway.ZARINPAL ? this.zarinpal : this.stripe;
+    const provider = this.zarinpal;
     const appUrl = this.config.get("APP_PUBLIC_URL");
 
     // No gateway credentials in dev → route to the in-app simulate flow.
@@ -87,11 +87,8 @@ export class PaymentsService {
       };
     }
 
-    // The API is now same-origin, so the ZarinPal callback lives under /api on the app.
-    const callbackUrl =
-      gateway === PaymentGateway.ZARINPAL
-        ? `${appUrl}/api/coach/billing/zarinpal/callback?locale=${locale}`
-        : `${appUrl}/${locale}/coach/billing`;
+    // The API is same-origin, so the ZarinPal callback lives under /api on the app.
+    const callbackUrl = `${appUrl}/api/coach/billing/zarinpal/callback?locale=${locale}`;
 
     const result = await provider.createCheckout({
       paymentId: payment.id,
@@ -167,11 +164,10 @@ export class PaymentsService {
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────
-  private amountFor(plan: SubscriptionPlan, gateway: PaymentGateway) {
+  /** ZarinPal is the only checkout gateway today, so amounts are always in Rial. */
+  private amountFor(plan: SubscriptionPlan) {
     const p = PLANS[plan];
-    return gateway === PaymentGateway.ZARINPAL
-      ? { amount: p.priceIrr * 10, currency: "IRR" } // Toman → Rial
-      : { amount: p.priceUsd * 100, currency: "USD" }; // → cents
+    return { amount: p.priceIrr * 10, currency: "IRR" }; // Toman → Rial
   }
 
   /** Idempotent: marks PENDING→PAID once, then activates/extends the plan. */
@@ -207,7 +203,8 @@ export class PaymentsService {
     });
   }
 
-  private bothConfigured(): boolean {
-    return this.zarinpal.configured && this.stripe.configured;
+  /** ZarinPal alone decides "real money" vs. the in-app simulate flow. */
+  private gatewayConfigured(): boolean {
+    return this.zarinpal.configured;
   }
 }

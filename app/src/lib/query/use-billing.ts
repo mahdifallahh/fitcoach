@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { billingApi } from '@/lib/api/billing';
-import type { PaymentGateway, SubscriptionPlan } from '@/lib/api/types';
+import type { CheckoutGateway, SubscriptionPlan } from '@/lib/api/types';
 import { ME_QUERY_KEY } from './use-auth';
 
 export const BILLING_KEY = ['coach', 'billing'] as const;
@@ -24,7 +24,7 @@ export function useActivateTrial() {
 
 export function useCheckout() {
   return useMutation({
-    mutationFn: ({ plan, gateway, locale }: { plan: SubscriptionPlan; gateway: PaymentGateway; locale: 'fa' | 'en' }) =>
+    mutationFn: ({ plan, gateway, locale }: { plan: SubscriptionPlan; gateway: CheckoutGateway; locale: 'fa' | 'en' }) =>
       billingApi.checkout(plan, gateway, locale),
   });
 }

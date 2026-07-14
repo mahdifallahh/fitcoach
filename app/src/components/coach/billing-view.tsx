@@ -11,17 +11,12 @@ import {
   useCheckout,
   useDevComplete,
 } from "@/lib/query/use-billing";
-import type {
-  BillingPlan,
-  PaymentGateway,
-  SubscriptionPlan,
-} from "@/lib/api/types";
+import type { BillingPlan, SubscriptionPlan } from "@/lib/api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
-import { cn } from "@/lib/utils";
 
 export function BillingView() {
   const t = useTranslations("billing");
@@ -33,9 +28,6 @@ export function BillingView() {
   const checkout = useCheckout();
   const devComplete = useDevComplete();
   const activateTrial = useActivateTrial();
-  const [gateway, setGateway] = React.useState<PaymentGateway>(
-    locale === "en" ? "STRIPE" : "ZARINPAL",
-  );
   const handled = React.useRef(false);
 
   // Handle the return from checkout: dev-simulate completion, or a gateway status.
@@ -65,8 +57,9 @@ export function BillingView() {
   }
 
   function subscribe(plan: SubscriptionPlan) {
+    // ZarinPal is the only checkout gateway; payment is always in Toman (IRR).
     checkout.mutate(
-      { plan, gateway, locale },
+      { plan, gateway: "ZARINPAL", locale },
       {
         onSuccess: (res) => {
           window.location.href = res.redirectUrl;
@@ -77,9 +70,7 @@ export function BillingView() {
   }
 
   function price(plan: BillingPlan): string {
-    return gateway === "ZARINPAL"
-      ? `${format.number(plan.priceIrr)} ${t("toman")}`
-      : `$${plan.priceUsd}`;
+    return `${format.number(plan.priceIrr)} ${t("toman")}`;
   }
 
   if (isError) {
@@ -178,28 +169,6 @@ export function BillingView() {
           {t("simulateNote")}
         </p>
       )}
-
-      {/* Gateway toggle */}
-      <div>
-        <p className="mb-2 text-sm font-medium">{t("payVia")}</p>
-        <div className="inline-flex rounded-lg border p-1">
-          {(["ZARINPAL", "STRIPE"] as PaymentGateway[]).map((g) => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => setGateway(g)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                gateway === g
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {g === "ZARINPAL" ? t("zarinpal") : t("stripe")}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Plans */}
       <div className="grid gap-3 sm:grid-cols-3">

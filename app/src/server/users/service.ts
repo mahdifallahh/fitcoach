@@ -104,6 +104,11 @@ export class UsersService {
     return this.prisma.user.update({ where: { id }, data: { role } });
   }
 
+  /** Store a new password (already hashed by the caller). */
+  setPasswordHash(id: string, passwordHash: string): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data: { passwordHash } });
+  }
+
   /**
    * The linking rule: back-fill `userId` on every unlinked StudentProfile that
    * matches this identifier. Idempotent (only touches rows where userId IS NULL).
