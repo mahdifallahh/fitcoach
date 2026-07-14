@@ -340,13 +340,15 @@ function PasswordField({
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <div className="relative">
+      {/* dir=ltr on the wrapper (not just the input) so the reveal button's `end-0`
+          resolves to the same (right) side as the input's `pe-10` padding — otherwise
+          the page's RTL puts the eye on the left, overlapping the password dots. */}
+      <div className="relative" dir="ltr">
         <Input
           id={id}
           name="password"
           type={show ? 'text' : 'password'}
           autoComplete={autoComplete}
-          dir="ltr"
           className="pe-10"
           value={value}
           onChange={(e) => onChange(e.target.value)}

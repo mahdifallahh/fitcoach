@@ -85,3 +85,10 @@
 [dir='rtl'] .rtl-flip {
   transform: scaleX(-1);
 }
+
+/* Hide Edge/IE's built-in password reveal/clear controls — we render our own eye
+   toggle, and the native one would double up next to it. */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}
