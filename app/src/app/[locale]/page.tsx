@@ -101,17 +101,20 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
             <p className="mx-auto max-w-xl text-pretty text-muted-foreground sm:text-lg">{t('subtitle')}</p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg">
-              <Link href="/login?role=coach">
-                <PencilLine className="size-4" /> {t('coachCta')}
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/login?role=student">
-                <UserPlus className="size-4" /> {t('studentCta')}
-              </Link>
-            </Button>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/login?role=coach">
+                  <PencilLine className="size-4" /> {t('coachCta')}
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/login?role=student">
+                  <UserPlus className="size-4" /> {t('studentCta')}
+                </Link>
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">{t('ctaHint')}</p>
           </div>
 
           <ul className="grid w-full max-w-2xl grid-cols-1 gap-3 text-start sm:grid-cols-2">

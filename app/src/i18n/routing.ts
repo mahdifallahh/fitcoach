@@ -9,6 +9,9 @@ export const routing = defineRouting({
   locales: ["fa", "en"],
   defaultLocale: "fa",
   localePrefix: "always",
+  // Always default to Persian: don't auto-switch to English from the browser's
+  // Accept-Language header. Visitors can still pick English from the switcher.
+  localeDetection: false,
 });
 
 export type Locale = (typeof routing.locales)[number];
