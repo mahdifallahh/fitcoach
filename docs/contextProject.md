@@ -155,19 +155,30 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **`lib/site.ts`** is the single source of truth for the public origin: `SITE_URL` comes from
   **`NEXT_PUBLIC_SITE_URL`** (set it to the real domain in production — canonical URLs, sitemap, robots and OG
   tags all derive from it). It also exports `localeUrl()` and `languageAlternates()` (fa/en + `x-default`).
-- **`src/app/robots.ts`** (allows public pages, disallows `/api`, coach/student panels, login, intake) and
-  **`src/app/sitemap.ts`** (landing + blog index + every post, per locale, with hreflang alternates).
-- **Metadata:** `layout.tsx` sets `metadataBase` + defaults; each public page exports `generateMetadata` with a
-  locale-specific title/description, canonical, hreflang alternates and OG tags. **JSON-LD** via
-  `components/shared/json-ld.tsx`: Organization + WebSite + FAQPage (landing), Article (blog post),
+- **`src/app/robots.ts`** (allows public pages — with an explicit second rule block for AI answer-engine
+  crawlers (GPTBot/ClaudeBot/PerplexityBot/… — GEO); disallows `/api`, coach/student panels, login, `/launch`,
+  intake) and **`src/app/sitemap.ts`** (**`force-dynamic`**: landing + blog per locale with hreflang alternates
+  *plus every coach `/c/<handle>` page from the DB*, soft-failing to the static list if the DB is down).
+- **Metadata:** `layout.tsx` sets `metadataBase` + defaults incl. the **1200×630 `/og.png`** card
+  (regenerate via `docker compose exec app node scripts/generate-og.mjs` on rebrand), Twitter
+  `summary_large_image`, and env-driven Search Console verification (`NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`).
+  Each public page exports `generateMetadata` with locale title/description, canonical, hreflang and OG tags —
+  **NB:** a page-level `openGraph` replaces the layout's whole object, so each restates `images: ['/og.png']`.
+  **JSON-LD** via `components/shared/json-ld.tsx`: Organization (+sameAs socials, ContactPoint) + WebSite +
+  **WebApplication with the three plan Offers** + FAQPage (landing), Article + BreadcrumbList (blog post),
   ProfilePage + Person (`/c/<handle>`).
+- **GEO:** `public/llms.txt` — a plain-markdown product summary for AI answer engines; keep it in sync with
+  the pricing/feature story when either changes.
 - **`lib/blog.ts`** holds the posts as typed, bilingual content blocks (`p` / `h2` / `ul`) — no markdown
   dependency and nothing is `dangerouslySetInnerHTML`'d. Add a post by appending to `POSTS`; the blog index,
   static params and sitemap all pick it up automatically.
 - **Indexable public surface:** landing, blog, and each coach's `/c/<handle>` page (server-rendered so crawlers
   see the content, not an empty client shell). The app panels stay out of the index.
-- **Bundle:** `next.config.mjs` enables `optimizePackageImports: ['lucide-react']` (tree-shakes icon barrel
-  imports), `poweredByHeader: false`, and AVIF/WebP image formats. Landing + blog are statically prerendered.
+- **Performance:** `next.config.mjs` enables `optimizePackageImports: ['lucide-react']`,
+  `poweredByHeader: false`, AVIF/WebP + `minimumCacheTTL: 86400` for optimized images, and explicit
+  `Cache-Control` headers (icons immutable 1y; `/og.png` 1d; `sw.js` must-revalidate; manifest 1h). Landing +
+  blog are statically prerendered (SSG). Fonts: Vazirmatn preloads (fa default); Inter is `preload: false`
+  since it only serves `/en`.
 
 ---
 

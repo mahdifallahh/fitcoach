@@ -19,10 +19,39 @@ const nextConfig = {
   serverExternalPackages: ['@prisma/client', 'puppeteer-core'],
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Optimized remote images (avatars/GIF posters) can be re-served from the
+    // image cache for a day instead of the 60s default.
+    minimumCacheTTL: 86400,
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: '**' },
     ],
+  },
+  // Cache policy for public/ assets (Next only auto-immutables /_next/static).
+  async headers() {
+    return [
+      {
+        // App icons are referenced by fixed paths from the manifest/metadata and
+        // effectively never change without a rebrand.
+        source: '/icons/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        // Social scrapers refetch OG images on their own schedule; a day is plenty.
+        source: '/og.png',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
+      },
+      {
+        // The service worker must revalidate on every load so app updates roll
+        // out promptly (a long-cached sw.js pins users to a stale app shell).
+        source: '/sw.js',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }],
+      },
+      {
+        source: '/manifest.webmanifest',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600' }],
+      },
+    ];
   },
 };
 

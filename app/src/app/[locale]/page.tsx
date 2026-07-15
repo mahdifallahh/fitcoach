@@ -15,6 +15,8 @@ import {
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/routing';
 import { SITE_NAME, SITE_URL, languageAlternates, localeUrl } from '@/lib/site';
+import { PUBLIC_PLANS, type PlanCode } from '@/lib/plans';
+import { CONTACT } from '@/components/shared/public-footer';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/shared/public-header';
 import { PublicFooter } from '@/components/shared/public-footer';
@@ -35,7 +37,9 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: localeUrl(locale, ''), languages: languageAlternates('') },
-    openGraph: { title, description, url: localeUrl(locale, ''), locale },
+    // NB: a page-level `openGraph` replaces the layout's whole object, so the
+    // shared card image must be restated here (same for the other public pages).
+    openGraph: { title, description, url: localeUrl(locale, ''), locale, images: ['/og.png'] },
   };
 }
 
@@ -71,6 +75,14 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
       name: SITE_NAME,
       url: SITE_URL,
       logo: `${SITE_URL}/icons/icon-512.png`,
+      sameAs: [CONTACT.instagram, CONTACT.telegram, CONTACT.bale],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        telephone: CONTACT.phoneHref.replace('tel:', ''),
+        email: CONTACT.email,
+        contactType: 'customer support',
+        availableLanguage: ['fa', 'en'],
+      },
     },
     {
       '@context': 'https://schema.org',
@@ -78,6 +90,26 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
       name: SITE_NAME,
       url: localeUrl(locale, ''),
       inLanguage: locale,
+    },
+    // Product + public pricing — powers rich results and gives AI answer engines
+    // an unambiguous, machine-readable summary of what fitlo is and costs.
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: SITE_NAME,
+      url: localeUrl(locale, ''),
+      description: t('subtitle'),
+      applicationCategory: 'HealthApplication',
+      operatingSystem: 'Web, iOS, Android',
+      inLanguage: ['fa', 'en'],
+      image: `${SITE_URL}/og.png`,
+      offers: (Object.keys(PUBLIC_PLANS) as PlanCode[]).map((code) => ({
+        '@type': 'Offer',
+        name: `${PUBLIC_PLANS[code].months}-month coach subscription`,
+        price: PUBLIC_PLANS[code].priceIrr,
+        priceCurrency: 'IRR',
+        category: 'subscription',
+      })),
     },
     {
       '@context': 'https://schema.org',

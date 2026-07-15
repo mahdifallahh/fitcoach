@@ -1,0 +1,29 @@
+# fitlo (فیتلو)
+
+> fitlo is a bilingual (Persian/English) web app for fitness coaches and their students.
+> Coaches build a personal exercise library (GIFs, video links, notes), write day-by-day
+> training programs with supersets/trisets, export clean RTL-aware PDFs, and get a public
+> link-in-bio page that collects student intake requests. Students see their programs on
+> their phone the moment they're published. Persian (RTL) is the default language.
+
+fitlo is free for students. Coaches get a one-time 15-day free trial, then subscribe
+(3, 6, or 12-month plans, paid in Iranian Toman via ZarinPal).
+
+A defining feature: a coach can write a program against just a student's phone number —
+before that student has an account. When the student later registers with the same number,
+every program written for them links to their account automatically.
+
+## Pages
+
+- [Landing (fa)](/fa): product overview, how it works, pricing, FAQ
+- [Landing (en)](/en): English version of the landing page
+- [About](/fa/about): what fitlo is and the team's values
+- [Blog](/fa/blog): practical guides on online coaching and program design
+- [Coach public pages](/fa/c/): each coach has a shareable public page at /fa/c/<handle>
+
+## Contact
+
+- Phone: +98 935 699 5806
+- Email: support@fitlo.ir
+- Instagram: https://instagram.com/fitlo.ir
+- Telegram: https://t.me/fitlo

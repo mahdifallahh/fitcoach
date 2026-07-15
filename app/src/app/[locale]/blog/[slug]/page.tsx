@@ -37,6 +37,7 @@ export async function generateMetadata({
       url: localeUrl(locale, path),
       locale,
       publishedTime: post.date,
+      images: ['/og.png'],
     },
   };
 }
@@ -55,21 +56,32 @@ export default async function BlogPostPage({
   const format = await getFormatter();
   const c = post.content[locale as Locale];
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: c.title,
-    description: c.description,
-    datePublished: post.date,
-    inLanguage: locale,
-    author: { '@type': 'Organization', name: SITE_NAME },
-    publisher: {
-      '@type': 'Organization',
-      name: SITE_NAME,
-      logo: { '@type': 'ImageObject', url: `${SITE_URL}/icons/icon-512.png` },
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: c.title,
+      description: c.description,
+      datePublished: post.date,
+      inLanguage: locale,
+      author: { '@type': 'Organization', name: SITE_NAME },
+      publisher: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        logo: { '@type': 'ImageObject', url: `${SITE_URL}/icons/icon-512.png` },
+      },
+      mainEntityOfPage: localeUrl(locale, `/blog/${slug}`),
     },
-    mainEntityOfPage: localeUrl(locale, `/blog/${slug}`),
-  };
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: SITE_NAME, item: localeUrl(locale, '') },
+        { '@type': 'ListItem', position: 2, name: t('indexTitle'), item: localeUrl(locale, '/blog') },
+        { '@type': 'ListItem', position: 3, name: c.title, item: localeUrl(locale, `/blog/${slug}`) },
+      ],
+    },
+  ];
 
   return (
     <div className="flex min-h-dvh flex-col">

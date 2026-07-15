@@ -49,7 +49,7 @@ export async function generateMetadata({
       description,
       url: localeUrl(locale, path),
       locale,
-      images: coach.avatarUrl ? [{ url: coach.avatarUrl }] : undefined,
+      images: coach.avatarUrl ? [{ url: coach.avatarUrl }] : ['/og.png'],
     },
   };
 }

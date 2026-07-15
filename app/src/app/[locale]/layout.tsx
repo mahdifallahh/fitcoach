@@ -10,7 +10,9 @@ import { InstallPrompt } from '@/components/pwa/install-prompt';
 import '../globals.css';
 
 const vazirmatn = Vazirmatn({ subsets: ['arabic'], variable: '--font-vazir', display: 'swap' });
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+// Inter is only the en-locale face (Vazirmatn covers Latin on fa pages), so don't
+// spend the default locale's critical path preloading it; `swap` hides the cost on /en.
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap', preload: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -25,10 +27,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
-    images: [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: SITE_NAME }],
+    // Regenerate with `node scripts/generate-og.mjs` (inside the container) on rebrand.
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: SITE_NAME }],
   },
-  twitter: { card: 'summary' },
+  twitter: { card: 'summary_large_image' },
   appleWebApp: { capable: true, title: 'fitlo', statusBarStyle: 'default' },
+  // Google Search Console ownership proof — set the env in production to enable.
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export const viewport: Viewport = {

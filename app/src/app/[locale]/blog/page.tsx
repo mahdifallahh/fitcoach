@@ -21,7 +21,7 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: localeUrl(locale, '/blog'), languages: languageAlternates('/blog') },
-    openGraph: { title, description, url: localeUrl(locale, '/blog'), locale },
+    openGraph: { title, description, url: localeUrl(locale, '/blog'), locale, images: ['/og.png'] },
   };
 }
 
