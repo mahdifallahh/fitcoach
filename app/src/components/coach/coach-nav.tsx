@@ -8,6 +8,7 @@ import {
   FileText,
   Inbox,
   LayoutDashboard,
+  LayoutTemplate,
   User,
 } from "lucide-react";
 import { Link, usePathname } from "@/i18n/routing";
@@ -17,6 +18,7 @@ const items = [
   { href: "/coach", key: "dashboard", icon: LayoutDashboard },
   { href: "/coach/requests", key: "requests", icon: Inbox },
   { href: "/coach/programs", key: "programs", icon: ClipboardList },
+  { href: "/coach/templates", key: "templates", icon: LayoutTemplate },
   { href: "/coach/exercises", key: "exercises", icon: Dumbbell },
   { href: "/coach/intake", key: "intake", icon: FileText },
   { href: "/coach/profile", key: "profile", icon: User },

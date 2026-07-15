@@ -132,6 +132,7 @@ model CoachProfile {
   categories       ExerciseCategory[]
   exercises        Exercise[]
   programs         Program[]
+  templates        ProgramTemplate[]
   students         StudentProfile[]
   subscriptions    Subscription[]
   payments         Payment[]
@@ -164,9 +165,10 @@ model Exercise {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  coach            CoachProfile      @relation(fields: [coachId], references: [userId], onDelete: Cascade)
-  category         ExerciseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  programExercises ProgramExercise[]
+  coach             CoachProfile      @relation(fields: [coachId], references: [userId], onDelete: Cascade)
+  category          ExerciseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  programExercises  ProgramExercise[]
+  templateExercises TemplateExercise[]
 
   @@index([coachId, categoryId])
   @@index([coachId])
@@ -249,6 +251,57 @@ model ProgramExercise {
   exercise Exercise   @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
 
   @@index([programDayId])
+  @@index([exerciseId])
+  @@index([supersetGroupId])
+}
+
+// ── Program templates (reusable, student-agnostic) ───────────────────────────
+// A coach authors a template once (e.g. "Beginner full-body"), then assigns it
+// to any student — which materializes a real Program. Same day/superset shape as
+// Program, minus the student and snapshot fields.
+model ProgramTemplate {
+  id          String   @id @default(cuid())
+  coachId     String
+  name        String
+  description String?
+  daysPerWeek Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  coach CoachProfile  @relation(fields: [coachId], references: [userId], onDelete: Cascade)
+  days  TemplateDay[]
+
+  @@index([coachId])
+}
+
+model TemplateDay {
+  id         String  @id @default(cuid())
+  templateId String
+  dayIndex   Int
+  title      String?
+
+  template  ProgramTemplate    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercises TemplateExercise[]
+
+  @@unique([templateId, dayIndex])
+  @@index([templateId])
+}
+
+model TemplateExercise {
+  id              String  @id @default(cuid())
+  templateDayId   String
+  exerciseId      String
+  sets            Int
+  reps            String
+  notes           String?
+  order           Int
+  supersetGroupId String?
+  supersetOrder   Int?
+
+  day      TemplateDay @relation(fields: [templateDayId], references: [id], onDelete: Cascade)
+  exercise Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([templateDayId])
   @@index([exerciseId])
   @@index([supersetGroupId])
 }

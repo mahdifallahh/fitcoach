@@ -193,6 +193,12 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **ProgramDay** (`programId`, `dayIndex`, `title?`) — @@unique([programId,dayIndex]).
 - **ProgramExercise** (`programDayId`, `exerciseId`, `sets` Int, `reps` String, `notes?`, `order` Int,
   **`supersetGroupId?`**, **`supersetOrder?`**) — rows sharing `supersetGroupId` = one superset.
+- **ProgramTemplate** / **TemplateDay** / **TemplateExercise** — reusable, **student-agnostic** program
+  blueprints. Same day/exercise/superset shape as Program (`TemplateExercise` carries the same
+  `sets/reps/notes/order/supersetGroupId/supersetOrder`), minus the student + snapshot fields.
+  `ProgramTemplate(coachId, name, description?, daysPerWeek)`. A coach authors one once and **assigns** it to
+  any student — which materializes a real Program via `ProgramsService.create` (so student find-or-create,
+  exercise-ownership checks and the `requestId` accept side-effect all behave identically).
 - **Subscription** (`coachId`, `plan` SubscriptionPlan, `status` SubscriptionStatus, `startsAt`, `endsAt`).
 - **Payment** (`coachId`, `subscriptionId?`, `gateway` PaymentGateway, `plan`, `amount` Int (minor units),
   `currency`, `status` PaymentStatus, `reference?` @@unique([gateway,reference]), `raw` Json).
@@ -225,6 +231,9 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **programs** (COACH): `GET /coach/programs`, `POST` *(gated; `requestId?` → marks that request ACCEPTED)*,
   `GET/:id`, `PATCH/:id` *(gated)*, `PATCH/:id/status` *(gated)*, `DELETE/:id` *(gated)*,
   `GET /coach/programs/:id/pdf?locale=fa|en`.
+- **program-templates** (COACH): `GET /coach/program-templates?search=`, `POST` *(gated)*, `GET/:id`,
+  `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*, `POST /coach/program-templates/:id/assign` *(gated)* —
+  materialize a Program for `{ studentContact, name?, age?, heightCm?, weightKg?, status?, requestId? }`.
 - **student** (STUDENT): `GET /student/coaches`, `GET /student/coaches/:coachId/programs`,
   `GET /student/programs/:id`, `GET /student/programs/:id/pdf?locale=` — **published-only**, ownership via
   claimed profile (drafts → 404).
@@ -341,6 +350,7 @@ form auto-fills + submits it → one-click dev login. Never present when `NODE_E
 | Auth / cookies / JWT | `src/server/auth/*`, `src/server/http/route.ts` (`getSession`, `withRoute`) |
 | Uploads | `src/server/storage.ts` + `src/lib/api/upload.ts` |
 | Program builder | `src/components/coach/program-builder/*` (prefill student via `?student=`, request via `?request=` on `/coach/programs/new`) |
+| Program templates ("برنامه‌های آماده") | `src/server/program-templates/*` + `src/app/api/coach/program-templates/*`; UI `src/app/[locale]/coach/templates/*`, `components/coach/{template-list,assign-template-dialog}.tsx` + `components/coach/template-builder/*` (reuses program-builder sub-components + `daysToBuilderDays`); **assign** delegates to `ProgramsService.create` |
 | Subscription / trial gating | `withRoute({ requiresSub: true })` + `src/server/subscriptions/*` (`activateTrial` = the coach's one-time free trial) |
 | Public coach page / handle | `src/server/public-coach/*`, `src/server/utils/handle.ts`; UI `src/app/[locale]/c/[handle]/*` |
 | Program requests (intake) | `src/server/program-requests/*`; UI `src/app/[locale]/c/[handle]/request`, `components/coach/requests-inbox.tsx` |

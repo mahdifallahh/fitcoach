@@ -264,6 +264,26 @@ export interface ProgramDetail {
   days: ProgramDayDetail[];
 }
 
+// ── Program templates (reusable, student-agnostic) ───────────────────────────
+export interface ProgramTemplateListItem {
+  id: string;
+  name: string;
+  description: string | null;
+  daysPerWeek: number;
+  updatedAt: string;
+  _count: { days: number };
+}
+
+export interface ProgramTemplateDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  daysPerWeek: number;
+  createdAt: string;
+  updatedAt: string;
+  days: ProgramDayDetail[]; // same day/exercise/superset shape as a program
+}
+
 // ── Admin panel ──────────────────────────────────────────────────────────────
 export interface AdminOverview {
   totals: {

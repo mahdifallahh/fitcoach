@@ -16,6 +16,7 @@ import { CategoriesService } from "./categories/service";
 import { ExercisesService } from "./exercises/service";
 import { StudentsService } from "./students/service";
 import { ProgramsService } from "./programs/service";
+import { ProgramTemplatesService } from "./program-templates/service";
 import { PublicCoachService } from "./public-coach/service";
 import { ProgramRequestsService } from "./program-requests/service";
 import { ZarinpalProvider } from "./payments/providers/zarinpal";
@@ -42,6 +43,7 @@ interface Container {
   exercises?: ExercisesService;
   students?: StudentsService;
   programs?: ProgramsService;
+  programTemplates?: ProgramTemplatesService;
   publicCoach?: PublicCoachService;
   programRequests?: ProgramRequestsService;
   zarinpal?: ZarinpalProvider;
@@ -109,6 +111,13 @@ export function getStudents(): StudentsService {
 
 export function getPrograms(): ProgramsService {
   return (c.programs ??= new ProgramsService(getPrisma(), getStudents()));
+}
+
+export function getProgramTemplates(): ProgramTemplatesService {
+  return (c.programTemplates ??= new ProgramTemplatesService(
+    getPrisma(),
+    getPrograms(),
+  ));
 }
 
 export function getPublicCoach(): PublicCoachService {

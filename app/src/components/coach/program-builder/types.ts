@@ -68,9 +68,13 @@ export function blankState(): BuilderState {
   };
 }
 
-/** Build editor state from a fetched program (lossless round-trip). */
-export function stateFromProgram(p: ProgramDetail): BuilderState {
-  const days: BuilderDay[] = p.days.map((d) => {
+/**
+ * Map fetched program/template days (same shape) into builder days, regrouping
+ * exercises that share a supersetGroupId back into superset rows. Shared by the
+ * program builder and the template builder.
+ */
+export function daysToBuilderDays(days: ProgramDetail['days']): BuilderDay[] {
+  return days.map((d) => {
     const rows: BuilderRow[] = [];
     const groups = new Map<string, BuilderRow>();
     for (const ex of d.exercises) {
@@ -97,6 +101,11 @@ export function stateFromProgram(p: ProgramDetail): BuilderState {
     }
     return { uid: uid(), dayIndex: d.dayIndex, title: d.title ?? '', rows };
   });
+}
+
+/** Build editor state from a fetched program (lossless round-trip). */
+export function stateFromProgram(p: ProgramDetail): BuilderState {
+  const days = daysToBuilderDays(p.days);
 
   return {
     meta: {
