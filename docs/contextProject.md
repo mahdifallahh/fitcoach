@@ -357,6 +357,7 @@ form auto-fills + submits it → one-click dev login. Never present when `NODE_E
 | Background cron / expiry | `src/instrumentation.ts` + `src/server/cron.ts` + `src/server/subscriptions/service.ts` |
 | Payments / webhooks / trial activation | `src/server/payments/*`, `src/server/subscriptions/service.ts`; routes `src/app/api/coach/billing/*` |
 | Admin / owner panel | `src/server/admin/*` + `src/app/api/admin/*`; UI `src/app/[locale]/admin/*` + `components/admin/*`; who-is-admin = `ADMIN_PHONES` env (promotion in `src/server/auth/service.ts`) |
+| PWA install | `public/manifest.webmanifest` (`start_url: "/launch"`), `public/sw.js`; shared install-prompt state in `src/lib/hooks/use-pwa-install.ts`, consumed by the auto-popup `components/pwa/install-prompt.tsx` (dismissible) and the permanent `components/shared/pwa-install-section.tsx` on the landing page. `app/[locale]/launch/page.tsx` is what the **installed** app opens to — an already-authenticated visitor is bounced to `roleHome()`; everyone else sees a minimal coach/student picker instead of the marketing landing page |
 
 Related docs: `architecture.md`, `data-model.md`, `code-structure.md`, `setup.md`, `i18n-and-rtl.md`,
 `api.md`, `progress.md`, `decisions/` (ADRs).

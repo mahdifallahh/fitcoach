@@ -23,7 +23,7 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-start gap-6 px-4 py-3">
         <Link href="/" aria-label="fitlo" onClick={() => setOpen(false)}>
           <Logo size="md" priority />
         </Link>

@@ -2,7 +2,7 @@
   "name": "fitlo — Coaching & Training Programs",
   "short_name": "fitlo",
   "description": "Bilingual platform for coaches and athletes: build programs, manage your exercise library, follow workouts.",
-  "start_url": "/",
+  "start_url": "/launch",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",

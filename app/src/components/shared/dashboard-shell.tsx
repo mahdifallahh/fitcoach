@@ -11,7 +11,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center justify-start gap-6 border-b bg-background/80 px-4 py-3 backdrop-blur">
         <Link href="/" aria-label="fitlo">
           <Logo size="md" priority />
         </Link>

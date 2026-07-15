@@ -18,6 +18,7 @@ import { SITE_NAME, SITE_URL, languageAlternates, localeUrl } from '@/lib/site';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/shared/public-header';
 import { PublicFooter } from '@/components/shared/public-footer';
+import { PwaInstallSection } from '@/components/shared/pwa-install-section';
 import { JsonLd } from '@/components/shared/json-ld';
 
 export async function generateMetadata({
@@ -140,6 +141,8 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
             </div>
           </div>
         </section>
+
+        <PwaInstallSection />
 
         {/* FAQ */}
         <section id="faq" className="scroll-mt-20 py-16">

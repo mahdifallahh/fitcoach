@@ -64,8 +64,8 @@
     "metaTitle": "fitlo — Coaching & Training Program Platform",
     "title": "Write and track training programs, together",
     "subtitle": "Coaches write day-by-day programs and send them straight to their students; students see their program on their phone the moment it's ready. Start free, with just a phone number.",
-    "coachCta": "I'm a coach, get started",
-    "studentCta": "I'm a student, sign in",
+    "coachCta": "I'm a coach",
+    "studentCta": "I'm a student",
     "ctaHint": "Sign in or sign up free — all you need is your phone number.",
     "nav": {
       "blog": "Blog"
@@ -108,9 +108,25 @@
       "a4": "Just register with the same number the coach entered — every program links to your account automatically."
     },
     "ctaTitle": "Start free today",
+    "pwaSection": {
+      "title": "The fitlo app",
+      "subtitle": "iPhone, Android, or desktop — install fitlo on your device right now and open it faster next time.",
+      "iphone": "iPhone",
+      "android": "Android",
+      "desktop": "Desktop",
+      "installNow": "Install now",
+      "alreadyInstalled": "fitlo is installed on this device",
+      "manualHint": "Open your browser menu and choose \"Add to Home Screen\" or \"Install app\"."
+    },
     "footer": {
       "copyright": "© {year} fitlo"
     }
+  },
+  "launch": {
+    "title": "Welcome to fitlo",
+    "subtitle": "Choose your role to get started.",
+    "coachCta": "I'm a coach",
+    "studentCta": "I'm a student"
   },
   "blog": {
     "indexTitle": "The fitlo blog",
