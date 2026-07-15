@@ -71,10 +71,16 @@
       "blog": "Blog"
     },
     "features": {
-      "programs": "Day-by-day program builder with supersets",
-      "library": "Your own exercise library with GIFs",
+      "programs": "Day-by-day training programs, with superset & triset support",
+      "library": "Your own exercise library — GIFs, video links, and notes",
       "pdf": "One-tap PDF export",
       "bilingual": "Persian & English, RTL-ready"
+    },
+    "pricing": {
+      "title": "Pricing",
+      "subtitle": "Coaches get a 15-day free trial, then choose one of the plans below. It's always free for students.",
+      "cta": "Start free",
+      "trialNote": "Includes a 15-day free trial for coaches — no card required."
     },
     "howTitle": "How it works",
     "howSubtitle": "Whether you coach or train, get going in three simple steps.",

@@ -23,30 +23,34 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
-      <div className="flex items-center justify-start gap-6 px-4 py-3">
-        <Link href="/" aria-label="fitlo" onClick={() => setOpen(false)}>
-          <Logo size="md" priority />
-        </Link>
+      <div className="flex items-center justify-between gap-6 px-4 py-3">
+        {/* Brand + nav cluster together at the start (right in RTL) */}
+        <div className="flex min-w-0 items-center gap-6">
+          <Link href="/" aria-label="fitlo" onClick={() => setOpen(false)}>
+            <Logo size="md" priority />
+          </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
-          {navLinks.map((l) => (
-            <Button key={l.href} asChild variant="ghost" size="sm">
-              <Link href={l.href}>{l.label}</Link>
+          <nav className="hidden items-center gap-1 md:flex">
+            {navLinks.map((l) => (
+              <Button key={l.href} asChild variant="ghost" size="sm">
+                <Link href={l.href}>{l.label}</Link>
+              </Button>
+            ))}
+            <span className="mx-1 h-5 w-px bg-border" />
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/login?role=student">{t('studentLogin')}</Link>
             </Button>
-          ))}
-          <span className="mx-1 h-5 w-px bg-border" />
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/login?role=student">{t('studentLogin')}</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/login?role=coach">{t('coachLogin')}</Link>
-          </Button>
+            <Button asChild size="sm">
+              <Link href="/login?role=coach">{t('coachLogin')}</Link>
+            </Button>
+          </nav>
+        </div>
+
+        {/* Locale + theme (+ mobile hamburger) always at the opposite end */}
+        <div className="hidden items-center gap-1 md:flex">
           <LocaleSwitcher />
           <ThemeToggle />
-        </nav>
-
-        {/* Mobile controls */}
+        </div>
         <div className="flex items-center gap-1 md:hidden">
           <LocaleSwitcher />
           <ThemeToggle />

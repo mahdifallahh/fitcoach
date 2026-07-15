@@ -26,17 +26,11 @@ export function InstallPrompt() {
     if (isStandalone()) return; // already installed
     if (localStorage.getItem(DISMISS_KEY) === '1') return;
 
-    // iOS gets no beforeinstallprompt event — offer the manual instructions instead.
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    // iOS gets no beforeinstallprompt event — show the manual instructions right away.
     if (isIos()) {
-      timer = setTimeout(() => {
-        setIosHint(true);
-        setVisible(true);
-      }, 2500);
+      setIosHint(true);
+      setVisible(true);
     }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
   }, []);
 
   // Chromium: reveal once the browser offers a deferred prompt to trigger.

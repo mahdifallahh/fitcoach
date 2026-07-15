@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/shared/public-header';
 import { PublicFooter } from '@/components/shared/public-footer';
 import { PwaInstallSection } from '@/components/shared/pwa-install-section';
+import { PricingSection } from '@/components/shared/pricing-section';
 import { JsonLd } from '@/components/shared/json-ld';
 
 export async function generateMetadata({
@@ -141,6 +142,8 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
             </div>
           </div>
         </section>
+
+        <PricingSection />
 
         <PwaInstallSection />
 
