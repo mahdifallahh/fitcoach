@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations, getFormatter } from 'next-intl/server';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/routing';
-import { getAllPostSlugs, getPost, type BlogBlock } from '@/lib/blog';
+import { getAllPostSlugs, getPost, postHero, type BlogBlock } from '@/lib/blog';
 import { SITE_NAME, SITE_URL, languageAlternates, localeUrl } from '@/lib/site';
 import { PublicHeader } from '@/components/shared/public-header';
 import { PublicFooter } from '@/components/shared/public-footer';
@@ -37,7 +38,7 @@ export async function generateMetadata({
       url: localeUrl(locale, path),
       locale,
       publishedTime: post.date,
-      images: ['/og.png'],
+      images: [postHero(slug)], // per-post branded card
     },
   };
 }
@@ -64,6 +65,7 @@ export default async function BlogPostPage({
       description: c.description,
       datePublished: post.date,
       inLanguage: locale,
+      image: `${SITE_URL}${postHero(slug)}`,
       author: { '@type': 'Organization', name: SITE_NAME },
       publisher: {
         '@type': 'Organization',
@@ -96,6 +98,15 @@ export default async function BlogPostPage({
         </Link>
 
         <article>
+          <Image
+            src={postHero(slug)}
+            alt={c.title}
+            width={1200}
+            height={630}
+            priority
+            sizes="(max-width: 672px) 100vw, 672px"
+            className="mb-8 aspect-[1200/630] w-full rounded-2xl border object-cover"
+          />
           <header className="mb-8">
             <p className="text-sm text-muted-foreground">
               {format.dateTime(new Date(post.date), { dateStyle: 'long' })} ·{' '}

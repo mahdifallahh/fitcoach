@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowRight, Eye, EyeOff, KeyRound, Loader2, ShieldCheck } from 'lucide-react';
-import { useRouter } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { authApi, roleHome } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
 import type { CurrentUser, Role } from '@/lib/api/types';
@@ -233,6 +233,20 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
               {loading ? t('checking') : t('continue')}
             </Button>
             <p className="text-center text-xs text-muted-foreground">{t('identifierHint')}</p>
+            <p className="text-center text-xs text-muted-foreground">
+              {t.rich('consent', {
+                terms: (chunks) => (
+                  <Link href="/terms" className="underline hover:text-primary">
+                    {chunks}
+                  </Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/privacy" className="underline hover:text-primary">
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
           </form>
         )}
 

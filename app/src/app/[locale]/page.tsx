@@ -132,7 +132,11 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
         <section className="container flex flex-col items-center gap-8 py-16 text-center sm:py-24">
           <div className="space-y-4">
             <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-5xl">{t('title')}</h1>
-            <p className="mx-auto max-w-xl text-pretty text-muted-foreground sm:text-lg">{t('subtitle')}</p>
+            <p className="mx-auto max-w-xl text-pretty text-muted-foreground sm:text-lg">
+              {t.rich('subtitle', {
+                b: (chunks) => <strong className="font-semibold text-foreground">{chunks}</strong>,
+              })}
+            </p>
           </div>
 
           <div className="flex flex-col items-center gap-3">

@@ -109,9 +109,16 @@ export async function PublicFooter() {
       </div>
 
       <div className="border-t">
-        <div className="container flex flex-col items-center justify-between gap-2 py-5 text-sm text-muted-foreground sm:flex-row">
+        <div className="container flex flex-col items-center justify-between gap-3 py-5 text-sm text-muted-foreground sm:flex-row">
           <span>{t("copyright", { year: new Date().getFullYear() })}</span>
-          <span>{t("madeWith")}</span>
+          <div className="flex items-center gap-4">
+            <Link href="/terms" className="transition-colors hover:text-primary">
+              {t("terms")}
+            </Link>
+            <Link href="/privacy" className="transition-colors hover:text-primary">
+              {t("privacy")}
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

@@ -42,10 +42,12 @@ export function Logo({
     // sized gap makes the lockup read as one word: fitlo.
     <span className={cn('inline-flex items-center gap-1', className)} dir="ltr">
       {/* In the lockup the wordmark already carries the name, so the mark is
-          decorative — otherwise a screen reader announces "fitlo" twice. */}
+          hidden from the a11y tree (aria-hidden) to avoid announcing "fitlo"
+          twice — but it still gets a non-empty `alt` so crawlers/SEO checkers
+          never see an image without alt text. */}
       <Image
         src={markSrc}
-        alt={lockup ? '' : 'fitlo'}
+        alt="fitlo"
         aria-hidden={lockup || undefined}
         width={s.mark}
         height={s.mark}

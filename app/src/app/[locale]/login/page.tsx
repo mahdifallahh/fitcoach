@@ -1,4 +1,5 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { ArrowLeft } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import type { Role } from '@/lib/api/types';
 import { AuthForm } from '@/components/auth/auth-form';
@@ -16,6 +17,7 @@ export default async function LoginPage({
   const { locale } = await params;
   const { role: roleParam, next } = await searchParams;
   setRequestLocale(locale);
+  const t = await getTranslations('auth');
 
   const role: Role = roleParam === 'coach' ? 'COACH' : 'STUDENT';
 
@@ -33,6 +35,13 @@ export default async function LoginPage({
       <main className="container flex flex-1 flex-col items-center justify-center gap-6 py-10">
         <Logo variant="mark" size="lg" />
         <AuthForm role={role} next={next} />
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
+        >
+          <ArrowLeft className="size-4 rtl-flip" />
+          {t('backHome')}
+        </Link>
       </main>
     </div>
   );

@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Root redirect → default locale.
   entries.push({ url: SITE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1 });
 
-  const staticPaths = ['', '/about', '/blog'];
+  const staticPaths = ['', '/about', '/blog', '/terms', '/privacy'];
   for (const path of staticPaths) {
     for (const locale of LOCALES) {
       entries.push({

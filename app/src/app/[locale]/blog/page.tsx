@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { setRequestLocale, getTranslations, getFormatter } from 'next-intl/server';
 import { ArrowRight } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/routing';
-import { listPosts } from '@/lib/blog';
+import { listPosts, postHero } from '@/lib/blog';
 import { languageAlternates, localeUrl } from '@/lib/site';
 import { PublicHeader } from '@/components/shared/public-header';
 import { PublicFooter } from '@/components/shared/public-footer';
@@ -50,17 +51,27 @@ export default async function BlogIndex({ params }: { params: Promise<{ locale: 
             <li key={post.slug}>
               <Link
                 href={`/blog/${post.slug}`}
-                className="block rounded-xl border bg-card p-5 transition-colors hover:bg-muted/50"
+                className="group block overflow-hidden rounded-xl border bg-card transition-colors hover:bg-muted/50"
               >
-                <p className="text-xs text-muted-foreground">
-                  {format.dateTime(new Date(post.date), { dateStyle: 'medium' })} ·{' '}
-                  {t('minRead', { min: post.readingMinutes })}
-                </p>
-                <h2 className="mt-1 text-lg font-bold">{post.title}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">{post.description}</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary">
-                  {t('readMore')} <ArrowRight className="size-4 rtl-flip" />
-                </span>
+                <Image
+                  src={postHero(post.slug)}
+                  alt={post.title}
+                  width={1200}
+                  height={630}
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="aspect-[1200/630] w-full border-b object-cover"
+                />
+                <div className="p-5">
+                  <p className="text-xs text-muted-foreground">
+                    {format.dateTime(new Date(post.date), { dateStyle: 'medium' })} ·{' '}
+                    {t('minRead', { min: post.readingMinutes })}
+                  </p>
+                  <h2 className="mt-1 text-lg font-bold">{post.title}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{post.description}</p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                    {t('readMore')} <ArrowRight className="size-4 rtl-flip" />
+                  </span>
+                </div>
               </Link>
             </li>
           ))}

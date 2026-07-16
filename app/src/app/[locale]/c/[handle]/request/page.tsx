@@ -265,6 +265,16 @@ function RequestForm() {
           {submitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4 rtl-flip" />}
           {submitting ? t('submitting') : t('submit')}
         </Button>
+
+        <p className="text-center text-xs text-muted-foreground">
+          {t.rich('consent', {
+            privacy: (chunks) => (
+              <Link href="/privacy" className="underline hover:text-primary">
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
       </form>
     </div>
   );

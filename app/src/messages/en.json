@@ -39,7 +39,12 @@
     "madeWith": "Built for coaches, RTL-first",
     "instagram": "Instagram",
     "telegram": "Telegram",
-    "bale": "Bale"
+    "bale": "Bale",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy"
+  },
+  "legal": {
+    "lastUpdated": "Last updated: {date}"
   },
   "about": {
     "title": "About fitlo",
@@ -63,7 +68,7 @@
   "landing": {
     "metaTitle": "fitlo — Coaching & Training Program Platform",
     "title": "Write and track training programs, together",
-    "subtitle": "Coaches write day-by-day programs and send them straight to their students; students see their program on their phone the moment it's ready. Start free, with just a phone number.",
+    "subtitle": "Coaches write <b>day-by-day training programs</b> and send them straight to their students; students see their program on their phone the moment it's ready. Start <b>free</b>, with just a phone number.",
     "coachCta": "I'm a coach",
     "studentCta": "I'm a student",
     "ctaHint": "Sign in or sign up free — all you need is your phone number.",
@@ -180,6 +185,8 @@
     "continue": "Continue",
     "checking": "Checking…",
     "identifierHint": "If you have an account you'll sign in with your password, otherwise you'll sign up.",
+    "consent": "By continuing, you agree to our <terms>Terms & Conditions</terms> and <privacy>Privacy Policy</privacy>.",
+    "backHome": "Back to home",
     "passwordTitle": "Sign in with password",
     "passwordLabel": "Password",
     "signIn": "Sign in",
@@ -569,6 +576,7 @@
     "maxPhotos": "Up to 6 images",
     "submit": "Send request",
     "submitting": "Sending…",
+    "consent": "By submitting, you agree to the processing of your data and photos per the <privacy>Privacy Policy</privacy>. This information is sent only to this coach.",
     "success": "Your request was sent",
     "error": "Could not send your request",
     "uploadError": "Upload failed",
