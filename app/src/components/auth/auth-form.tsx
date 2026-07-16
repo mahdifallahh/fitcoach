@@ -22,6 +22,10 @@ import {
 } from '@/components/ui/card';
 
 const MIN_PASSWORD = 8;
+// Mirrors the server's OTP resend cooldown (src/server/auth/otp.ts) — the
+// button stays disabled with a live countdown for exactly as long as a resend
+// would otherwise 429 with OTP_COOLDOWN.
+const RESEND_COOLDOWN_SECONDS = 60;
 
 /**
  * identifier → we ask the server whether the phone is known:
@@ -48,6 +52,14 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
   const [code, setCode] = React.useState('');
   const [sentTo, setSentTo] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const [resendIn, setResendIn] = React.useState(0);
+
+  // Tick the resend countdown down to zero, one second at a time.
+  React.useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
 
   const errMsg = (err: unknown) => (err instanceof ApiError ? err.message : t('errorGeneric'));
 
@@ -103,12 +115,20 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
       const res = await authApi.requestOtp(identifier);
       setSentTo(res.sentTo);
       setStep('code');
+      setResendIn(RESEND_COOLDOWN_SECONDS);
       // Dev-only: the server echoes the code, so skip the manual copy-from-logs step.
       if (res.devCode) {
         setCode(res.devCode);
         await verify(undefined, res.devCode);
       }
     } catch (err) {
+      // Stale page / another tab already reset the timer server-side: resync
+      // our countdown to the server's real remaining cooldown instead of
+      // leaving the resend button wrongly enabled.
+      if (err instanceof ApiError && err.code === 'OTP_COOLDOWN') {
+        const retryAfter = (err.details as { retryAfter?: number } | undefined)?.retryAfter;
+        if (retryAfter) setResendIn(retryAfter);
+      }
       toast.error(errMsg(err));
     } finally {
       setLoading(false);
@@ -161,6 +181,7 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
     setStep('identifier');
     setPassword('');
     setCode('');
+    setResendIn(0);
   }
 
   const titles: Record<Step, string> = {
@@ -169,10 +190,14 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
     code: t('codeTitle'),
     setPassword: t('setPasswordTitle'),
   };
-  const descriptions: Record<Step, string> = {
+  const descriptions: Record<Step, React.ReactNode> = {
     identifier: role === 'COACH' ? t('asCoach') : t('asStudent'),
     password: identifier,
-    code: t('sentTo', { target: sentTo }),
+    // `<n>` isolates the phone number in its own LTR run — inlined raw inside
+    // the Persian sentence, the digit/asterisk mix reorders unpredictably
+    // (bidi resolution), which is what actually caused the "jumbled" masked
+    // number the sentence used to show.
+    code: t.rich('sentTo', { target: sentTo, n: (chunks) => <bdi dir="ltr">{chunks}</bdi> }),
     setPassword: t('setPasswordSubtitle'),
   };
 
@@ -274,8 +299,13 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
             </Button>
 
             <div className="flex flex-col gap-2 text-center text-sm">
-              <button type="button" className="text-primary hover:underline" onClick={sendCode} disabled={loading}>
-                {t('resend')}
+              <button
+                type="button"
+                className="text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+                onClick={sendCode}
+                disabled={loading || resendIn > 0}
+              >
+                {resendIn > 0 ? t('resendIn', { seconds: resendIn }) : t('resend')}
               </button>
               <button
                 type="button"

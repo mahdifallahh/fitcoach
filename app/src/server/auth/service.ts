@@ -181,5 +181,9 @@ function maskIdentifier(channel: "SMS" | "EMAIL", value: string): string {
     const head = local.slice(0, 2);
     return `${head}***@${domain}`;
   }
-  return `${value.slice(0, 5)}***${value.slice(-2)}`;
+  // Mask the number the way an Iranian user recognizes it (local 09xxxxxxxxx)
+  // rather than the stored E.164 form — slicing "+98…" chops through the
+  // country code and reads as scrambled digits instead of a phone number.
+  const local = value.replace(/^\+98/, "0");
+  return `${local.slice(0, 4)}***${local.slice(-2)}`;
 }
