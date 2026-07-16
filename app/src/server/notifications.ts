@@ -1,5 +1,5 @@
-import 'server-only';
-import { AppConfig } from './config';
+import "server-only";
+import { AppConfig } from "./config";
 
 /**
  * Pluggable provider contracts. The dev "mock" implementations log to the
@@ -19,19 +19,28 @@ export interface SmsProvider {
 
 export interface EmailProvider {
   readonly name: string;
-  send(input: { to: string; subject: string; html: string; text: string }): Promise<void>;
+  send(input: {
+    to: string;
+    subject: string;
+    html: string;
+    text: string;
+  }): Promise<void>;
 }
 
 class MockSmsProvider implements SmsProvider {
-  readonly name = 'mock';
+  readonly name = "mock";
   async send(to: string, message: string): Promise<void> {
     console.log(`\n[SMS →${to}] ${message}\n`);
   }
 }
 
 class MockEmailProvider implements EmailProvider {
-  readonly name = 'mock';
-  async send(input: { to: string; subject: string; text: string }): Promise<void> {
+  readonly name = "mock";
+  async send(input: {
+    to: string;
+    subject: string;
+    text: string;
+  }): Promise<void> {
     console.log(`\n[EMAIL →${input.to}] ${input.subject}\n${input.text}\n`);
   }
 }
@@ -46,8 +55,8 @@ class MockEmailProvider implements EmailProvider {
  *   body:    { mobile, templateId, parameters: [{ name, value }] }
  */
 class SmsIrProvider implements SmsProvider {
-  readonly name = 'smsir';
-  private readonly endpoint = 'https://api.sms.ir/v1/send/verify';
+  readonly name = "smsir";
+  private readonly endpoint = "https://api.sms.ir/v1/send/verify";
 
   constructor(
     private readonly apiKey: string,
@@ -57,16 +66,16 @@ class SmsIrProvider implements SmsProvider {
 
   /** SMS.ir expects a local 09xxxxxxxxx number, not the E.164 we store. */
   private toLocal(phone: string): string {
-    return phone.replace(/^\+98/, '0').replace(/^98(?=9)/, '0');
+    return phone.replace(/^\+98/, "0").replace(/^98(?=9)/, "0");
   }
 
   async sendOtp(to: string, code: string): Promise<void> {
     const res = await fetch(this.endpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-API-KEY': this.apiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-API-KEY": this.apiKey,
       },
       body: JSON.stringify({
         mobile: this.toLocal(to),
@@ -75,15 +84,16 @@ class SmsIrProvider implements SmsProvider {
       }),
     });
 
-    const body = (await res.json().catch(() => null)) as
-      | { status?: number; message?: string }
-      | null;
+    const body = (await res.json().catch(() => null)) as {
+      status?: number;
+      message?: string;
+    } | null;
 
     // SMS.ir answers HTTP 200 with status=1 on success; anything else failed.
     if (!res.ok || body?.status !== 1) {
       throw new Error(
-        `SMS.ir send failed (http ${res.status}, status ${body?.status ?? '?'}): ${
-          body?.message ?? 'unknown error'
+        `SMS.ir send failed (http ${res.status}, status ${body?.status ?? "?"}): ${
+          body?.message ?? "unknown error"
         }`,
       );
     }
@@ -107,20 +117,26 @@ export class NotificationsService {
     private readonly config: AppConfig,
   ) {}
 
-  async sendOtpCode(channel: 'SMS' | 'EMAIL', identifier: string, code: string): Promise<void> {
-    const ttlMin = Math.round(this.config.get('OTP_TTL_SECONDS') / 60);
+  async sendOtpCode(
+    channel: "SMS" | "EMAIL",
+    identifier: string,
+    code: string,
+  ): Promise<void> {
+    const ttlMin = Math.round(this.config.get("OTP_TTL_SECONDS") / 60);
 
-    if (channel === 'SMS') {
-      // Template-based vendors take the bare code; generic ones get the full text.
+    if (channel === "SMS") {
       if (this.sms.sendOtp) {
         await this.sms.sendOtp(identifier, code);
       } else {
-        await this.sms.send(identifier, `fitlo code: ${code} (valid ${ttlMin}m) | کد ورود: ${code}`);
+        await this.sms.send(
+          identifier,
+          `fitlo code: ${code} (valid ${ttlMin}m) | کد ورود: ${code}`,
+        );
       }
       return;
     }
 
-    const subject = 'fitlo login code | کد ورود فیتلو';
+    const subject = "fitlo login code | کد ورود فیتلو";
     await this.email.send({
       to: identifier,
       subject,
@@ -131,17 +147,25 @@ export class NotificationsService {
 }
 
 function createSmsProvider(config: AppConfig): SmsProvider {
-  if (config.get('SMS_PROVIDER') !== 'smsir') return new MockSmsProvider();
+  if (config.get("SMS_PROVIDER") !== "smsir") return new MockSmsProvider();
 
-  const apiKey = config.get('SMSIR_API_KEY');
-  const templateId = config.get('SMSIR_TEMPLATE_ID');
+  const apiKey = config.get("SMSIR_API_KEY");
+  const templateId = config.get("SMSIR_TEMPLATE_ID");
   if (!apiKey || !templateId) {
     // Fail loudly at boot rather than silently dropping every production OTP.
-    throw new Error('SMS_PROVIDER=smsir requires SMSIR_API_KEY and SMSIR_TEMPLATE_ID');
+    throw new Error(
+      "SMS_PROVIDER=smsir requires SMSIR_API_KEY and SMSIR_TEMPLATE_ID",
+    );
   }
-  return new SmsIrProvider(apiKey, templateId, config.get('SMSIR_PARAM_NAME'));
+  return new SmsIrProvider(apiKey, templateId, config.get("SMSIR_PARAM_NAME"));
 }
 
-export function createNotificationsService(config: AppConfig): NotificationsService {
-  return new NotificationsService(createSmsProvider(config), new MockEmailProvider(), config);
+export function createNotificationsService(
+  config: AppConfig,
+): NotificationsService {
+  return new NotificationsService(
+    createSmsProvider(config),
+    new MockEmailProvider(),
+    config,
+  );
 }
