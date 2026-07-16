@@ -86,10 +86,32 @@ export const api = {
 };
 
 /**
+ * A handful of error `code`s are cross-cutting (can come back from any
+ * subscription-gated write, across every coach panel) and worth a proper
+ * translation instead of the server's English sentence. Keyed by code so a
+ * single fix here covers every call site; everything else falls through to
+ * the server's own message (already a clear, specific sentence — e.g. "One or
+ * more exercises do not belong to you").
+ */
+const KNOWN_ERROR_MESSAGES: Record<string, { fa: string; en: string }> = {
+  SUBSCRIPTION_REQUIRED: {
+    fa: 'برای ساخت یا ویرایش، اشتراک فعال لازم است.',
+    en: 'An active subscription is required to create or edit.',
+  },
+};
+
+function currentLocale(): 'fa' | 'en' {
+  if (typeof document === 'undefined') return 'fa';
+  return document.documentElement.lang === 'en' ? 'en' : 'fa';
+}
+
+/**
  * The server's own message when the failure is an `ApiError` (already a clear,
- * specific sentence — e.g. "One or more exercises do not belong to you"),
- * otherwise a translated fallback for network/unexpected errors.
+ * specific sentence), translated for known cross-cutting codes, otherwise a
+ * translated fallback for network/unexpected errors.
  */
 export function apiErrorMessage(err: unknown, fallback: string): string {
-  return err instanceof ApiError ? err.message : fallback;
+  if (!(err instanceof ApiError)) return fallback;
+  const known = KNOWN_ERROR_MESSAGES[err.code];
+  return known ? known[currentLocale()] : err.message;
 }
