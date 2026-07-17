@@ -19,12 +19,17 @@
     "close": "Close"
   },
   "pwa": {
-    "installTitle": "Install the app",
-    "installText": "Add fitlo to your home screen for faster access.",
+    "installTitle": "Install the fitlo app",
+    "installText": "Install fitlo on your device for faster access and a real app-like experience.",
     "install": "Install",
+    "installButton": "Install app",
     "later": "Later",
     "gotIt": "Got it",
-    "iosHint": "In Safari, tap the Share button and choose “Add to Home Screen”."
+    "iosHint": "In Safari, tap the Share button and choose “Add to Home Screen”.",
+    "howToInstall": "How to install on this device:",
+    "manualIos": "In Safari, tap the Share button (the square with an up arrow), then choose “Add to Home Screen”.",
+    "manualAndroid": "In Chrome, tap the three-dot menu (⋮) at the top, then choose “Add to Home screen” or “Install app”.",
+    "manualDesktop": "Click the install icon in your browser's address bar, or choose “Install fitlo” from the browser menu."
   },
   "footer": {
     "tagline": "The bilingual coaching & training-program platform — for coaches and their athletes.",

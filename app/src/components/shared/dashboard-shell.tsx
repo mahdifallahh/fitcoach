@@ -6,6 +6,7 @@ import { Logo } from "@/components/shared/logo";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { InstallButton } from "@/components/pwa/install-button";
 
 /** Shared app chrome for authenticated panels (header + content container). */
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <Logo size="md" priority />
         </Link>
         <div className="flex items-center gap-1">
+          {/* Full label on ≥sm, icon-only on tight mobile headers. */}
+          <InstallButton className="hidden sm:inline-flex" />
+          <InstallButton className="sm:hidden" iconOnly />
           <LocaleSwitcher />
           <ThemeToggle />
           <LogoutButton />

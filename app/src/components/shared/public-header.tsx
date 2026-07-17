@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Logo } from './logo';
 import { LocaleSwitcher } from './locale-switcher';
 import { ThemeToggle } from './theme-toggle';
+import { InstallButton } from '@/components/pwa/install-button';
 
 /** Shared header for public marketing/blog pages: nav, logins, locale & theme + a mobile menu. */
 export function PublicHeader() {
@@ -48,10 +49,12 @@ export function PublicHeader() {
 
         {/* Locale + theme (+ mobile hamburger) always at the opposite end */}
         <div className="hidden items-center gap-1 md:flex">
+          <InstallButton />
           <LocaleSwitcher />
           <ThemeToggle />
         </div>
         <div className="flex items-center gap-1 md:hidden">
+          <InstallButton iconOnly />
           <LocaleSwitcher />
           <ThemeToggle />
           <Button
