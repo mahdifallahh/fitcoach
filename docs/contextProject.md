@@ -10,8 +10,12 @@
 
 **fitlo** — a full-stack, mobile-first, **bilingual (fa-RTL default / en-LTR) PWA** where **coaches**
 write training programs + manage an exercise library, and **students** view the programs written for them.
-Monetization = coach-only subscriptions (a coach-activated, one-time 15-day free trial → 3M/6M/12M) via
-**ZarinPal (IRR)** (Stripe is present in code but disabled for checkout).
+Monetization = coach-only subscriptions (a coach-activated, one-time 15-day free trial → paid plans) via
+**ZarinPal (IRR)** (Stripe is present in code but disabled for checkout). **Public pricing is currently
+"coming soon"**: the landing + billing pages show three *student-scoped* tiers — Economy (≤10 students),
+Standard (≤50), Professional (unlimited) — from `lib/plans.ts` `TIERS` with **no price** and disabled buy
+buttons; the only live CTA is the free trial. The month-based `PUBLIC_PLANS`/server `PLANS` + ZarinPal checkout
+stay wired for when real prices are set (the billing view no longer calls checkout meanwhile).
 
 **Single-app architecture.** Originally two apps (NestJS API + Next.js UI); **now one Next.js app**
 (`app/`) that serves the UI *and* the REST API as Route Handlers under `src/app/api/**`. There is no
@@ -145,6 +149,11 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   (profile → first exercise → first program → payment details) that auto-hides when complete or dismissed
   (`localStorage: fitlo:onboarding-dismissed`); the coach dashboard also has a quick-actions grid.
   `student/student-help.tsx` is a dismissible "how it works" card. The landing explains both roles in 3 steps.
+- **Coach Help center:** `/coach/help` (`coach/coach-help.tsx`, nav item `coachNav.help`) — a native-`<details>`
+  accordion (server-friendly, RTL-aware chevron) answering every "how do I…" (add exercise+GIF, categories,
+  build a program + search by category, supersets/trisets, ready-made templates, how students see programs, the
+  public link, the request form, why the card number). Content is data-driven from `coachHelp.topics.<id>`
+  (title/intro/`steps[]` via `t.raw`) — add a topic by extending the `TOPICS` array + both message files.
 - **components/** `ui/` shadcn primitives; `shared/` (`dashboard-shell`, `public-header`, `locale-switcher`,
   `theme-toggle`, `gif-lightbox`, `error-state`, `field-error`, `json-ld`); `auth/` (`auth-form` 2-step OTP w/
   dev auto-login, `auth-guard`, `logout-button`); `coach/` (`coach-page-layout`, `coach-nav`, `getting-started`,
@@ -390,7 +399,7 @@ form auto-fills + submits it → one-click dev login. Never present when `NODE_E
 | Public coach page / handle | `src/server/public-coach/*`, `src/server/utils/handle.ts`; UI `src/app/[locale]/c/[handle]/*` |
 | Program requests (intake) | `src/server/program-requests/*`; UI `src/app/[locale]/c/[handle]/request`, `components/coach/requests-inbox.tsx` |
 | Background cron / expiry | `src/instrumentation.ts` + `src/server/cron.ts` + `src/server/subscriptions/service.ts` |
-| Payments / webhooks / trial activation | `src/server/payments/*`, `src/server/subscriptions/service.ts`; routes `src/app/api/coach/billing/*`. Plan months/prices live in `src/server/subscriptions/plans.ts` (billing) — `src/lib/plans.ts` is a client-safe duplicate of the same numbers for the public landing pricing section (`components/shared/pricing-section.tsx`); keep both in sync if prices change |
+| Payments / webhooks / trial activation | `src/server/payments/*`, `src/server/subscriptions/service.ts`; routes `src/app/api/coach/billing/*`. Month-based plan prices live in `src/server/subscriptions/plans.ts` (kept for future paid checkout); `src/lib/plans.ts` holds both that client-safe `PUBLIC_PLANS` mirror **and** the display-only student-scoped `TIERS` shown as "coming soon" on the landing (`components/shared/pricing-section.tsx`) + billing (`components/coach/billing-view.tsx`) |
 | Admin / owner panel | `src/server/admin/*` + `src/app/api/admin/*`; UI `src/app/[locale]/admin/*` + `components/admin/*`; who-is-admin = `ADMIN_PHONES` env (promotion in `src/server/auth/service.ts`) |
 | PWA install | `public/manifest.webmanifest` (`start_url: "/launch"`), `public/sw.js`; shared install-prompt state in `src/lib/hooks/use-pwa-install.ts`, consumed by the auto-popup `components/pwa/install-prompt.tsx` (dismissible) and the permanent `components/shared/pwa-install-section.tsx` on the landing page. `app/[locale]/launch/page.tsx` is what the **installed** app opens to — an already-authenticated visitor is bounced to `roleHome()`; everyone else sees a minimal coach/student picker instead of the marketing landing page |
 

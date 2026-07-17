@@ -9,6 +9,7 @@ import {
   Inbox,
   LayoutDashboard,
   LayoutTemplate,
+  LifeBuoy,
   User,
 } from "lucide-react";
 import { Link, usePathname } from "@/i18n/routing";
@@ -24,6 +25,7 @@ const items = [
   { href: "/coach/intake", key: "intake", icon: FileText },
   { href: "/coach/profile", key: "profile", icon: User },
   { href: "/coach/billing", key: "billing", icon: CreditCard },
+  { href: "/coach/help", key: "help", icon: LifeBuoy },
 ] as const;
 
 export function CoachNav() {

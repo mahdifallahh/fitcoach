@@ -12,3 +12,18 @@ export const PUBLIC_PLANS: Record<PlanCode, { months: number; priceIrr: number }
 };
 
 export const TRIAL_DAYS = 15;
+
+/**
+ * Public, capability-based subscription tiers shown on marketing + billing.
+ * Tiers are scoped by how many students a coach can manage; pricing is **not set
+ * yet** (shown as "coming soon"), so these are display-only for now — the actual
+ * checkout wiring (PUBLIC_PLANS / server PLANS) stays put for when prices land.
+ * `maxStudents: null` = unlimited. `highlight` marks the recommended tier.
+ */
+export type TierCode = 'ECONOMY' | 'NORMAL' | 'PRO';
+
+export const TIERS: { code: TierCode; maxStudents: number | null; highlight?: boolean }[] = [
+  { code: 'ECONOMY', maxStudents: 10 },
+  { code: 'NORMAL', maxStudents: 50, highlight: true },
+  { code: 'PRO', maxStudents: null },
+];

@@ -1,31 +1,29 @@
 "use client";
 
 import * as React from "react";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Check, CreditCard, Loader2 } from "lucide-react";
+import { Check, CreditCard, Loader2, Sparkles } from "lucide-react";
 import {
   useActivateTrial,
   useBilling,
-  useCheckout,
   useDevComplete,
 } from "@/lib/query/use-billing";
-import type { BillingPlan, SubscriptionPlan } from "@/lib/api/types";
+import { TIERS } from "@/lib/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
+import { cn } from "@/lib/utils";
 
 export function BillingView() {
   const t = useTranslations("billing");
   const tc = useTranslations("common");
   const format = useFormatter();
-  const locale = useLocale() as "fa" | "en";
   const params = useSearchParams();
   const { data, isLoading, isError, refetch } = useBilling();
-  const checkout = useCheckout();
   const devComplete = useDevComplete();
   const activateTrial = useActivateTrial();
   const handled = React.useRef(false);
@@ -54,23 +52,6 @@ export function BillingView() {
       onSuccess: () => toast.success(t("trialActivated")),
       onError: () => toast.error(t("trialActivateFailed")),
     });
-  }
-
-  function subscribe(plan: SubscriptionPlan) {
-    // ZarinPal is the only checkout gateway; payment is always in Toman (IRR).
-    checkout.mutate(
-      { plan, gateway: "ZARINPAL", locale },
-      {
-        onSuccess: (res) => {
-          window.location.href = res.redirectUrl;
-        },
-        onError: () => toast.error(t("payFailed")),
-      },
-    );
-  }
-
-  function price(plan: BillingPlan): string {
-    return `${format.number(plan.priceIrr)} ${t("toman")}`;
   }
 
   if (isError) {
@@ -170,34 +151,39 @@ export function BillingView() {
         </p>
       )}
 
-      {/* Plans */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {data.plans.map((plan) => (
-          <Card key={plan.id} className="flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {t("monthsCount", { count: plan.months })}
-              </CardTitle>
-              <p className="text-2xl font-bold text-primary" dir="ltr">
-                {price(plan)}
-              </p>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button
-                className="w-full"
-                disabled={checkout.isPending}
-                onClick={() => subscribe(plan.id)}
-              >
-                {checkout.isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Check className="size-4" />
-                )}
-                {checkout.isPending ? t("subscribing") : t("subscribe")}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Plans — scoped by number of students; pricing is coming soon. */}
+      <div>
+        <h2 className="mb-1 text-lg font-semibold">{t("plansTitle")}</h2>
+        <p className="mb-3 text-sm text-muted-foreground">{t("plansSubtitle")}</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {TIERS.map((tier) => (
+            <Card
+              key={tier.code}
+              className={cn("relative flex flex-col", tier.highlight && "border-primary shadow-sm")}
+            >
+              {tier.highlight && (
+                <Badge className="absolute -top-2.5 start-4">
+                  <Sparkles className="me-1 size-3" />
+                  {t("popular")}
+                </Badge>
+              )}
+              <CardHeader>
+                <CardTitle className="text-lg">{t(`tier_${tier.code}_name`)}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {tier.maxStudents === null
+                    ? t("unlimitedStudents")
+                    : t("upToStudents", { count: tier.maxStudents })}
+                </p>
+              </CardHeader>
+              <CardContent className="mt-auto space-y-3">
+                <p className="text-xl font-bold text-primary">{t("comingSoon")}</p>
+                <Button variant="outline" className="w-full" disabled>
+                  {t("comingSoonCta")}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* History */}

@@ -15,7 +15,6 @@ import {
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/routing';
 import { SITE_NAME, SITE_URL, languageAlternates, localeUrl } from '@/lib/site';
-import { PUBLIC_PLANS, type PlanCode } from '@/lib/plans';
 import { CONTACT } from '@/components/shared/public-footer';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/shared/public-header';
@@ -105,13 +104,8 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
       inLanguage: ['fa', 'en'],
       keywords: t('keywords'),
       image: `${SITE_URL}/og.png`,
-      offers: (Object.keys(PUBLIC_PLANS) as PlanCode[]).map((code) => ({
-        '@type': 'Offer',
-        name: `${PUBLIC_PLANS[code].months}-month coach subscription`,
-        price: PUBLIC_PLANS[code].priceIrr,
-        priceCurrency: 'IRR',
-        category: 'subscription',
-      })),
+      // A free 15-day trial is the only committed offer while paid pricing is TBD.
+      offers: { '@type': 'Offer', price: 0, priceCurrency: 'IRR', category: 'free-trial' },
     },
     {
       '@context': 'https://schema.org',

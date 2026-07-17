@@ -86,9 +86,19 @@
     },
     "pricing": {
       "title": "Pricing",
-      "subtitle": "Coaches get a 15-day free trial, then choose one of the plans below. It's always free for students.",
-      "cta": "Start free",
-      "trialNote": "Includes a 15-day free trial for coaches — no card required."
+      "subtitle": "Plans are based on how many students you coach. Start with a 15-day free trial; it's always free for students.",
+      "trialTitle": "15 days free, no card required",
+      "trialDesc": "Start now and try every feature without paying.",
+      "trialCta": "Start free",
+      "tier_ECONOMY_name": "Economy",
+      "tier_NORMAL_name": "Standard",
+      "tier_PRO_name": "Professional",
+      "upToStudents": "Up to {count} students",
+      "unlimitedStudents": "Unlimited students",
+      "comingSoon": "Coming soon",
+      "comingSoonCta": "Coming soon",
+      "popular": "Recommended",
+      "trialNote": "Plan prices will be announced soon. Until then, start with 15 days free."
     },
     "howTitle": "How it works",
     "howSubtitle": "Whether you coach or train, get going in three simple steps.",
@@ -260,7 +270,111 @@
     "templates": "Templates",
     "billing": "Billing",
     "requests": "Requests",
-    "intake": "Student form"
+    "intake": "Student form",
+    "help": "Help"
+  },
+  "coachHelp": {
+    "title": "Coach help center",
+    "subtitle": "How to do everything, step by step. Tap a topic to expand it.",
+    "open": "Go to this section",
+    "contactTitle": "Didn't find your answer here?",
+    "contactCta": "Message on Telegram",
+    "topics": {
+      "addExercise": {
+        "title": "Add an exercise and its GIF",
+        "intro": "Build your exercise library first; then reuse those movements across every program.",
+        "steps": [
+          "Go to \"Exercises\" and tap \"New exercise\".",
+          "Enter the exercise name and its default sets and reps.",
+          "Upload a GIF to show the movement (a GIF or image file).",
+          "Optional: add a demo video link (YouTube/Aparat) and a form note.",
+          "Save — the exercise joins your library, ready to use in programs."
+        ]
+      },
+      "categories": {
+        "title": "Organize exercises into categories",
+        "intro": "Categories like Chest, Legs and Back keep your library tidy and quick to search.",
+        "steps": [
+          "In \"Exercises\", tap \"Manage categories\".",
+          "Type a category name and add it, e.g. \"Chest\".",
+          "When creating or editing an exercise, pick its category.",
+          "You can now filter the exercise list by category."
+        ]
+      },
+      "buildProgram": {
+        "title": "Build a program from your exercises (and search them)",
+        "intro": "You build the program day by day from the very exercises you uploaded.",
+        "steps": [
+          "Go to \"Programs\" and tap \"New program\".",
+          "Enter the student's phone and a program name — they don't need an account yet.",
+          "Set the days per week, then tap \"Add exercise\" for each day.",
+          "In the picker, find the exercise by search or category filter, and add it.",
+          "Adjust sets/reps per exercise and drag to reorder them.",
+          "Tap \"Save draft\" or \"Publish\" — once published the student can see it."
+        ]
+      },
+      "supersets": {
+        "title": "Create a superset or triset",
+        "intro": "A superset is two moves back-to-back with no rest. A triset is the same with three.",
+        "steps": [
+          "Add an exercise to the day.",
+          "Under that exercise, tap \"Superset\" (or \"Add to superset\").",
+          "Pick the second exercise — the two now show as one superset group.",
+          "For a triset, add one more exercise to the same group.",
+          "Superset moves are boxed together so the student understands the order."
+        ]
+      },
+      "templates": {
+        "title": "What ready-made programs are for",
+        "intro": "Build your common programs once and assign them to many students — without rewriting.",
+        "steps": [
+          "Go to \"Ready-made programs\" and create a new one, e.g. \"Beginner plan\".",
+          "Lay out the days and exercises like a normal program, and save.",
+          "Whenever you want, tap \"Assign\" and enter a student's phone to spin up a real program for them.",
+          "You can edit, delete or search templates by name."
+        ]
+      },
+      "studentView": {
+        "title": "How the student sees the programs",
+        "intro": "After you publish, the student signs in with their phone and sees their program.",
+        "steps": [
+          "Publish the program (not draft).",
+          "The student registers or logs in with the same number you wrote it for.",
+          "Every program you wrote for them links to their account automatically.",
+          "They see it day by day with exercise GIFs and sets/reps, and can download a PDF."
+        ]
+      },
+      "publicLink": {
+        "title": "What the public coach link is",
+        "intro": "A public page at /c/<handle> that you paste into your social-media bio.",
+        "steps": [
+          "Go to \"Profile\" and choose a link handle (lowercase Latin letters).",
+          "Save the profile — your public link is now live.",
+          "Copy the link and put it in your Instagram or Telegram bio.",
+          "Anyone who taps it sees your profile and can send a program request."
+        ]
+      },
+      "requestForm": {
+        "title": "The request form and student info",
+        "intro": "New students send requests from your public page; their details land straight in your inbox.",
+        "steps": [
+          "From your public link, the student fills the request form: height, weight, history, photos and a payment receipt.",
+          "Requests appear for you under \"Requests\".",
+          "You can view the details and photos and accept or decline the request.",
+          "\"Start program\" opens the builder pre-filled with that student's info."
+        ]
+      },
+      "cardNumber": {
+        "title": "Why put a card number in your profile",
+        "intro": "To collect payment from students by card transfer, set your card number and price in the student form.",
+        "steps": [
+          "Go to \"Student form\" and enter your card number, cardholder name and program price.",
+          "This is shown to the student in the request form on your public page.",
+          "The student transfers the amount and uploads the receipt in that same form.",
+          "You see the receipt under \"Requests\", then start their program."
+        ]
+      }
+    }
   },
   "billing": {
     "title": "Subscription",
@@ -282,6 +396,16 @@
     "monthsCount": "{count} months",
     "subscribe": "Subscribe",
     "subscribing": "Redirecting…",
+    "plansTitle": "Plans",
+    "plansSubtitle": "Plans are based on how many students you coach. Pricing will be announced soon.",
+    "tier_ECONOMY_name": "Economy",
+    "tier_NORMAL_name": "Standard",
+    "tier_PRO_name": "Professional",
+    "upToStudents": "Up to {count} students",
+    "unlimitedStudents": "Unlimited students",
+    "comingSoon": "Coming soon",
+    "comingSoonCta": "Coming soon",
+    "popular": "Recommended",
     "payVia": "Pay with",
     "zarinpal": "ZarinPal (IRR)",
     "stripe": "Stripe (USD)",
