@@ -1,5 +1,9 @@
 import type { MetadataRoute } from 'next';
-import { SITE_URL } from '@/lib/site';
+import { resolveOrigin } from '@/lib/site';
+
+// Read the origin from the live request so the sitemap URL + host match the
+// domain robots.txt is served from, even if the build-time env was wrong.
+export const dynamic = 'force-dynamic';
 
 /** Private, auth-gated areas — out of every index. */
 const PRIVATE_PATHS = [
@@ -31,13 +35,14 @@ const AI_CRAWLERS = [
 ];
 
 /** Allow crawling of public marketing/coach pages; keep app & private areas out of the index. */
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const origin = await resolveOrigin();
   return {
     rules: [
       { userAgent: '*', allow: '/', disallow: PRIVATE_PATHS },
       { userAgent: AI_CRAWLERS, allow: '/', disallow: PRIVATE_PATHS },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
+    sitemap: `${origin}/sitemap.xml`,
+    host: origin,
   };
 }

@@ -171,14 +171,18 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **`lib/site.ts`** is the single source of truth for the public origin: `SITE_URL` comes from
   **`NEXT_PUBLIC_SITE_URL`** (set it to the real domain in production — canonical URLs, sitemap, robots and OG
   tags all derive from it; fallback is `https://fitlo.ir`). It also exports `localeUrl()` and
-  `languageAlternates()` (fa/en + `x-default`). **Gotcha (bit us once):** if the host's env panel doesn't
-  actually set `NEXT_PUBLIC_SITE_URL` — or a stray `.env.local` in the deployed files supplies its dev value —
-  every generated URL (sitemap, canonical, OG, JSON-LD) silently resolves to `localhost`, which Search Console
-  then rejects ("URL not allowed") since a sitemap's `<loc>` entries must share the origin it was fetched from.
-  `site.ts` now `console.error`s loudly in production if `SITE_URL` still resolves to a localhost/loopback
-  origin — check server logs first if the sitemap ever looks wrong again. Fix: set the var correctly on the
-  host and do a full **rebuild** (not just a restart) — `NEXT_PUBLIC_*` is also inlined into client bundles at
-  build time, not only read at request time.
+  `languageAlternates()` (fa/en + `x-default`). **Gotcha (bit us once):** `NEXT_PUBLIC_*` is inlined at
+  **build** time, so if the host's env panel doesn't set `NEXT_PUBLIC_SITE_URL` — or a stray `.env.local` in
+  the deployed files supplies its dev value — the baked `SITE_URL` becomes `localhost`, and canonical/OG/JSON-LD
+  ship wrong. **`sitemap.ts` + `robots.ts` are hardened against this**: they're `force-dynamic` and call
+  `resolveOrigin()` (in `site.ts`), which prefers a non-localhost `SITE_URL` but otherwise derives the origin
+  from the request's `x-forwarded-host`/`host` header — so a sitemap's `<loc>` entries always match the host it
+  was fetched from (exactly what Search Console's "URL not allowed" check enforces). `resolveOrigin()` also
+  `console.error`s once per process when it has to fall back, so a misconfigured prod deploy shows up in logs.
+  Full fix for the baked tags: set the var on the host and do a **rebuild** (not just a restart), since
+  `NEXT_PUBLIC_*` is frozen at build time. Base-aware helpers `localeUrlOn(base,…)` / `languageAlternatesOn(base,…)`
+  build URLs against a resolved origin; the plain `localeUrl` / `languageAlternates` still use the baked `SITE_URL`
+  (fine for same-request page metadata).
 - **`src/app/robots.ts`** (allows public pages — with an explicit second rule block for AI answer-engine
   crawlers (GPTBot/ClaudeBot/PerplexityBot/… — GEO); disallows `/api`, coach/student panels, login, `/launch`,
   intake) and **`src/app/sitemap.ts`** (**`force-dynamic`**: landing + blog per locale with hreflang alternates
