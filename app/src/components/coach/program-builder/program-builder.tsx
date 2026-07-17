@@ -22,10 +22,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useProgramDraft } from './use-program-draft';
-import { blankState, daysToPayload, itemFromExercise, parseStat, stateFromProgram } from './types';
+import {
+  WEEK_DAY_OPTIONS,
+  blankState,
+  daysToPayload,
+  itemFromExercise,
+  parseStat,
+  stateFromProgram,
+} from './types';
 import { DayRow } from './day-row';
 import { ExercisePicker } from './exercise-picker';
 import { ScrollableTabs } from '@/components/shared/scrollable-tabs';
@@ -200,14 +208,17 @@ export function ProgramBuilder({
             <Field label={t('weight')} value={state.meta.weightKg} onChange={(v) => draft.setMeta('weightKg', v)} />
             <div className="space-y-2">
               <Label htmlFor="dpw">{t('daysPerWeek')}</Label>
-              <Input
+              <Select
                 id="dpw"
-                type="number"
-                min={1}
-                max={14}
                 value={state.daysPerWeek}
                 onChange={(e) => draft.setDaysPerWeek(Number(e.target.value))}
-              />
+              >
+                {WEEK_DAY_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </Select>
             </div>
           </div>
         </CardContent>

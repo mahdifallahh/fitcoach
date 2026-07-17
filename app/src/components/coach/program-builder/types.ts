@@ -1,6 +1,9 @@
 import type { ProgramDayPayload } from '@/lib/api/programs';
 import type { Exercise, ProgramDetail } from '@/lib/api/types';
 
+/** A week has 7 days — the daysPerWeek picker in both builders is a dropdown over these. */
+export const WEEK_DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
+
 /** One exercise instance inside the builder (single row or superset member). */
 export interface BuilderItem {
   uid: string;

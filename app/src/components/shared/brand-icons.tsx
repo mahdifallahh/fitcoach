@@ -11,11 +11,27 @@ export function TelegramIcon({ className }: { className?: string }) {
   );
 }
 
-/** Bale (بله) — approximated by its rounded-square paper-plane mark. */
+/**
+ * Bale (بله) — its real app icon is a green rounded-square badge with a white
+ * chat-bubble/check mark, so (unlike the monochrome glyphs above) this one
+ * keeps the brand's own color rather than inheriting `currentColor`.
+ */
 export function BaleIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
-      <path d="M6 2h12a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4Zm11.3 5.1L7.2 10.9c-.5.19-.49.53.02.68l2.55.8 1.03 3.2c.13.4.37.44.61.2l1.34-1.3 2.6 1.93c.32.24.65.11.73-.34l1.5-8.06c.11-.55-.24-.8-.6-.6Z" />
+    <svg viewBox="0 0 24 24" aria-hidden className={className}>
+      <rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="#06C270" />
+      <path
+        d="M7 11.3a5 5 0 1 1 2.1 4.06.6.6 0 0 0-.6-.1l-1.6.44a.5.5 0 0 1-.61-.62l.46-1.58a.63.63 0 0 0-.09-.55A4.98 4.98 0 0 1 7 11.3Z"
+        fill="#fff"
+      />
+      <path
+        d="M9.3 11.5l1.5 1.5 3.1-3.3"
+        fill="none"
+        stroke="#06C270"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

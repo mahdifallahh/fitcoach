@@ -23,10 +23,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useProgramDraft } from '@/components/coach/program-builder/use-program-draft';
 import {
+  WEEK_DAY_OPTIONS,
   blankState,
   daysToBuilderDays,
   daysToPayload,
@@ -167,14 +169,17 @@ export function TemplateBuilder({ templateId }: { templateId?: string }) {
           </div>
           <div className="max-w-[10rem] space-y-2">
             <Label htmlFor="tdpw">{t('daysPerWeek')}</Label>
-            <Input
+            <Select
               id="tdpw"
-              type="number"
-              min={1}
-              max={14}
               value={state.daysPerWeek}
               onChange={(e) => draft.setDaysPerWeek(Number(e.target.value))}
-            />
+            >
+              {WEEK_DAY_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </Select>
           </div>
         </CardContent>
       </Card>

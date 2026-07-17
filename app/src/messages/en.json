@@ -25,7 +25,6 @@
     "installButton": "Install app",
     "later": "Later",
     "gotIt": "Got it",
-    "iosHint": "In Safari, tap the Share button and choose “Add to Home Screen”.",
     "howToInstall": "How to install on this device:",
     "manualIos": "In Safari, tap the Share button (the square with an up arrow), then choose “Add to Home Screen”.",
     "manualAndroid": "In Chrome, tap the three-dot menu (⋮) at the top, then choose “Add to Home screen” or “Install app”.",
@@ -101,7 +100,6 @@
       "upToStudents": "Up to {count} students",
       "unlimitedStudents": "Unlimited students",
       "comingSoon": "Coming soon",
-      "comingSoonCta": "Coming soon",
       "popular": "Recommended",
       "trialNote": "Plan prices will be announced soon. Until then, start with 15 days free."
     },
@@ -132,7 +130,7 @@
       "q2": "How do I sign in?",
       "a2": "With your phone number. The first time you verify by SMS code and choose a password; after that you sign in with just that password (or a one-time code whenever you prefer).",
       "q3": "How much does it cost?",
-      "a3": "Coaches get a 15-day free trial, then can subscribe for 3, 6, or 12 months. It's free for students.",
+      "a3": "Coaches get a 15-day free trial. After that, you pick a plan based on how many students you manage: Economy (up to 10 students), Normal (up to 50 students), or Professional (unlimited students). Plan pricing is coming soon. It's always free for students.",
       "q4": "What if a coach wrote a program before I signed up?",
       "a4": "Just register with the same number the coach entered — every program links to your account automatically."
     },
@@ -409,7 +407,6 @@
     "upToStudents": "Up to {count} students",
     "unlimitedStudents": "Unlimited students",
     "comingSoon": "Coming soon",
-    "comingSoonCta": "Coming soon",
     "popular": "Recommended",
     "payVia": "Pay with",
     "zarinpal": "ZarinPal (IRR)",

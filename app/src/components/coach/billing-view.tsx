@@ -4,7 +4,7 @@ import * as React from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Check, CreditCard, Loader2, Sparkles } from "lucide-react";
+import { Check, CreditCard, Loader2 } from "lucide-react";
 import {
   useActivateTrial,
   useBilling,
@@ -14,9 +14,9 @@ import { TIERS } from "@/lib/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TierCard } from "@/components/shared/tier-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
-import { cn } from "@/lib/utils";
 
 export function BillingView() {
   const t = useTranslations("billing");
@@ -157,31 +157,18 @@ export function BillingView() {
         <p className="mb-3 text-sm text-muted-foreground">{t("plansSubtitle")}</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {TIERS.map((tier) => (
-            <Card
+            <TierCard
               key={tier.code}
-              className={cn("relative flex flex-col", tier.highlight && "border-primary shadow-sm")}
-            >
-              {tier.highlight && (
-                <Badge className="absolute -top-2.5 start-4">
-                  <Sparkles className="me-1 size-3" />
-                  {t("popular")}
-                </Badge>
-              )}
-              <CardHeader>
-                <CardTitle className="text-lg">{t(`tier_${tier.code}_name`)}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {tier.maxStudents === null
-                    ? t("unlimitedStudents")
-                    : t("upToStudents", { count: tier.maxStudents })}
-                </p>
-              </CardHeader>
-              <CardContent className="mt-auto space-y-3">
-                <p className="text-xl font-bold text-primary">{t("comingSoon")}</p>
-                <Button variant="outline" className="w-full" disabled>
-                  {t("comingSoonCta")}
-                </Button>
-              </CardContent>
-            </Card>
+              name={t(`tier_${tier.code}_name`)}
+              studentsLine={
+                tier.maxStudents === null
+                  ? t("unlimitedStudents")
+                  : t("upToStudents", { count: tier.maxStudents })
+              }
+              highlight={tier.highlight}
+              popularLabel={t("popular")}
+              comingSoonLabel={t("comingSoon")}
+            />
           ))}
         </div>
       </div>

@@ -170,7 +170,15 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 ### SEO & performance
 - **`lib/site.ts`** is the single source of truth for the public origin: `SITE_URL` comes from
   **`NEXT_PUBLIC_SITE_URL`** (set it to the real domain in production — canonical URLs, sitemap, robots and OG
-  tags all derive from it). It also exports `localeUrl()` and `languageAlternates()` (fa/en + `x-default`).
+  tags all derive from it; fallback is `https://fitlo.ir`). It also exports `localeUrl()` and
+  `languageAlternates()` (fa/en + `x-default`). **Gotcha (bit us once):** if the host's env panel doesn't
+  actually set `NEXT_PUBLIC_SITE_URL` — or a stray `.env.local` in the deployed files supplies its dev value —
+  every generated URL (sitemap, canonical, OG, JSON-LD) silently resolves to `localhost`, which Search Console
+  then rejects ("URL not allowed") since a sitemap's `<loc>` entries must share the origin it was fetched from.
+  `site.ts` now `console.error`s loudly in production if `SITE_URL` still resolves to a localhost/loopback
+  origin — check server logs first if the sitemap ever looks wrong again. Fix: set the var correctly on the
+  host and do a full **rebuild** (not just a restart) — `NEXT_PUBLIC_*` is also inlined into client bundles at
+  build time, not only read at request time.
 - **`src/app/robots.ts`** (allows public pages — with an explicit second rule block for AI answer-engine
   crawlers (GPTBot/ClaudeBot/PerplexityBot/… — GEO); disallows `/api`, coach/student panels, login, `/launch`,
   intake) and **`src/app/sitemap.ts`** (**`force-dynamic`**: landing + blog per locale with hreflang alternates

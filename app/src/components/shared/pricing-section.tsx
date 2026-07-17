@@ -1,11 +1,9 @@
 import { getTranslations } from 'next-intl/server';
-import { Check, Gift, Sparkles } from 'lucide-react';
+import { Check, Gift } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { TIERS } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { TierCard } from '@/components/shared/tier-card';
 
 /**
  * Public pricing on the landing page. Tiers are scoped by student count; prices
@@ -46,31 +44,18 @@ export async function PricingSection() {
       {/* Paid tiers — scoped by number of students, pricing coming soon */}
       <div className="container mt-6 grid max-w-3xl gap-4 sm:grid-cols-3">
         {TIERS.map((tier) => (
-          <Card
+          <TierCard
             key={tier.code}
-            className={cn('relative flex flex-col', tier.highlight && 'border-primary shadow-sm')}
-          >
-            {tier.highlight && (
-              <Badge className="absolute -top-2.5 start-4">
-                <Sparkles className="me-1 size-3" />
-                {t('popular')}
-              </Badge>
-            )}
-            <CardHeader>
-              <CardTitle className="text-lg">{t(`tier_${tier.code}_name`)}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {tier.maxStudents === null
-                  ? t('unlimitedStudents')
-                  : t('upToStudents', { count: tier.maxStudents })}
-              </p>
-            </CardHeader>
-            <CardContent className="mt-auto space-y-3">
-              <p className="text-xl font-bold text-primary">{t('comingSoon')}</p>
-              <Button variant="outline" className="w-full" disabled>
-                {t('comingSoonCta')}
-              </Button>
-            </CardContent>
-          </Card>
+            name={t(`tier_${tier.code}_name`)}
+            studentsLine={
+              tier.maxStudents === null
+                ? t('unlimitedStudents')
+                : t('upToStudents', { count: tier.maxStudents })
+            }
+            highlight={tier.highlight}
+            popularLabel={t('popular')}
+            comingSoonLabel={t('comingSoon')}
+          />
         ))}
       </div>
 

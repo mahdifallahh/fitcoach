@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Download, Info } from 'lucide-react';
-import { isIos, usePwaInstall } from '@/lib/hooks/use-pwa-install';
+import { Download } from 'lucide-react';
+import { manualInstallKey, usePwaInstall } from '@/lib/hooks/use-pwa-install';
 import {
   Dialog,
   DialogContent,
@@ -15,9 +15,14 @@ import { Button } from '@/components/ui/button';
 
 /**
  * Shared "install the app" modal, used by both the header button and the
- * auto-prompt on app entry. Offers the one-tap native install when the browser
- * exposes it (Chromium `beforeinstallprompt`), and always shows concrete
- * per-platform manual steps as a fallback (iOS never fires the native event).
+ * auto-prompt on app entry. Just the one-tap native install button when the
+ * browser offers it — same as the landing page's install action.
+ *
+ * Neither iOS Safari nor Android Chrome always exposes that native prompt
+ * (iOS never does at all — Apple doesn't support the Web Install Prompt API;
+ * Android only after its own engagement heuristic is met), so whenever there
+ * is no button to show, the description swaps to the concrete manual steps
+ * for whichever platform the visitor is actually on.
  */
 export function InstallDialog({
   open,
@@ -28,13 +33,7 @@ export function InstallDialog({
 }) {
   const t = useTranslations('pwa');
   const { canPrompt, install } = usePwaInstall();
-
-  const manualKey = React.useMemo<'manualIos' | 'manualAndroid' | 'manualDesktop'>(() => {
-    if (typeof navigator === 'undefined') return 'manualDesktop';
-    if (isIos()) return 'manualIos';
-    if (/android/i.test(navigator.userAgent)) return 'manualAndroid';
-    return 'manualDesktop';
-  }, []);
+  const manualKey = React.useMemo(manualInstallKey, []);
 
   async function onInstall() {
     const outcome = await install();
@@ -49,26 +48,16 @@ export function InstallDialog({
             <Download className="size-6" />
           </div>
           <DialogTitle>{t('installTitle')}</DialogTitle>
-          <DialogDescription>{t('installText')}</DialogDescription>
+          <DialogDescription>{canPrompt ? t('installText') : t(manualKey)}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {canPrompt && (
             <Button className="w-full" size="lg" onClick={onInstall}>
               <Download className="size-4" />
               {t('install')}
             </Button>
           )}
-
-          {/* Manual steps for this device — the reliable fallback (and the only
-              path on iOS). */}
-          <div className="flex items-start gap-2 rounded-lg border bg-muted/30 p-3 text-start text-sm text-muted-foreground">
-            <Info className="mt-0.5 size-4 shrink-0 text-primary" />
-            <span>
-              <span className="font-medium text-foreground">{t('howToInstall')}</span> {t(manualKey)}
-            </span>
-          </div>
-
           <Button variant="ghost" className="w-full" onClick={() => onOpenChange(false)}>
             {t('later')}
           </Button>
