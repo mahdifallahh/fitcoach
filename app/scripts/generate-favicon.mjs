@@ -1,8 +1,13 @@
 /**
- * Generate a real multi-size favicon.ico from the brand SVG (public/icons/icon.svg)
- * and write it to src/app/favicon.ico — Next then serves it at /favicon.ico and
- * injects the <link>. Google needs a crawlable, square favicon (a multiple of
- * 48px) to show a site icon in results; a root favicon.ico is the most reliable.
+ * Generate a real multi-size favicon.ico from the fitlo brand logo mark
+ * (public/brand/logo-mark.png) and write it to src/app/favicon.ico — Next then
+ * serves it at /favicon.ico and injects the <link>. Google needs a crawlable,
+ * square favicon (a multiple of 48px) to show a site icon in results; a root
+ * favicon.ico is the most reliable.
+ *
+ * The mark is composited on a white rounded square with a little padding so it
+ * stays the actual logo yet reads clearly on any browser-tab theme (light/dark)
+ * and on Google's white results background.
  *
  * Run inside the app container (Chromium present):
  *   docker compose exec app node scripts/generate-favicon.mjs
@@ -12,10 +17,10 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const svg = readFileSync(path.join(root, 'public/icons/icon.svg'), 'utf8');
-const svgDataUri = 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+const markPng = readFileSync(path.join(root, 'public/brand/logo-mark.png'));
+const markDataUri = 'data:image/png;base64,' + markPng.toString('base64');
 
-const SIZES = [16, 32, 48, 64];
+const SIZES = [16, 32, 48, 64, 128];
 
 const { default: puppeteer } = await import('puppeteer-core');
 const browser = await puppeteer.launch({
@@ -27,10 +32,17 @@ const pngs = [];
 for (const size of SIZES) {
   const page = await browser.newPage();
   await page.setViewport({ width: size, height: size, deviceScaleFactor: 1 });
+  // Rounded-square scales with size; ~14% padding keeps the mark from the edges.
+  const radius = Math.round(size * 0.22);
   await page.setContent(
-    `<!doctype html><html><head><style>*{margin:0;padding:0}html,body{width:${size}px;height:${size}px}
-     img{width:${size}px;height:${size}px;display:block}</style></head>
-     <body><img src="${svgDataUri}"></body></html>`,
+    `<!doctype html><html><head><style>
+       *{margin:0;padding:0;box-sizing:border-box}
+       html,body{width:${size}px;height:${size}px}
+       .bg{width:${size}px;height:${size}px;background:#ffffff;border-radius:${radius}px;
+           display:flex;align-items:center;justify-content:center;padding:${Math.round(size * 0.14)}px}
+       img{width:100%;height:100%;object-fit:contain;display:block}
+     </style></head>
+     <body><div class="bg"><img src="${markDataUri}"></div></body></html>`,
     { waitUntil: 'networkidle0' },
   );
   const buf = await page.screenshot({ type: 'png', omitBackground: true });
