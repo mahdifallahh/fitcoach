@@ -102,6 +102,13 @@ No global guards; each route opts in via `withRoute` options. Default: authentic
 restricts. `requiresSub: true` gates writes → **402** when a coach's trial/plan lapses (reads stay open =
 read-only). `public: true` skips auth.
 
+The **UI mirrors this** so write buttons don't look clickable-then-fail: `lib/hooks/use-write-access.ts`
+(`useWriteAccess()`) returns `canWrite` (coach has an active/unexpired TRIALING|ACTIVE sub — also false for a
+coach who hasn't activated the free trial yet, matching the server). The create/save/delete/assign actions in
+`program-list`, `template-list`, `exercise-library`, both builders and `profile-form` disable + show a lock icon
+with the `billing.lockedTitle` tooltip; `subscription-banner` explains why and links to billing. The server 402
+remains the source of truth.
+
 ### Cross-cutting conventions
 Ownership always enforced in the service (`where: { id, coachId }`). Multi-table writes use
 `prisma.$transaction`. Services throw the error shims with `{ code, message, details? }` so the envelope
@@ -159,6 +166,14 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   crawlers (GPTBot/ClaudeBot/PerplexityBot/… — GEO); disallows `/api`, coach/student panels, login, `/launch`,
   intake) and **`src/app/sitemap.ts`** (**`force-dynamic`**: landing + blog per locale with hreflang alternates
   *plus every coach `/c/<handle>` page from the DB*, soft-failing to the static list if the DB is down).
+- **Favicon:** `src/app/favicon.ico` is a real multi-size (16/32/48/64) ICO generated from `public/icons/icon.svg`
+  via `docker compose exec app node scripts/generate-favicon.mjs` (regenerate on rebrand). Google needs a
+  crawlable root favicon to show a site icon in results; `layout.tsx` `icons` lists `/favicon.ico` (`sizes:any`)
+  first, then the 192 PNG + apple-touch-icon.
+- **Target keywords:** the landing carries `landing.metaTitle` / `metaDescription` / `keywords` (both locales,
+  keyword-rich — برنامه تمرینی / مربی آنلاین / تمرین آنلاین / تمرینات بدنسازی / فیتنس) fed into `generateMetadata`
+  (`keywords`) and the WebApplication JSON-LD (`keywords`). The hero emphasises key phrases via `subtitleRich`
+  (a `t.rich` string with `<b>` → `<strong>`); the plain `subtitle` stays for any non-rich consumer.
 - **Metadata:** `layout.tsx` sets `metadataBase` + defaults incl. the **1200×630 `/og.png`** card
   (regenerate via `docker compose exec app node scripts/generate-og.mjs` on rebrand), Twitter
   `summary_large_image`, and env-driven Search Console verification (`NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`).

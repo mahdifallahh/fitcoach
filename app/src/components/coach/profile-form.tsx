@@ -10,6 +10,7 @@ import { Loader2, Plus, Save, Trash2, Upload, X } from "lucide-react";
 import type { CoachProfile } from "@/lib/api/types";
 import { coachProfileApi } from "@/lib/api/coach-profile";
 import { useUpdateCoachProfile } from "@/lib/query/use-coach-profile";
+import { useWriteAccess } from "@/lib/hooks/use-write-access";
 import { ApiError, apiErrorMessage } from "@/lib/api/client";
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -48,6 +49,8 @@ type FormValues = z.infer<typeof schema>;
 export function ProfileForm({ profile }: { profile: CoachProfile }) {
   const t = useTranslations("profile");
   const tf = useTranslations("forms");
+  const tb = useTranslations("billing");
+  const { canWrite } = useWriteAccess();
   const update = useUpdateCoachProfile();
   const fileRef = React.useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = React.useState(false);
@@ -297,7 +300,11 @@ export function ProfileForm({ profile }: { profile: CoachProfile }) {
         </Button>
       </div>
 
-      <Button type="submit" disabled={update.isPending}>
+      <Button
+        type="submit"
+        disabled={update.isPending || !canWrite}
+        title={canWrite ? undefined : tb("lockedTitle")}
+      >
         {update.isPending ? (
           <Loader2 className="size-4 animate-spin" />
         ) : (

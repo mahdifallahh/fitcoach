@@ -2,9 +2,10 @@
 
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ClipboardList, Pencil, Plus, Trash2 } from "lucide-react";
+import { ClipboardList, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { usePrograms, useDeleteProgram } from "@/lib/query/use-programs";
+import { useWriteAccess } from "@/lib/hooks/use-write-access";
 import { apiErrorMessage } from "@/lib/api/client";
 import { DownloadPdfButton } from "@/components/coach/download-pdf-button";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,11 @@ import { ErrorState } from "@/components/shared/error-state";
 export function ProgramList() {
   const t = useTranslations("programs");
   const tc = useTranslations("common");
+  const tb = useTranslations("billing");
   const format = useFormatter();
   const { data, isLoading, isError, refetch } = usePrograms();
   const del = useDeleteProgram();
+  const { canWrite } = useWriteAccess();
 
   return (
     <div className="space-y-6">
@@ -27,12 +30,19 @@ export function ProgramList() {
           <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <Button asChild>
-          <Link href="/coach/programs/new">
-            <Plus className="size-4" />
+        {canWrite ? (
+          <Button asChild>
+            <Link href="/coach/programs/new">
+              <Plus className="size-4" />
+              {t("new")}
+            </Link>
+          </Button>
+        ) : (
+          <Button disabled title={tb("lockedTitle")}>
+            <Lock className="size-4" />
             {t("new")}
-          </Link>
-        </Button>
+          </Button>
+        )}
       </div>
 
       {isError ? (
@@ -93,6 +103,8 @@ export function ProgramList() {
                     variant="ghost"
                     size="icon"
                     aria-label={t("delete")}
+                    disabled={!canWrite}
+                    title={canWrite ? undefined : tb("lockedTitle")}
                     onClick={() => {
                       if (confirm(t("deleteConfirm", { name: p.name }))) {
                         del.mutate(p.id, {

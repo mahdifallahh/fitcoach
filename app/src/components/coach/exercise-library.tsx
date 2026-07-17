@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   Dumbbell,
   FolderCog,
+  Lock,
   Pencil,
   Plus,
   Search,
@@ -15,6 +16,7 @@ import type { Exercise } from "@/lib/api/types";
 import { useExercises, useDeleteExercise } from "@/lib/query/use-exercises";
 import { useCategories } from "@/lib/query/use-categories";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { useWriteAccess } from "@/lib/hooks/use-write-access";
 import { apiErrorMessage } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +33,8 @@ import { CategoryManager } from "./category-manager";
 export function ExerciseLibrary() {
   const t = useTranslations("exercises");
   const tc = useTranslations("common");
+  const tb = useTranslations("billing");
+  const { canWrite } = useWriteAccess();
   const { data: categories } = useCategories();
   const [search, setSearch] = React.useState("");
   const [categoryId, setCategoryId] = React.useState("");
@@ -76,12 +80,21 @@ export function ExerciseLibrary() {
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCatOpen(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setCatOpen(true)}
+            disabled={!canWrite}
+            title={canWrite ? undefined : tb("lockedTitle")}
+          >
             <FolderCog className="size-4" />
             {t("manageCategories")}
           </Button>
-          <Button onClick={openCreate}>
-            <Plus className="size-4" />
+          <Button
+            onClick={openCreate}
+            disabled={!canWrite}
+            title={canWrite ? undefined : tb("lockedTitle")}
+          >
+            {canWrite ? <Plus className="size-4" /> : <Lock className="size-4" />}
             {t("new")}
           </Button>
         </div>
@@ -158,6 +171,8 @@ export function ExerciseLibrary() {
                 sets: ex.defaultSets,
                 reps: ex.defaultReps,
               })}
+              canWrite={canWrite}
+              lockedTitle={tb("lockedTitle")}
               onEdit={() => openEdit(ex)}
               onDelete={() => onDelete(ex)}
             />
@@ -178,11 +193,15 @@ export function ExerciseLibrary() {
 function ExerciseCard({
   ex,
   setsReps,
+  canWrite,
+  lockedTitle,
   onEdit,
   onDelete,
 }: {
   ex: Exercise;
   setsReps: string;
+  canWrite: boolean;
+  lockedTitle: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -214,10 +233,22 @@ function ExerciseCard({
             </Badge>
           )}
           <div className="mt-auto flex justify-end gap-1 pt-1">
-            <Button size="icon" variant="ghost" onClick={onEdit}>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onEdit}
+              disabled={!canWrite}
+              title={canWrite ? undefined : lockedTitle}
+            >
               <Pencil className="size-4" />
             </Button>
-            <Button size="icon" variant="ghost" onClick={onDelete}>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onDelete}
+              disabled={!canWrite}
+              title={canWrite ? undefined : lockedTitle}
+            >
               <Trash2 className="size-4 text-destructive" />
             </Button>
           </div>

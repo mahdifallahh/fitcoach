@@ -75,10 +75,28 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Stop mobile browsers (esp. Android Chrome/WebView) from auto-inflating
+       font sizes ("font boosting") — that heuristic fires on some phones but not
+       others, which is why a page can look zoomed on one device and fine on the
+       next. Pin it so our own responsive sizes are the single source of truth. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
+}
+
+/* Hide the horizontal scrollbar on tab strips while keeping them scrollable.
+   The scroll affordance is provided by an edge fade (see ScrollableTabs). */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/legacy Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* WebKit/Blink */
 }
 
 /* Flip directional icons (chevrons/arrows) automatically in RTL. */

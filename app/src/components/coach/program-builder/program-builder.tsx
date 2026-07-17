@@ -16,6 +16,7 @@ import { Loader2, Plus, Save, Send } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import type { Exercise, ProgramStatus2 } from '@/lib/api/types';
 import { useProgram, useCreateProgram, useUpdateProgram } from '@/lib/query/use-programs';
+import { useWriteAccess } from '@/lib/hooks/use-write-access';
 import { apiErrorMessage } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ import { useProgramDraft } from './use-program-draft';
 import { blankState, daysToPayload, itemFromExercise, parseStat, stateFromProgram } from './types';
 import { DayRow } from './day-row';
 import { ExercisePicker } from './exercise-picker';
+import { ScrollableTabs } from '@/components/shared/scrollable-tabs';
 
 export function ProgramBuilder({
   programId,
@@ -40,8 +42,10 @@ export function ProgramBuilder({
 }) {
   const t = useTranslations('builder');
   const tf = useTranslations('forms');
+  const tb = useTranslations('billing');
   const router = useRouter();
   const isEdit = !!programId;
+  const { canWrite } = useWriteAccess();
 
   const { data: existing, isError } = useProgram(programId);
   const draft = useProgramDraft(blankState());
@@ -143,11 +147,20 @@ export function ProgramBuilder({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{isEdit ? t('editTitle') : t('newTitle')}</h1>
         <div className="flex gap-2">
-          <Button variant="outline" disabled={pending} onClick={() => save('DRAFT')}>
+          <Button
+            variant="outline"
+            disabled={pending || !canWrite}
+            title={canWrite ? undefined : tb('lockedTitle')}
+            onClick={() => save('DRAFT')}
+          >
             {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             {t('saveDraft')}
           </Button>
-          <Button disabled={pending} onClick={() => save('PUBLISHED')}>
+          <Button
+            disabled={pending || !canWrite}
+            title={canWrite ? undefined : tb('lockedTitle')}
+            onClick={() => save('PUBLISHED')}
+          >
             <Send className="size-4" />
             {t('publish')}
           </Button>
@@ -201,7 +214,7 @@ export function ProgramBuilder({
       </Card>
 
       {/* Day tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b">
+      <ScrollableTabs className="border-b" viewportClassName="gap-1">
         {state.days.map((d, i) => (
           <button
             key={d.uid}
@@ -217,7 +230,7 @@ export function ProgramBuilder({
             {t('day', { n: d.dayIndex })}
           </button>
         ))}
-      </div>
+      </ScrollableTabs>
 
       {/* Active day */}
       {activeDay && (

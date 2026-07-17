@@ -3,11 +3,12 @@
 import * as React from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { LayoutTemplate, Pencil, Plus, Search, Send, Trash2 } from 'lucide-react';
+import { LayoutTemplate, Lock, Pencil, Plus, Search, Send, Trash2 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import type { ProgramTemplateListItem } from '@/lib/api/types';
 import { useTemplates, useDeleteTemplate } from '@/lib/query/use-program-templates';
 import { useDebounce } from '@/lib/hooks/use-debounce';
+import { useWriteAccess } from '@/lib/hooks/use-write-access';
 import { apiErrorMessage } from '@/lib/api/client';
 import { AssignTemplateDialog } from './assign-template-dialog';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,9 @@ import { ErrorState } from '@/components/shared/error-state';
 export function TemplateList() {
   const t = useTranslations('templates');
   const tc = useTranslations('common');
+  const tb = useTranslations('billing');
   const format = useFormatter();
+  const { canWrite } = useWriteAccess();
 
   const [search, setSearch] = React.useState('');
   const ds = useDebounce(search, 250);
@@ -37,12 +40,19 @@ export function TemplateList() {
           <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <Button asChild>
-          <Link href="/coach/templates/new">
-            <Plus className="size-4" />
+        {canWrite ? (
+          <Button asChild>
+            <Link href="/coach/templates/new">
+              <Plus className="size-4" />
+              {t('new')}
+            </Link>
+          </Button>
+        ) : (
+          <Button disabled title={tb('lockedTitle')}>
+            <Lock className="size-4" />
             {t('new')}
-          </Link>
-        </Button>
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -94,8 +104,13 @@ export function TemplateList() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button size="sm" onClick={() => setAssignFor(tpl)}>
-                    <Send className="size-4" />
+                  <Button
+                    size="sm"
+                    disabled={!canWrite}
+                    title={canWrite ? undefined : tb('lockedTitle')}
+                    onClick={() => setAssignFor(tpl)}
+                  >
+                    {canWrite ? <Send className="size-4" /> : <Lock className="size-4" />}
                     {t('assign')}
                   </Button>
                   <Button asChild variant="ghost" size="icon">
@@ -107,6 +122,8 @@ export function TemplateList() {
                     variant="ghost"
                     size="icon"
                     aria-label={t('delete')}
+                    disabled={!canWrite}
+                    title={canWrite ? undefined : tb('lockedTitle')}
                     onClick={() => {
                       if (confirm(t('deleteConfirm', { name: tpl.name }))) {
                         del.mutate(tpl.id, {

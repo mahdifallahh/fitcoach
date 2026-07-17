@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { CreditCard, LayoutDashboard, Users } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
+import { ScrollableTabs } from '@/components/shared/scrollable-tabs';
 
 const items = [
   { href: '/admin', key: 'overview', icon: LayoutDashboard },
@@ -16,7 +17,7 @@ export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mb-6 flex gap-1 overflow-x-auto border-b">
+    <ScrollableTabs as="nav" className="mb-6 border-b" viewportClassName="gap-1">
       {items.map(({ href, key, icon: Icon }) => {
         const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
         return (
@@ -35,6 +36,6 @@ export function AdminNav() {
           </Link>
         );
       })}
-    </nav>
+    </ScrollableTabs>
   );
 }

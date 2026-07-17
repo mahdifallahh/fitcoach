@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GifLightbox } from "@/components/shared/gif-lightbox";
 import { DownloadPdfButton } from "@/components/coach/download-pdf-button";
 import { cn } from "@/lib/utils";
+import { ScrollableTabs } from "@/components/shared/scrollable-tabs";
 
 interface Row {
   type: "single" | "superset";
@@ -89,7 +90,7 @@ export function ProgramViewer({ programId }: { programId: string }) {
       </header>
 
       {/* Day navigation */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <ScrollableTabs viewportClassName="gap-2 pb-1">
         {data.days.map((d, i) => (
           <button
             key={d.id}
@@ -105,7 +106,7 @@ export function ProgramViewer({ programId }: { programId: string }) {
             {t("day", { n: d.dayIndex })}
           </button>
         ))}
-      </div>
+      </ScrollableTabs>
 
       {day && (
         <div className="space-y-4">

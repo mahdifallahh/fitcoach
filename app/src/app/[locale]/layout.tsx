@@ -21,8 +21,14 @@ export const metadata: Metadata = {
   description: 'Bilingual fitness coaching & training program platform',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/icons/icon-192.png',
+    // Google shows the site icon from a crawlable favicon; a root .ico (multiple
+    // of 48px) is the most reliable. The PNG is offered for high-DPI/browser use.
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
     apple: '/icons/icon-192.png',
+    shortcut: '/favicon.ico',
   },
   openGraph: {
     type: 'website',

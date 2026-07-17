@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Link, usePathname } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
+import { ScrollableTabs } from "@/components/shared/scrollable-tabs";
 
 const items = [
   { href: "/coach", key: "dashboard", icon: LayoutDashboard },
@@ -30,7 +31,7 @@ export function CoachNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mb-6 flex gap-1 overflow-x-auto border-b">
+    <ScrollableTabs as="nav" className="mb-6 border-b" viewportClassName="gap-1">
       {items.map(({ href, key, icon: Icon }) => {
         const active =
           href === "/coach" ? pathname === "/coach" : pathname.startsWith(href);
@@ -50,6 +51,6 @@ export function CoachNav() {
           </Link>
         );
       })}
-    </nav>
+    </ScrollableTabs>
   );
 }

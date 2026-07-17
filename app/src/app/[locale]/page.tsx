@@ -32,10 +32,11 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'landing' });
   const title = t('metaTitle');
-  const description = t('subtitle');
+  const description = t('metaDescription');
   return {
     title,
     description,
+    keywords: t('keywords').split(',').map((k) => k.trim()),
     alternates: { canonical: localeUrl(locale, ''), languages: languageAlternates('') },
     // NB: a page-level `openGraph` replaces the layout's whole object, so the
     // shared card image must be restated here (same for the other public pages).
@@ -98,10 +99,11 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
       '@type': 'WebApplication',
       name: SITE_NAME,
       url: localeUrl(locale, ''),
-      description: t('subtitle'),
+      description: t('metaDescription'),
       applicationCategory: 'HealthApplication',
       operatingSystem: 'Web, iOS, Android',
       inLanguage: ['fa', 'en'],
+      keywords: t('keywords'),
       image: `${SITE_URL}/og.png`,
       offers: (Object.keys(PUBLIC_PLANS) as PlanCode[]).map((code) => ({
         '@type': 'Offer',
@@ -133,7 +135,7 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
           <div className="space-y-4">
             <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-5xl">{t('title')}</h1>
             <p className="mx-auto max-w-xl text-pretty text-muted-foreground sm:text-lg">
-              {t.rich('subtitle', {
+              {t.rich('subtitleRich', {
                 b: (chunks) => <strong className="font-semibold text-foreground">{chunks}</strong>,
               })}
             </p>

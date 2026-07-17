@@ -16,6 +16,7 @@ import { Loader2, Plus, Save } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import type { Exercise } from '@/lib/api/types';
 import { useTemplate, useCreateTemplate, useUpdateTemplate } from '@/lib/query/use-program-templates';
+import { useWriteAccess } from '@/lib/hooks/use-write-access';
 import { apiErrorMessage } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,12 +35,15 @@ import {
 } from '@/components/coach/program-builder/types';
 import { DayRow } from '@/components/coach/program-builder/day-row';
 import { ExercisePicker } from '@/components/coach/program-builder/exercise-picker';
+import { ScrollableTabs } from '@/components/shared/scrollable-tabs';
 
 export function TemplateBuilder({ templateId }: { templateId?: string }) {
   const t = useTranslations('templateBuilder');
   const tf = useTranslations('forms');
+  const tb = useTranslations('billing');
   const router = useRouter();
   const isEdit = !!templateId;
+  const { canWrite } = useWriteAccess();
 
   const { data: existing, isError } = useTemplate(templateId);
   const draft = useProgramDraft(blankState());
@@ -132,7 +136,7 @@ export function TemplateBuilder({ templateId }: { templateId?: string }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{isEdit ? t('editTitle') : t('newTitle')}</h1>
-        <Button disabled={pending} onClick={save}>
+        <Button disabled={pending || !canWrite} title={canWrite ? undefined : tb('lockedTitle')} onClick={save}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           {t('save')}
         </Button>
@@ -176,7 +180,7 @@ export function TemplateBuilder({ templateId }: { templateId?: string }) {
       </Card>
 
       {/* Day tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b">
+      <ScrollableTabs className="border-b" viewportClassName="gap-1">
         {state.days.map((d, i) => (
           <button
             key={d.uid}
@@ -192,7 +196,7 @@ export function TemplateBuilder({ templateId }: { templateId?: string }) {
             {t('day', { n: d.dayIndex })}
           </button>
         ))}
-      </div>
+      </ScrollableTabs>
 
       {/* Active day */}
       {activeDay && (
