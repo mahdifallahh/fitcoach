@@ -4,20 +4,23 @@ import {
   GraduationCap,
   HelpCircle,
   Info,
-  Mail,
   Newspaper,
   Phone,
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { Logo } from "./logo";
 import { BaleIcon, InstagramIcon, TelegramIcon } from "./brand-icons";
+import { ObfuscatedEmail } from "./obfuscated-email";
 
 /** Owner contact channels. Central so the header/other pages can reuse them. */
 export const CONTACT = {
   phoneDisplay: "09356995806",
   phoneHref: "tel:+989356995806",
+  // Split into parts so the literal address is never emitted in server HTML
+  // (see ObfuscatedEmail). `email` stays for non-HTML uses (JSON-LD, llms.txt).
   email: "support@fitlo.ir",
-  emailHref: "mailto:support@fitlo.ir",
+  emailUser: "support",
+  emailDomain: "fitlo.ir",
   instagram: "https://instagram.com/fitlo.ir",
   telegram: "https://t.me/fitlo",
   bale: "https://ble.ir/fitlo",
@@ -26,6 +29,7 @@ export const CONTACT = {
 /** Marketing footer shared by the landing, blog and about pages. */
 export async function PublicFooter() {
   const t = await getTranslations("footer");
+  const tc = await getTranslations("common");
 
   const explore = [
     { href: "/about", label: t("about"), icon: Info },
@@ -51,7 +55,9 @@ export async function PublicFooter() {
       <div className="container grid gap-10 py-14 md:grid-cols-12">
         {/* Brand + contact */}
         <div className="md:col-span-5">
-          <Logo size="lg" />
+          {/* Distinct from the header's logo alt — repeating one string across the
+              page reads as duplicate alt text to crawlers/SEO auditors. */}
+          <Logo size="lg" alt={tc('logoBrand')} markAlt={tc('logoBrandMark')} />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {t("tagline")}
           </p>
@@ -66,15 +72,7 @@ export async function PublicFooter() {
               </span>
               <span dir="ltr">{CONTACT.phoneDisplay}</span>
             </a>
-            <a
-              href={CONTACT.emailHref}
-              className="group flex items-center gap-2.5 text-sm text-muted-foreground transition-colors hover:text-primary"
-            >
-              <span className="flex size-8 items-center justify-center rounded-lg bg-background ring-1 ring-border transition-colors group-hover:ring-primary/40">
-                <Mail className="size-4" />
-              </span>
-              <span dir="ltr">{CONTACT.email}</span>
-            </a>
+            <ObfuscatedEmail user={CONTACT.emailUser} domain={CONTACT.emailDomain} />
           </div>
 
           {/* Social pills */}

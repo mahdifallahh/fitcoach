@@ -27,8 +27,8 @@ export function PublicHeader() {
       <div className="flex items-center justify-between gap-6 px-4 py-3">
         {/* Brand + nav cluster together at the start (right in RTL) */}
         <div className="flex min-w-0 items-center gap-6">
-          <Link href="/" aria-label="fitlo" onClick={() => setOpen(false)}>
-            <Logo size="md" priority />
+          <Link href="/" aria-label={tc('logoHome')} onClick={() => setOpen(false)}>
+            <Logo size="md" priority alt={tc('logoHome')} markAlt={tc('logoHomeMark')} />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">

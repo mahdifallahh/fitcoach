@@ -16,7 +16,11 @@
     "language": "Language",
     "retry": "Retry",
     "menu": "Menu",
-    "close": "Close"
+    "close": "Close",
+    "logoHome": "fitlo — home",
+    "logoHomeMark": "fitlo icon",
+    "logoBrand": "fitlo — training program platform",
+    "logoBrandMark": "fitlo brand emblem"
   },
   "pwa": {
     "installTitle": "Install the fitlo app",

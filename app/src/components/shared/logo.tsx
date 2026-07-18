@@ -27,11 +27,21 @@ export function Logo({
   size = 'md',
   className,
   priority,
+  alt = 'fitlo',
+  markAlt,
 }: {
   variant?: 'lockup' | 'mark';
   size?: keyof typeof SIZES;
   className?: string;
   priority?: boolean;
+  /** Accessible/SEO text for the wordmark. Pass a *distinct* value per instance
+   *  (header vs footer) — repeating one string across the page reads as
+   *  duplicate alt text to crawlers and SEO auditors. */
+  alt?: string;
+  /** Alt for the decorative mark. It's `aria-hidden` inside the lockup, so this
+   *  is never announced by screen readers; it exists only so no image ships
+   *  without alt text. Keep it different from `alt`. */
+  markAlt?: string;
 }) {
   const s = SIZES[size];
   const lockup = variant === 'lockup';
@@ -41,13 +51,12 @@ export function Logo({
     // gap-1: the mark *is* the "f" — the wordmark is "itlo", so a letter-spacing
     // sized gap makes the lockup read as one word: fitlo.
     <span className={cn('inline-flex items-center gap-1', className)} dir="ltr">
-      {/* In the lockup the wordmark already carries the name, so the mark is
-          hidden from the a11y tree (aria-hidden) to avoid announcing "fitlo"
-          twice — but it still gets a non-empty `alt` so crawlers/SEO checkers
-          never see an image without alt text. */}
+      {/* In the lockup the wordmark carries the name, so the mark is hidden from
+          the a11y tree (no "fitlo" announced twice) while still carrying its own
+          non-empty, non-duplicate alt for crawlers. */}
       <Image
         src={markSrc}
-        alt="fitlo"
+        alt={lockup ? (markAlt ?? `${alt} mark`) : alt}
         aria-hidden={lockup || undefined}
         width={s.mark}
         height={s.mark}
@@ -57,7 +66,7 @@ export function Logo({
       {lockup && (
         <Image
           src={wordmarkSrc}
-          alt="fitlo"
+          alt={alt}
           width={s.word}
           height={wordHeight}
           priority={priority}
