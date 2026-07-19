@@ -390,7 +390,17 @@ form auto-fills + submits it → one-click dev login. Never present when `NODE_E
   activateTrial + expiry, payment flow + idempotency, PDF template). ts-jest with `tsconfig.jest.json`;
   `server-only` stubbed via `test/server-only.js`.
 - `pnpm build` (= typecheck + compile, incl. spec files) and `pnpm lint` clean.
-- **Live UI checks:** Playwright via host Edge (`channel: 'msedge'`); API checks via `curl` against `:3000`.
+- `cd app && pnpm e2e` — **Playwright** suite in `e2e/**/*.spec.ts`, run against a live app (`docker compose
+  up -d` first; `e2e/global-setup.ts` fails fast with instructions if nothing answers `/api/health`). Covers
+  auth (signup/login/logout/wrong-password), the coach exercise library CRUD, the program builder + templates
+  (create, publish, assign-to-student), public SEO surface (robots/sitemap/canonical+hreflang/coach JSON-LD),
+  and the PWA install-prompt behavior. Selectors read copy from `src/messages/fa.json` via `e2e/helpers/
+  labels.ts` so they track UI text instead of duplicating it.
+  - Default browser is Playwright's managed Chromium (`npx playwright install chromium`); on machines where
+    that download is blocked, `PLAYWRIGHT_CHANNEL=msedge pnpm e2e` drives the host's installed Edge instead.
+  - `POST /api/auth/otp/request` is rate-limited to 5 req/60s per client IP, and every worker/test signs up
+    from the same local IP — `playwright.config.ts` pins `workers: 2` and `e2e/helpers/auth.ts`'s `signUp`
+    retries through a 429 rather than the suite flaking or the limiter being loosened for tests.
 
 ---
 

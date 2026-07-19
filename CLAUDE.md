@@ -63,6 +63,9 @@ pnpm build                  # next build — this is also the typecheck step (no
 pnpm lint                   # next lint
 pnpm test                   # jest — server-layer specs under src/server/**/*.spec.ts (46 tests)
 pnpm test -- <pattern>      # run specs matching a file/name, e.g. pnpm test -- programs
+pnpm e2e                    # playwright — e2e/**/*.spec.ts against a live app (docker compose up first)
+pnpm e2e:headed             # same, with a visible browser
+pnpm e2e:ui                 # Playwright's interactive UI runner
 pnpm prisma:generate        # regenerate Prisma client after a schema change
 pnpm prisma:migrate         # prisma migrate deploy (apply pending migrations)
 pnpm db:seed                # prisma db seed (demo coach, unlinked student, superset program)
