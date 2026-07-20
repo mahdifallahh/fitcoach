@@ -224,6 +224,25 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   `Cache-Control` headers (icons immutable 1y; `/og.png` 1d; `sw.js` must-revalidate; manifest 1h). Landing +
   blog are statically prerendered (SSG). Fonts: Vazirmatn preloads (fa default); Inter is `preload: false`
   since it only serves `/en`.
+- **Core Web Vitals conventions** (Lighthouse-mobile driven; keep these when touching the public surface):
+  - **Fonts:** Vazirmatn loads `['arabic','latin']` subsets — both are preloaded so Latin glyphs (digits,
+    "fitlo") don't arrive via a late CSS-discovered fetch; fallback stack starts at `Tahoma` (closest
+    Arabic-capable system metrics during the `swap` window).
+  - **Client i18n payload:** the `[locale]` layout ships only `PUBLIC_CLIENT_NAMESPACES`
+    (`src/i18n/client-messages.ts`, ~7 KB) to `NextIntlClientProvider`; the app segments
+    (`coach/student/admin/login/layout.tsx`) re-provide the full catalog via
+    `components/providers/full-intl-provider.tsx`. **When a client component reachable from a public page
+    gains a new `useTranslations('<ns>')`, add `<ns>` to `PUBLIC_CLIENT_NAMESPACES`** — a miss throws
+    MISSING_MESSAGE in dev.
+  - **CLS:** `pwa/install-button.tsx` server-renders its button and keeps the box (`invisible` until the
+    standalone check runs) instead of null-then-pop-in — don't reintroduce mount-gated header elements
+    that shift layout; reserve the space instead.
+  - **Legacy JS:** `package.json` `browserslist` pins modern targets (Chrome/Edge/Firefox ≥111,
+    Safari ≥16.4) so SWC doesn't down-level/polyfill for browsers the PWA doesn't serve.
+  - `experimental.optimizeCss` (critters) was **tried and reverted** — it breaks app-router prerendering
+    (`<Html> should not be imported…`); don't re-enable without re-testing a production build.
+  - `src/app/layout.tsx` (passthrough) + `src/app/not-found.tsx` (self-contained bilingual 404) exist so
+    the global `/404` prerenders through the app router — required for `next build` to pass.
 
 ---
 
@@ -371,6 +390,14 @@ datamodel … --script`, hand-write `prisma/migrations/<ts>_<name>/migration.sql
 
 **Mock OTP in dev:** `POST /api/auth/otp/request` echoes the code as `devCode` when not production; the login
 form auto-fills + submits it → one-click dev login. Never present when `NODE_ENV=production`.
+
+**Production build inside the dev container needs `NODE_ENV=production`:** the compose app service sets
+`NODE_ENV=development`, and `docker compose exec app pnpm build` under that env dies at the `/404` prerender
+with `<Html> should not be imported outside of pages/_document` (dev React runtime mixed into the prod
+render). Run `docker compose exec app sh -c "NODE_ENV=production pnpm build"` instead. Also note the
+container's `node_modules` and `.next` are **named volumes** (`app_node_modules`, `app_next`) — they are NOT
+the host directories, so verify build artifacts inside the container and install container deps with
+`docker compose exec app pnpm add … --store-dir /root/.local/share/pnpm/store/v10`.
 
 ### Known caveats
 - **Edge bundle + node builtins:** anything reachable from `instrumentation.ts` / middleware must not statically

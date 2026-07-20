@@ -3,13 +3,25 @@ import { notFound } from 'next/navigation';
 import { Inter, Vazirmatn } from 'next/font/google';
 import { getMessages, getTimeZone, setRequestLocale } from 'next-intl/server';
 import { routing, localeDirection, type Locale } from '@/i18n/routing';
+import { PUBLIC_CLIENT_NAMESPACES, pickMessages } from '@/i18n/client-messages';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { AppProviders } from '@/components/providers/app-providers';
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
 import '../globals.css';
 
-const vazirmatn = Vazirmatn({ subsets: ['arabic'], variable: '--font-vazir', display: 'swap' });
+// `latin` is preloaded alongside `arabic`: fa pages always contain Latin glyphs
+// (digits, "fitlo", URLs), and without the subset those characters waited for
+// late CSS-discovered fetches — a visible reflow mid-render. Tahoma leads the
+// fallback stack because it's the metrically-closest Arabic-capable system font
+// during the brief `swap` window (next/font's size-adjusted fallback only tunes
+// Latin metrics).
+const vazirmatn = Vazirmatn({
+  subsets: ['arabic', 'latin'],
+  variable: '--font-vazir',
+  display: 'swap',
+  fallback: ['Tahoma', 'Arial', 'sans-serif'],
+});
 // Inter is only the en-locale face (Vazirmatn covers Latin on fa pages), so don't
 // spend the default locale's critical path preloading it; `swap` hides the cost on /en.
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap', preload: false });
@@ -65,7 +77,9 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as Locale)) notFound();
 
   setRequestLocale(locale);
-  const messages = await getMessages();
+  // Public pages only get the client namespaces they actually render with; the
+  // app segments re-provide the full catalog (see i18n/client-messages.ts).
+  const messages = pickMessages(await getMessages(), PUBLIC_CLIENT_NAMESPACES);
   const timeZone = await getTimeZone();
   const dir = localeDirection[locale as Locale];
   const fontVar = locale === 'fa' ? 'var(--font-vazir)' : 'var(--font-inter)';

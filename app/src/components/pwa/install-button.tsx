@@ -25,11 +25,18 @@ export function InstallButton({
   variant?: 'outline' | 'ghost' | 'default';
 }) {
   const t = useTranslations('pwa');
-  const [installed, setInstalled] = React.useState(true); // assume installed until checked (avoids SSR flash)
+  // Server-render the button and keep its box while we check install state:
+  // rendering null-until-hydrated made the whole header row shift when the
+  // button popped in, which Lighthouse counts as CLS on every page view. Now
+  // the space is reserved from the first paint (invisible until checked) and
+  // only the rare already-installed/standalone case removes it.
+  const [checked, setChecked] = React.useState(false);
+  const [installed, setInstalled] = React.useState(false);
   const [open, setOpen] = React.useState(false);
 
   React.useEffect(() => {
     setInstalled(isStandalone());
+    setChecked(true);
     const mq = window.matchMedia('(display-mode: standalone)');
     const onChange = () => setInstalled(isStandalone());
     mq.addEventListener?.('change', onChange);
@@ -40,14 +47,14 @@ export function InstallButton({
     };
   }, []);
 
-  if (installed) return null;
+  if (checked && installed) return null;
 
   return (
     <>
       <Button
         variant={variant}
         size={iconOnly ? 'icon' : 'sm'}
-        className={cn(className)}
+        className={cn(!checked && 'invisible', className)}
         aria-label={t('installButton')}
         title={t('installButton')}
         onClick={() => setOpen(true)}

@@ -13,6 +13,11 @@ const nextConfig = {
   // Tree-shake per-icon/component imports from big barrel packages → smaller bundles.
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    // NB: `optimizeCss` (critters) was tried for critical-CSS inlining and
+    // reverted — critters targets the pages router and breaks app-router
+    // prerendering (`<Html> should not be imported…` on /404, useContext null
+    // crashes). The single compiled stylesheet is small enough that inlining
+    // isn't worth a fragile experiment.
   },
   // Keep native/server-only packages out of the bundle so their runtime engines
   // (Prisma query engine, Chromium launcher) load from node_modules at runtime.
