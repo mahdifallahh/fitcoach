@@ -13,11 +13,14 @@ const nextConfig = {
   // Tree-shake per-icon/component imports from big barrel packages → smaller bundles.
   experimental: {
     optimizePackageImports: ['lucide-react'],
-    // NB: `optimizeCss` (critters) was tried for critical-CSS inlining and
-    // reverted — critters targets the pages router and breaks app-router
-    // prerendering (`<Html> should not be imported…` on /404, useContext null
-    // crashes). The single compiled stylesheet is small enough that inlining
-    // isn't worth a fragile experiment.
+    // Ship the compiled Tailwind CSS as an inline <style> instead of a
+    // render-blocking <link>. The whole sheet is ~8 KB gzipped while the
+    // request for it was the entire LCP critical path in production
+    // (~2s of chain latency on Lighthouse mobile — the origin has no CDN).
+    // NB: this is Next's native App-Router inliner — NOT `optimizeCss`
+    // (critters), which was tried and reverted because it breaks app-router
+    // prerendering (`<Html> should not be imported…` on /404).
+    inlineCss: true,
   },
   // Keep native/server-only packages out of the bundle so their runtime engines
   // (Prisma query engine, Chromium launcher) load from node_modules at runtime.

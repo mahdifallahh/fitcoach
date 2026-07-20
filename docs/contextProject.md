@@ -238,9 +238,16 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
     standalone check runs) instead of null-then-pop-in — don't reintroduce mount-gated header elements
     that shift layout; reserve the space instead.
   - **Legacy JS:** `package.json` `browserslist` pins modern targets (Chrome/Edge/Firefox ≥111,
-    Safari ≥16.4) so SWC doesn't down-level/polyfill for browsers the PWA doesn't serve.
-  - `experimental.optimizeCss` (critters) was **tried and reverted** — it breaks app-router prerendering
-    (`<Html> should not be imported…`); don't re-enable without re-testing a production build.
+    Safari ≥16.4) so SWC doesn't emit down-level transpilation helpers in the *module* bundles modern
+    browsers run. (The separate ~112 KB `polyfills-*.js` chunk is loaded `nomodule` — module-capable
+    browsers, incl. Lighthouse's Chrome, never fetch or run it, so it's not on anyone's critical path.)
+  - **Render-blocking CSS:** `experimental.inlineCss: true` (Next's native App-Router inliner) ships the
+    compiled Tailwind sheet as an inline `<style>` instead of a `<link>`. In production the CSS `<link>`
+    was the *entire* LCP critical path (~2 s of chain latency — the origin has no CDN) for ~8 KB gzipped;
+    inlining collapses HTML→CSS→render into one response. This is **not** `optimizeCss` (critters), which
+    was tried and reverted — critters breaks app-router prerendering (`<Html> should not be imported…`).
+    Trade-off: the sheet is re-embedded per HTML doc instead of cached once; worth it here for a text-LCP
+    marketing surface. If the sheet ever grows large (many new global styles), re-measure.
   - `src/app/layout.tsx` (passthrough) + `src/app/not-found.tsx` (self-contained bilingual 404) exist so
     the global `/404` prerenders through the app router — required for `next build` to pass.
 
