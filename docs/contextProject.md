@@ -228,12 +228,18 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   - **Fonts:** Vazirmatn loads `['arabic','latin']` subsets — both are preloaded so Latin glyphs (digits,
     "fitlo") don't arrive via a late CSS-discovered fetch; fallback stack starts at `Tahoma` (closest
     Arabic-capable system metrics during the `swap` window).
-  - **Client i18n payload:** the `[locale]` layout ships only `PUBLIC_CLIENT_NAMESPACES`
-    (`src/i18n/client-messages.ts`, ~7 KB) to `NextIntlClientProvider`; the app segments
-    (`coach/student/admin/login/layout.tsx`) re-provide the full catalog via
-    `components/providers/full-intl-provider.tsx`. **When a client component reachable from a public page
-    gains a new `useTranslations('<ns>')`, add `<ns>` to `PUBLIC_CLIENT_NAMESPACES`** — a miss throws
-    MISSING_MESSAGE in dev.
+  - **Provider scoping (public vs. app):** `AppProviders` (global, wraps every page) ships only the small
+    public i18n subset + theme + Toaster. The authenticated segments
+    (`coach/student/admin/login/layout.tsx`) wrap children in `AppSegmentProviders`
+    (`components/providers/app-segment-providers.tsx`), which re-provides the **full** message catalog
+    **and** `QueryProvider` (react-query, ~45 KB). react-query therefore never reaches the landing/blog/
+    coach-public bundles — verified: 0 react-query hits in the landing's chunks. The `/launch` screen sits
+    outside those segments but uses `useMe()`, so it has its own tiny `launch/layout.tsx` mounting just
+    `QueryProvider`. **Rules when adding to a public-reachable client component:** a new
+    `useTranslations('<ns>')` → add `<ns>` to `PUBLIC_CLIENT_NAMESPACES` (`src/i18n/client-messages.ts`);
+    a new react-query hook on a page *outside* coach/student/admin/login/launch → that page needs a
+    `QueryProvider` (both misses throw at runtime — MISSING_MESSAGE / "No QueryClient set"). Toaster is
+    global because the public `/c/<handle>/request` form raises toasts.
   - **CLS:** `pwa/install-button.tsx` server-renders its button and keeps the box (`invisible` until the
     standalone check runs) instead of null-then-pop-in — don't reintroduce mount-gated header elements
     that shift layout; reserve the space instead.

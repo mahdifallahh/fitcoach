@@ -8,7 +8,7 @@ import type { AbstractIntlMessages } from 'next-intl';
  * to `NextIntlClientProvider` on every page — Lighthouse billed that against the
  * landing page as serialized RSC payload + hydration work. Public pages now get
  * only this subset; the app segments (coach/student/admin/login) re-provide the
- * full catalog via their own layouts (`FullIntlProvider`).
+ * full catalog via their own layouts (`AppSegmentProviders`).
  *
  * When you add a `useTranslations('<ns>')` call to a component reachable from a
  * public page, add its namespace here — a miss surfaces as a loud
