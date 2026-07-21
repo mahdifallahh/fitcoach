@@ -5,9 +5,10 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/routing';
 import { listPosts, postHero } from '@/lib/blog';
-import { languageAlternates, localeUrl } from '@/lib/site';
+import { SITE_NAME, SITE_URL, languageAlternates, localeUrl } from '@/lib/site';
 import { PublicHeader } from '@/components/shared/public-header';
 import { PublicFooter } from '@/components/shared/public-footer';
+import { JsonLd } from '@/components/shared/json-ld';
 
 export async function generateMetadata({
   params,
@@ -37,8 +38,45 @@ export default async function BlogIndex({ params }: { params: Promise<{ locale: 
   const format = await getFormatter();
   const posts = listPosts(locale as Locale);
 
+  // Blog + ItemList structured data: tells Google this is a blog listing and
+  // enumerates its articles (image + url + date), so the posts are eligible for
+  // article-rich results instead of being read as a generic page of links.
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Blog',
+      name: t('indexTitle'),
+      description: t('indexSubtitle'),
+      url: localeUrl(locale, '/blog'),
+      inLanguage: locale,
+      publisher: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        logo: { '@type': 'ImageObject', url: `${SITE_URL}/icons/icon-512.png` },
+      },
+      blogPost: posts.map((post) => ({
+        '@type': 'BlogPosting',
+        headline: post.title,
+        description: post.description,
+        datePublished: post.date,
+        image: `${SITE_URL}${postHero(post.slug)}`,
+        url: localeUrl(locale, `/blog/${post.slug}`),
+        mainEntityOfPage: localeUrl(locale, `/blog/${post.slug}`),
+      })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: SITE_NAME, item: localeUrl(locale, '') },
+        { '@type': 'ListItem', position: 2, name: t('indexTitle'), item: localeUrl(locale, '/blog') },
+      ],
+    },
+  ];
+
   return (
     <div className="flex min-h-dvh flex-col">
+      <JsonLd data={jsonLd} />
       <PublicHeader />
       <main className="container max-w-3xl flex-1 py-12">
         <header className="mb-10">

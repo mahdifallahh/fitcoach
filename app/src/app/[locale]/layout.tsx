@@ -48,7 +48,9 @@ export const metadata: Metadata = {
     // Regenerate with `node scripts/generate-og.mjs` (inside the container) on rebrand.
     images: [{ url: '/og.png', width: 1200, height: 630, alt: SITE_NAME }],
   },
-  twitter: { card: 'summary_large_image' },
+  // `summary_large_image` needs an explicit image — X/Twitter don't reliably
+  // fall back to the OG image, so a card without this renders text-only.
+  twitter: { card: 'summary_large_image', images: ['/og.png'] },
   appleWebApp: { capable: true, title: 'fitlo', statusBarStyle: 'default' },
   // Google Search Console ownership proof — set the env in production to enable.
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
