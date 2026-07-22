@@ -3,11 +3,21 @@ import {
   PaymentStatus,
   Role,
   SubscriptionStatus,
+  SubscriptionTier,
   type PrismaClient,
 } from "@prisma/client";
 import { NotFoundException } from "../http/errors";
+import { TIER_MAX_STUDENTS } from "../subscriptions/plans";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** All tiers in display order (FREE → PRO), so distributions are never sparse. */
+const TIER_ORDER: SubscriptionTier[] = [
+  SubscriptionTier.FREE,
+  SubscriptionTier.ECONOMY,
+  SubscriptionTier.NORMAL,
+  SubscriptionTier.PRO,
+];
 
 /** Platform-owner operations behind the ADMIN role. Read-mostly + subscription grants. */
 export class AdminService {
@@ -15,6 +25,10 @@ export class AdminService {
 
   /** One-screen pulse of the whole platform. */
   async overview() {
+    const now = Date.now();
+    const since7 = new Date(now - 7 * DAY_MS);
+    const since30 = new Date(now - 30 * DAY_MS);
+
     const [
       coaches,
       students,
@@ -23,7 +37,11 @@ export class AdminService {
       requests,
       pendingRequests,
       exercises,
-      subsByStatus,
+      subsByTier,
+      newCoaches7,
+      newCoaches30,
+      newStudents7,
+      newStudents30,
       revenueByCurrency,
       recentUsers,
     ] = await Promise.all([
@@ -34,7 +52,11 @@ export class AdminService {
       this.prisma.programRequest.count(),
       this.prisma.programRequest.count({ where: { status: "PENDING" } }),
       this.prisma.exercise.count(),
-      this.prisma.subscription.groupBy({ by: ["status"], _count: { _all: true } }),
+      this.prisma.subscription.groupBy({ by: ["tier"], _count: { _all: true } }),
+      this.prisma.user.count({ where: { role: Role.COACH, createdAt: { gte: since7 } } }),
+      this.prisma.user.count({ where: { role: Role.COACH, createdAt: { gte: since30 } } }),
+      this.prisma.user.count({ where: { role: Role.STUDENT, createdAt: { gte: since7 } } }),
+      this.prisma.user.count({ where: { role: Role.STUDENT, createdAt: { gte: since30 } } }),
       this.prisma.payment.groupBy({
         by: ["currency"],
         where: { status: PaymentStatus.PAID },
@@ -48,8 +70,20 @@ export class AdminService {
       }),
     ]);
 
-    const subscriptions: Record<string, number> = {};
-    for (const row of subsByStatus) subscriptions[row.status] = row._count._all;
+    // Tier distribution, dense (every tier a key). Coaches with no subscription
+    // row at all are implicitly FREE, so fold that remainder into FREE.
+    const tiers: Record<SubscriptionTier, number> = {
+      FREE: 0,
+      ECONOMY: 0,
+      NORMAL: 0,
+      PRO: 0,
+    };
+    let subRows = 0;
+    for (const row of subsByTier) {
+      tiers[row.tier] = row._count._all;
+      subRows += row._count._all;
+    }
+    tiers.FREE += Math.max(0, coaches - subRows);
 
     return {
       totals: {
@@ -61,7 +95,14 @@ export class AdminService {
         pendingRequests,
         exercises,
       },
-      subscriptions,
+      // Ordered [FREE, ECONOMY, NORMAL, PRO] tuples so the UI never re-sorts.
+      tiers: TIER_ORDER.map((tier) => ({ tier, count: tiers[tier] })),
+      growth: {
+        newCoaches7,
+        newCoaches30,
+        newStudents7,
+        newStudents30,
+      },
       revenue: revenueByCurrency.map((r) => ({
         currency: r.currency,
         total: r._sum.amount ?? 0,
@@ -102,6 +143,11 @@ export class AdminService {
         (sub.status === SubscriptionStatus.TRIALING ||
           sub.status === SubscriptionStatus.ACTIVE) &&
         (sub.endsAt === null || sub.endsAt.getTime() > Date.now());
+      const tier = sub?.tier ?? SubscriptionTier.FREE;
+      // Student quota: cap null = unlimited. A coach is "at quota" once their
+      // student count reaches the cap — the point admin cares about for upgrades.
+      const cap = TIER_MAX_STUDENTS[tier];
+      const atQuota = cap !== null && c._count.students >= cap;
       return {
         userId: c.userId,
         name: c.name,
@@ -109,6 +155,9 @@ export class AdminService {
         phone: c.user.phone,
         email: c.user.email,
         joinedAt: c.user.createdAt,
+        tier,
+        cap,
+        atQuota,
         subscription: sub
           ? { status: sub.status, tier: sub.tier, plan: sub.plan, endsAt: sub.endsAt, live }
           : null,
@@ -127,11 +176,13 @@ export class AdminService {
   }
 
   /**
-   * Owner-granted access: extend the coach's subscription by N days (stacks on a
-   * still-valid end date, otherwise starts from now). Creates the row if the coach
-   * never had one. Marked ACTIVE — a grant is real access, not a trial.
+   * Owner sets a coach's capability tier (FREE / ECONOMY / NORMAL / PRO). This is
+   * the live access model — a tier caps how many students the coach may manage,
+   * not a time window. Normalizes the row to a clean tier grant: ACTIVE, no
+   * `endsAt`, and any legacy time-based `plan` cleared. Creates the row if the
+   * coach never had one.
    */
-  async grantSubscription(coachUserId: string, days: number) {
+  async setCoachTier(coachUserId: string, tier: SubscriptionTier) {
     const coach = await this.prisma.coachProfile.findUnique({
       where: { userId: coachUserId },
       select: { userId: true },
@@ -143,42 +194,24 @@ export class AdminService {
       where: { coachId: coachUserId },
       orderBy: { createdAt: "desc" },
     });
-    const now = new Date();
-    // A tier row (endsAt null) means the grant starts from now.
-    const base =
-      current && current.endsAt && current.endsAt > now ? current.endsAt : now;
-    const endsAt = new Date(base.getTime() + days * DAY_MS);
-
     if (current) {
       return this.prisma.subscription.update({
         where: { id: current.id },
-        data: { status: SubscriptionStatus.ACTIVE, endsAt },
+        data: {
+          tier,
+          status: SubscriptionStatus.ACTIVE,
+          plan: null, // clear any legacy time-based paid plan
+          endsAt: null, // tier rows never expire
+        },
       });
     }
     return this.prisma.subscription.create({
       data: {
         coachId: coachUserId,
+        tier,
         status: SubscriptionStatus.ACTIVE,
-        startsAt: now,
-        endsAt,
+        endsAt: null,
       },
-    });
-  }
-
-  /** Cut access now: the coach drops to read-only immediately. */
-  async expireSubscription(coachUserId: string) {
-    const current = await this.prisma.subscription.findFirst({
-      where: { coachId: coachUserId },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!current)
-      throw new NotFoundException({
-        code: "SUBSCRIPTION_NOT_FOUND",
-        message: "This coach has no subscription",
-      });
-    return this.prisma.subscription.update({
-      where: { id: current.id },
-      data: { status: SubscriptionStatus.EXPIRED, endsAt: new Date() },
     });
   }
 }

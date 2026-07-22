@@ -7,6 +7,8 @@ import {
   Dumbbell,
   GraduationCap,
   Inbox,
+  Layers,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 import { useAdminOverview } from '@/lib/query/use-admin';
@@ -27,8 +29,8 @@ export function OverviewView() {
   if (isLoading || !data) {
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
@@ -44,7 +46,14 @@ export function OverviewView() {
     { icon: Inbox, label: t('requests'), value: data.totals.requests, sub: t('pendingCount', { count: data.totals.pendingRequests }) },
     { icon: Dumbbell, label: t('exercises'), value: data.totals.exercises },
   ];
-  const subStatuses = ['TRIALING', 'ACTIVE', 'EXPIRED', 'CANCELED'] as const;
+
+  // Growth (trailing 7 / 30 days), the "is the platform moving?" read.
+  const growth = [
+    { label: t('coaches'), d7: data.growth.newCoaches7, d30: data.growth.newCoaches30 },
+    { label: t('students'), d7: data.growth.newStudents7, d30: data.growth.newStudents30 },
+  ];
+
+  const totalTierCoaches = data.tiers.reduce((s, x) => s + x.count, 0) || 1;
 
   return (
     <div className="space-y-6">
@@ -68,18 +77,23 @@ export function OverviewView() {
         ))}
       </div>
 
-      {/* Subscriptions + revenue */}
+      {/* Growth + tier distribution */}
       <div className="grid gap-3 md:grid-cols-2">
         <Card>
           <CardContent className="p-4">
             <h2 className="mb-3 flex items-center gap-2 font-semibold">
-              <CreditCard className="size-4" /> {t('subscriptions')}
+              <TrendingUp className="size-4" /> {t('growthTitle')}
             </h2>
-            <div className="flex flex-wrap gap-2">
-              {subStatuses.map((s) => (
-                <Badge key={s} variant={s === 'ACTIVE' || s === 'TRIALING' ? 'default' : 'secondary'}>
-                  {t(`sub_${s}`)}: {format.number(data.subscriptions[s] ?? 0)}
-                </Badge>
+            <div className="grid grid-cols-2 gap-3">
+              {growth.map((g) => (
+                <div key={g.label} className="rounded-lg border p-3">
+                  <p className="text-sm text-muted-foreground">{g.label}</p>
+                  <p className="mt-1 text-xl font-bold text-primary">+{format.number(g.d7)}</p>
+                  <p className="text-xs text-muted-foreground">{t('last7')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('last30')}: <span className="font-medium text-foreground">+{format.number(g.d30)}</span>
+                  </p>
+                </div>
               ))}
             </div>
           </CardContent>
@@ -87,24 +101,56 @@ export function OverviewView() {
 
         <Card>
           <CardContent className="p-4">
-            <h2 className="mb-3 font-semibold">{t('revenue')}</h2>
-            {data.revenue.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('noRevenue')}</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {data.revenue.map((r) => (
-                  <li key={r.currency} className="flex items-center justify-between text-sm">
-                    <span dir="ltr" className="font-medium">
-                      {format.number(r.total)} {r.currency}
-                    </span>
-                    <span className="text-muted-foreground">{t('paymentsCount', { count: r.payments })}</span>
+            <h2 className="mb-3 flex items-center gap-2 font-semibold">
+              <Layers className="size-4" /> {t('tierDistribution')}
+            </h2>
+            <ul className="space-y-2">
+              {data.tiers.map(({ tier, count }) => {
+                const pct = Math.round((count / totalTierCoaches) * 100);
+                return (
+                  <li key={tier}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="font-medium">{t(`tier_${tier}`)}</span>
+                      <span className="text-muted-foreground">
+                        {format.number(count)} · {pct}%
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   </li>
-                ))}
-              </ul>
-            )}
+                );
+              })}
+            </ul>
           </CardContent>
         </Card>
       </div>
+
+      {/* Revenue */}
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="mb-3 flex items-center gap-2 font-semibold">
+            <CreditCard className="size-4" /> {t('revenue')}
+          </h2>
+          {data.revenue.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('noRevenue')}</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {data.revenue.map((r) => (
+                <li key={r.currency} className="flex items-center justify-between text-sm">
+                  <span dir="ltr" className="font-medium">
+                    {format.number(r.total)} {r.currency}
+                  </span>
+                  <span className="text-muted-foreground">{t('paymentsCount', { count: r.payments })}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent signups */}
       <Card>

@@ -1,9 +1,9 @@
 import { z } from "zod";
+import { SubscriptionTier } from "@prisma/client";
 
-/** Grant N days of access, or expire the coach's subscription immediately. */
-export const subscriptionActionSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("grant"), days: z.number().int().min(1).max(3650) }),
-  z.object({ action: z.literal("expire") }),
-]);
+/** Owner sets a coach's capability tier (student-quota based, not time-based). */
+export const setTierSchema = z.object({
+  tier: z.nativeEnum(SubscriptionTier),
+});
 
-export type SubscriptionActionDto = z.infer<typeof subscriptionActionSchema>;
+export type SetTierDto = z.infer<typeof setTierSchema>;

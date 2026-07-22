@@ -298,8 +298,15 @@ export interface AdminOverview {
     pendingRequests: number;
     exercises: number;
   };
-  /** Counts keyed by SubscriptionStatus (missing key = 0). */
-  subscriptions: Record<string, number>;
+  /** Coach count per capability tier, ordered FREE → ECONOMY → NORMAL → PRO. */
+  tiers: { tier: SubscriptionTier; count: number }[];
+  /** New signups in the trailing 7 / 30 days, by role. */
+  growth: {
+    newCoaches7: number;
+    newCoaches30: number;
+    newStudents7: number;
+    newStudents30: number;
+  };
   revenue: { currency: string; total: number; payments: number }[];
   recentUsers: {
     id: string;
@@ -317,6 +324,10 @@ export interface AdminCoach {
   phone: string | null;
   email: string | null;
   joinedAt: string;
+  /** Current capability tier and its student cap (`cap` null = unlimited). */
+  tier: SubscriptionTier;
+  cap: number | null;
+  atQuota: boolean;
   subscription: {
     status: SubscriptionStatus;
     tier: SubscriptionTier;

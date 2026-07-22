@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
+import type { TierCode } from '@/lib/plans';
 
 export const ADMIN_OVERVIEW_KEY = ['admin', 'overview'] as const;
 export const ADMIN_COACHES_KEY = ['admin', 'coaches'] as const;
@@ -21,13 +22,11 @@ export function useAdminPayments() {
   return useQuery({ queryKey: ['admin', 'payments'], queryFn: () => adminApi.payments() });
 }
 
-export function useAdminSubscriptionAction() {
+export function useAdminSetTier() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { coachUserId: string; action: 'grant' | 'expire'; days?: number }) =>
-      vars.action === 'grant'
-        ? adminApi.grantSubscription(vars.coachUserId, vars.days ?? 30)
-        : adminApi.expireSubscription(vars.coachUserId),
+    mutationFn: (vars: { coachUserId: string; tier: TierCode }) =>
+      adminApi.setTier(vars.coachUserId, vars.tier),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ADMIN_COACHES_KEY });
       qc.invalidateQueries({ queryKey: ADMIN_OVERVIEW_KEY });

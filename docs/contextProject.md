@@ -333,12 +333,18 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   `POST /coach/billing/dev/complete/:paymentId` (non-prod simulate).
 - **gateway webhooks** (public): `GET /coach/billing/zarinpal/callback` (redirect),
   `POST /payments/stripe/webhook` (raw body via `req.text()`).
-- **admin** (ADMIN — owner panel at `/[locale]/admin`): `GET /admin/overview` (totals, subscription
-  breakdown, revenue by currency, recent signups), `GET /admin/coaches?search=` (coaches + latest
-  subscription + usage counts), `POST /admin/coaches/:id/subscription` (`{action:'grant',days}` extends —
-  stacking on a live end date — or `{action:'expire'}` cuts access now), `GET /admin/payments` (latest 50).
-  **Who is admin:** phones listed in the `ADMIN_PHONES` env (comma-separated, normalized) — logging in with
-  one of them creates/promotes the account to ADMIN (`AuthService.verifyOtp`); there is no admin signup UI.
+- **admin** (ADMIN — owner panel at `/[locale]/admin`): `GET /admin/overview` (totals, **tier distribution**
+  FREE/ECONOMY/NORMAL/PRO, **growth** = new coaches/students in the trailing 7 & 30 days, revenue by currency,
+  recent signups), `GET /admin/coaches?search=` (coaches + tier + **student-quota usage** `cap`/`atQuota` +
+  usage counts), `POST /admin/coaches/:id/subscription` (`{tier}` — sets the coach's capability tier via
+  `AdminService.setCoachTier`, normalizing the row to ACTIVE / no `endsAt` / cleared legacy `plan`),
+  `GET /admin/payments` (latest 50). The old day-based `{action:'grant'|'expire'}` was removed with the tier
+  migration — access is student-count scoped now, not time-scoped. **Who is admin:** phones listed in the
+  `ADMIN_PHONES` env (comma-separated, normalized) — logging in with one of them creates/promotes the account
+  to ADMIN (`AuthService.verifyOtp`); there is no admin signup UI. The **platform owner** account
+  (`+989356995806`) is also seeded by migration `20260722020000_seed_admin_owner` (idempotent upsert: role
+  ADMIN + a scrypt password hash, so it can sign in with phone+password on a fresh server) — keep that phone
+  in `ADMIN_PHONES` too so login-time owner detection stays consistent.
   ADMIN accounts get no coach profile and no student claiming.
 - **health:** `GET /api/health` (liveness; container healthcheck).
 

@@ -3,17 +3,21 @@
 import * as React from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { CalendarPlus, ExternalLink, Loader2, Search, XCircle } from 'lucide-react';
-import { useAdminCoaches, useAdminSubscriptionAction } from '@/lib/query/use-admin';
+import { AlertTriangle, ExternalLink, Loader2, Search, Users } from 'lucide-react';
+import { useAdminCoaches, useAdminSetTier } from '@/lib/query/use-admin';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { apiErrorMessage } from '@/lib/api/client';
 import type { AdminCoach } from '@/lib/api/types';
+import { TIER_MAX_STUDENTS, type TierCode } from '@/lib/plans';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/shared/error-state';
+
+/** All tiers in upgrade order — the values admin can assign. */
+const TIER_CODES = Object.keys(TIER_MAX_STUDENTS) as TierCode[];
 
 export function CoachesView() {
   const t = useTranslations('admin');
@@ -65,39 +69,21 @@ export function CoachesView() {
 function CoachCard({ coach }: { coach: AdminCoach }) {
   const t = useTranslations('admin');
   const format = useFormatter();
-  const action = useAdminSubscriptionAction();
-  const [days, setDays] = React.useState('30');
+  const setTier = useAdminSetTier();
 
-  const sub = coach.subscription;
-  // Tier rows have no end date; only legacy paid plans show one.
-  const subLabel = sub
-    ? [
-        t(`tier_${sub.tier}`),
-        t(`sub_${sub.status}`),
-        sub.endsAt ? format.dateTime(new Date(sub.endsAt), { dateStyle: 'medium' }) : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : t('noSub');
+  // Students used vs. cap; cap null = unlimited (∞).
+  const capLabel = coach.cap === null ? t('unlimited') : format.number(coach.cap);
+  const usageLabel = t('studentsOfCap', {
+    count: format.number(coach.counts.students),
+    cap: capLabel,
+  });
 
-  function grant() {
-    const n = Number(days);
-    if (!Number.isInteger(n) || n < 1) return toast.error(t('badDays'));
-    action.mutate(
-      { coachUserId: coach.userId, action: 'grant', days: n },
+  function onChangeTier(next: TierCode) {
+    if (next === coach.tier) return;
+    setTier.mutate(
+      { coachUserId: coach.userId, tier: next },
       {
-        onSuccess: () => toast.success(t('granted', { days: n })),
-        onError: (e) => toast.error(apiErrorMessage(e, t('actionError'))),
-      },
-    );
-  }
-
-  function expire() {
-    if (!confirm(t('expireConfirm', { name: coach.name }))) return;
-    action.mutate(
-      { coachUserId: coach.userId, action: 'expire' },
-      {
-        onSuccess: () => toast.success(t('expired')),
+        onSuccess: () => toast.success(t('tierChanged', { tier: t(`tier_${next}`) })),
         onError: (e) => toast.error(apiErrorMessage(e, t('actionError'))),
       },
     );
@@ -126,37 +112,43 @@ function CoachCard({ coach }: { coach: AdminCoach }) {
               {coach.phone ?? coach.email} · {format.dateTime(new Date(coach.joinedAt), { dateStyle: 'medium' })}
             </p>
           </div>
-          <Badge variant={sub?.live ? 'default' : 'secondary'}>{subLabel}</Badge>
+          <Badge variant={coach.atQuota ? 'secondary' : 'default'}>{t(`tier_${coach.tier}`)}</Badge>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span
+            className={
+              'inline-flex items-center gap-1 rounded-md px-2 py-1 ' +
+              (coach.atQuota ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-muted')
+            }
+          >
+            {coach.atQuota ? <AlertTriangle className="size-3.5" /> : <Users className="size-3.5" />}
+            {usageLabel}
+          </span>
           <span className="rounded-md bg-muted px-2 py-1">{t('countPrograms', { count: coach.counts.programs })}</span>
-          <span className="rounded-md bg-muted px-2 py-1">{t('countStudents', { count: coach.counts.students })}</span>
           <span className="rounded-md bg-muted px-2 py-1">{t('countExercises', { count: coach.counts.exercises })}</span>
         </div>
 
-        {/* Owner actions */}
+        {/* Owner action: set the coach's capability tier */}
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
-          <Input
-            type="number"
-            min={1}
-            max={3650}
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            className="h-9 w-24"
-            dir="ltr"
-            aria-label={t('daysLabel')}
-          />
-          <Button size="sm" disabled={action.isPending} onClick={grant}>
-            {action.isPending ? <Loader2 className="size-4 animate-spin" /> : <CalendarPlus className="size-4" />}
-            {t('grantDays')}
-          </Button>
-          {sub?.live && (
-            <Button size="sm" variant="outline" disabled={action.isPending} onClick={expire}>
-              <XCircle className="size-4 text-destructive" />
-              {t('expireNow')}
-            </Button>
-          )}
+          <label className="text-sm text-muted-foreground" htmlFor={`tier-${coach.userId}`}>
+            {t('tierLabel')}
+          </label>
+          <Select
+            id={`tier-${coach.userId}`}
+            className="h-9 w-40"
+            value={coach.tier}
+            disabled={setTier.isPending}
+            onChange={(e) => onChangeTier(e.target.value as TierCode)}
+          >
+            {TIER_CODES.map((code) => (
+              <option key={code} value={code}>
+                {t(`tier_${code}`)}
+                {TIER_MAX_STUDENTS[code] === null ? '' : ` (${TIER_MAX_STUDENTS[code]})`}
+              </option>
+            ))}
+          </Select>
+          {setTier.isPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
         </div>
       </CardContent>
     </Card>

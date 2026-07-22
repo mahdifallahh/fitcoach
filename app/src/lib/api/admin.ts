@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { TierCode } from '@/lib/plans';
 import type { AdminCoach, AdminOverview, AdminPayment } from './types';
 
 export const adminApi = {
@@ -6,8 +7,7 @@ export const adminApi = {
   coaches: (search?: string) =>
     api.get<AdminCoach[]>(`/admin/coaches${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   payments: () => api.get<AdminPayment[]>('/admin/payments'),
-  grantSubscription: (coachUserId: string, days: number) =>
-    api.post<unknown>(`/admin/coaches/${coachUserId}/subscription`, { action: 'grant', days }),
-  expireSubscription: (coachUserId: string) =>
-    api.post<unknown>(`/admin/coaches/${coachUserId}/subscription`, { action: 'expire' }),
+  /** Set a coach's capability tier (FREE/ECONOMY/NORMAL/PRO). */
+  setTier: (coachUserId: string, tier: TierCode) =>
+    api.post<unknown>(`/admin/coaches/${coachUserId}/subscription`, { tier }),
 };
