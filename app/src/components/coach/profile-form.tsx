@@ -17,6 +17,7 @@ import {
   MAX_UPLOAD_BYTES,
   uploadFile,
 } from "@/lib/api/upload";
+import { downscaleImage } from "@/lib/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,7 +87,11 @@ export function ProfileForm({ profile }: { profile: CoachProfile }) {
     if (file.size > MAX_UPLOAD_BYTES) return toast.error(t("fileTooLarge"));
     setUploading(true);
     try {
-      const url = await uploadFile(coachProfileApi.avatarUploadUrl, file);
+      // Downscale before the presigned PUT: the avatar renders at ≤96px on the
+      // public page but is uploaded straight to S3 with no server resize, so a
+      // full-size phone photo would otherwise ship as the page's LCP image.
+      const optimized = await downscaleImage(file);
+      const url = await uploadFile(coachProfileApi.avatarUploadUrl, optimized);
       setValue("avatarUrl", url, { shouldDirty: true });
     } catch (err) {
       toast.error(apiErrorMessage(err, t("saveError")));
