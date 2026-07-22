@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { L } from './helpers/labels';
-import { setupCoachWithTrial } from './helpers/auth';
+import { setupCoach } from './helpers/auth';
 import { INSTALL_PROMPT_SESSION_KEY } from './helpers/test';
 
 /**
@@ -12,7 +12,7 @@ const test = base;
 
 test.describe('PWA install prompt', () => {
   test('auto-opens once per session on entering the coach panel', async ({ page }) => {
-    await setupCoachWithTrial(page);
+    await setupCoach(page);
     // The prompt's own 900ms timer may or may not have already fired and set
     // the session flag during signup/trial-activation navigations — clear it so
     // this test's own visit deterministically triggers a fresh auto-open.

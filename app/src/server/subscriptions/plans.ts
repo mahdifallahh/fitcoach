@@ -1,6 +1,7 @@
 import type { SubscriptionPlan } from "@prisma/client";
 
-/** Plan catalog. Prices: IRR (Toman) for ZarinPal, USD for Stripe. */
+// Legacy time-based paid plan catalog — used only by the not-yet-live paid
+// checkout. Prices: IRR (Toman) for ZarinPal, USD for Stripe.
 export const PLANS: Record<
   SubscriptionPlan,
   { months: number; priceIrr: number; priceUsd: number }
@@ -10,7 +11,9 @@ export const PLANS: Record<
   M12: { months: 12, priceIrr: 2_990_000, priceUsd: 59 },
 };
 
-export const TRIAL_DAYS = 15;
+// Student cap per capability tier. Re-exported from the shared client catalog so
+// server-side quota checks and the marketing/billing UI use one source of truth.
+export { TIER_MAX_STUDENTS, DEFAULT_TIER } from "@/lib/plans";
 
 export function addMonths(from: Date, months: number): Date {
   const d = new Date(from);

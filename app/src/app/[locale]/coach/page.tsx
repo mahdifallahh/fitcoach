@@ -1,12 +1,13 @@
 'use client';
 
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { CreditCard, Dumbbell, Inbox, PencilLine, User } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { CoachPageLayout } from '@/components/coach/coach-page-layout';
 import { GettingStarted } from '@/components/coach/getting-started';
 import { useMe } from '@/lib/query/use-auth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TIER_MAX_STUDENTS, type TierCode } from '@/lib/plans';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CoachPage() {
   return (
@@ -26,14 +27,16 @@ const quickActions = [
 function CoachDashboard() {
   const t = useTranslations('dashboard');
   const th = useTranslations('coachHome');
-  const format = useFormatter();
+  const tb = useTranslations('billing');
   const { data } = useMe();
   if (!data) return null;
 
   const identifier = data.phone ?? data.email;
   const sub = data.subscription;
-  const subLabel =
-    sub?.status === 'TRIALING' ? t('trial') : sub?.status === 'ACTIVE' ? t('active') : sub ? t('expired') : th('noSub');
+  const tier: TierCode = sub?.tier ?? 'FREE';
+  const maxStudents = TIER_MAX_STUDENTS[tier];
+  const capLine =
+    maxStudents === null ? tb('unlimitedStudents') : tb('upToStudents', { count: maxStudents });
 
   return (
     <div className="space-y-6">
@@ -65,16 +68,12 @@ function CoachDashboard() {
         </div>
       </div>
 
-      {/* Subscription status */}
+      {/* Current plan */}
       <Card className="max-w-md">
         <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
           <div>
-            <CardTitle className="text-lg">{subLabel}</CardTitle>
-            {sub && (
-              <CardDescription>
-                {t('trialEndsOn', { date: format.dateTime(new Date(sub.endsAt), { dateStyle: 'medium' }) })}
-              </CardDescription>
-            )}
+            <CardTitle className="text-lg">{tb(`tier_${tier}_name`)}</CardTitle>
+            <CardDescription>{capLine}</CardDescription>
           </div>
           <Link href="/coach/billing" className="text-muted-foreground hover:text-foreground">
             <CreditCard className="size-5" />

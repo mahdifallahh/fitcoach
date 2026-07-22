@@ -215,7 +215,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
           { type: 'h2', text: 'اشتراک و پرداخت' },
           {
             type: 'p',
-            text: 'مربی‌ها یک نسخه‌ی آزمایشی رایگان ۱۵ روزه دارند که فقط یک‌بار قابل فعال‌سازی است؛ پس از آن برای ساخت و ویرایش برنامه به اشتراک نیاز است. پرداخت از طریق درگاه زرین‌پال انجام می‌شود. مبالغ پرداخت‌شده جز در مواردی که قانون تعیین می‌کند بازگردانده نمی‌شوند.',
+            text: 'مربی‌ها با یک پلن رایگان دائمی شروع می‌کنند که تا یک شاگرد را پوشش می‌دهد؛ برای مدیریت شاگرد بیشتر می‌توانند به پلن‌های بالاتر (بر اساس تعداد شاگرد) ارتقا دهند. پرداخت از طریق درگاه زرین‌پال انجام می‌شود. مبالغ پرداخت‌شده جز در مواردی که قانون تعیین می‌کند بازگردانده نمی‌شوند.',
           },
           { type: 'h2', text: 'محتوای کاربر' },
           {
@@ -282,7 +282,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
           { type: 'h2', text: 'Subscriptions and payment' },
           {
             type: 'p',
-            text: 'Coaches get a one-time 15-day free trial; after that, an active subscription is required to create or edit programs. Payments are processed through the ZarinPal gateway. Amounts paid are non-refundable except where the law requires otherwise.',
+            text: 'Coaches start on a permanent free plan that covers up to one student; to manage more students they can upgrade to a higher plan (scoped by student count). Payments are processed through the ZarinPal gateway. Amounts paid are non-refundable except where the law requires otherwise.',
           },
           { type: 'h2', text: 'Your content' },
           {

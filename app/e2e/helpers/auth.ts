@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { L } from "./labels";
 
 export type Role = "coach" | "student";
@@ -63,19 +63,16 @@ export async function logout(page: Page): Promise<void> {
   );
 }
 
-export async function activateTrial(page: Page): Promise<void> {
-  const res = await page.request.post("/api/coach/billing/activate-trial");
-  expect(res.ok(), `activate-trial failed: ${res.status()}`).toBeTruthy();
-  await page.reload();
-}
-
-/** Signup a coach + activate the trial → ready to create exercises/programs. */
-export async function setupCoachWithTrial(
+/**
+ * Signup a coach → ready to create exercises/programs. Coaches are provisioned
+ * with the permanent FREE plan at signup, so there's no activation step; the
+ * panel is writable immediately (within the free 1-student cap).
+ */
+export async function setupCoach(
   page: Page,
   password = "Passw0rd!23",
 ): Promise<{ phone: string; password: string }> {
   const phone = uniquePhone();
   await signUp(page, { phone, password, role: "coach" });
-  await activateTrial(page);
   return { phone, password };
 }

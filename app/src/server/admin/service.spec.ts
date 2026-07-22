@@ -33,7 +33,7 @@ describe("AdminService subscriptions", () => {
     });
     const res = await service.grantSubscription("c1", 30);
     expect(res.status).toBe(SubscriptionStatus.ACTIVE);
-    expect(res.endsAt.getTime()).toBe(end.getTime() + 30 * DAY);
+    expect(res.endsAt!.getTime()).toBe(end.getTime() + 30 * DAY);
   });
 
   it("grant starts from now when the subscription already lapsed", async () => {
@@ -44,7 +44,7 @@ describe("AdminService subscriptions", () => {
     });
     const before = Date.now();
     const res = await service.grantSubscription("c1", 10);
-    expect(res.endsAt.getTime()).toBeGreaterThanOrEqual(before + 10 * DAY);
+    expect(res.endsAt!.getTime()).toBeGreaterThanOrEqual(before + 10 * DAY);
   });
 
   it("grant creates the row when the coach never had one", async () => {
@@ -69,7 +69,7 @@ describe("AdminService subscriptions", () => {
     });
     const res = await service.expireSubscription("c1");
     expect(res.status).toBe(SubscriptionStatus.EXPIRED);
-    expect(res.endsAt.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(res.endsAt!.getTime()).toBeLessThanOrEqual(Date.now());
   });
 
   it("expire 404s when there is no subscription", async () => {

@@ -104,8 +104,8 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
       inLanguage: ['fa', 'en'],
       keywords: t('keywords'),
       image: `${SITE_URL}/og.png`,
-      // A free 15-day trial is the only committed offer while paid pricing is TBD.
-      offers: { '@type': 'Offer', price: 0, priceCurrency: 'IRR', category: 'free-trial' },
+      // A permanent free plan (1 student) is the committed offer while paid pricing is TBD.
+      offers: { '@type': 'Offer', price: 0, priceCurrency: 'IRR', category: 'free' },
     },
     {
       '@context': 'https://schema.org',

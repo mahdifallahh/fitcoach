@@ -2,6 +2,7 @@ export type Role = 'COACH' | 'STUDENT' | 'ADMIN';
 
 export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'EXPIRED' | 'CANCELED';
 export type SubscriptionPlan = 'M3' | 'M6' | 'M12';
+export type SubscriptionTier = 'FREE' | 'ECONOMY' | 'NORMAL' | 'PRO';
 
 export interface CurrentUser {
   id: string;
@@ -12,8 +13,9 @@ export interface CurrentUser {
   coachProfile: { name: string; avatarUrl: string | null; bio: string | null } | null;
   subscription: {
     status: SubscriptionStatus;
+    tier: SubscriptionTier;
     plan: SubscriptionPlan | null;
-    endsAt: string;
+    endsAt: string | null;
   } | null;
 }
 
@@ -190,9 +192,10 @@ export interface PaymentRecord {
 export interface BillingSummary {
   subscription: {
     status: SubscriptionStatus;
+    tier: SubscriptionTier;
     plan: SubscriptionPlan | null;
     startsAt: string;
-    endsAt: string;
+    endsAt: string | null;
   } | null;
   plans: BillingPlan[];
   payments: PaymentRecord[];
@@ -316,8 +319,9 @@ export interface AdminCoach {
   joinedAt: string;
   subscription: {
     status: SubscriptionStatus;
+    tier: SubscriptionTier;
     plan: SubscriptionPlan | null;
-    endsAt: string;
+    endsAt: string | null;
     live: boolean;
   } | null;
   counts: { programs: number; students: number; exercises: number };

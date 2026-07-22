@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role, SubscriptionStatus, SubscriptionTier } from '@prisma/client';
 import { UsersService } from './service';
 
 describe('UsersService.createUser', () => {
@@ -20,7 +20,7 @@ describe('UsersService.createUser', () => {
     service = new UsersService(prisma);
   });
 
-  it('creates a coach profile with no subscription (trial is activated later, by the coach)', async () => {
+  it('creates a coach profile plus a permanent FREE subscription', async () => {
     tx.user.create.mockResolvedValue({ id: 'c1', role: Role.COACH });
     await service.createUser({ identifier: '+989120000000', channel: 'SMS', role: Role.COACH });
 
@@ -29,7 +29,12 @@ describe('UsersService.createUser', () => {
     expect(coachData.name).toBe('+989120000000');
     // phone coaches must NOT leak their number into the public handle
     expect(coachData.handle).toMatch(/^coach-[0-9a-f]{6}$/);
-    expect(tx.subscription.create).not.toHaveBeenCalled();
+    // every coach starts on the free tier (1 student, never expires)
+    const subData = tx.subscription.create.mock.calls[0][0].data;
+    expect(subData.coachId).toBe('c1');
+    expect(subData.tier).toBe(SubscriptionTier.FREE);
+    expect(subData.status).toBe(SubscriptionStatus.ACTIVE);
+    expect(subData.endsAt).toBeNull();
     expect(tx.studentProfile.updateMany).not.toHaveBeenCalled();
   });
 

@@ -11,6 +11,7 @@ import { Link } from "@/i18n/routing";
 import { Logo } from "./logo";
 import { BaleIcon, InstagramIcon, TelegramIcon } from "./brand-icons";
 import { ObfuscatedEmail } from "./obfuscated-email";
+import { EnamadSeal } from "./enamad-seal";
 
 /** Owner contact channels. Central so the header/other pages can reuse them. */
 export const CONTACT = {
@@ -90,6 +91,11 @@ export async function PublicFooter() {
                 <Icon className="size-5" />
               </a>
             ))}
+          </div>
+
+          {/* Trust seal (Enamad) — Iranian e-commerce e-trust badge */}
+          <div className="mt-6">
+            <EnamadSeal label={t("enamad")} />
           </div>
         </div>
 

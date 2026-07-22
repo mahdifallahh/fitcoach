@@ -1,14 +1,14 @@
 import { test, expect } from './helpers/test';
 import { L } from './helpers/labels';
-import { setupCoachWithTrial } from './helpers/auth';
+import { setupCoach } from './helpers/auth';
 
 /**
- * Exercise library CRUD. Every test signs up its own coach (via setupCoachWithTrial)
+ * Exercise library CRUD. Every test signs up its own coach (via setupCoach)
  * so exercises never leak between tests / parallel workers.
  */
 test.describe('coach exercise library', () => {
   test('a coach can create, find, edit, and delete an exercise', async ({ page }) => {
-    await setupCoachWithTrial(page);
+    await setupCoach(page);
     await page.goto('/fa/coach/exercises');
 
     const name = `پرس سینه ${Date.now()}`;

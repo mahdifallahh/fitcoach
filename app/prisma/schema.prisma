@@ -32,14 +32,28 @@ enum ProgramStatus {
   PUBLISHED
 }
 
+// Legacy time-based paid plans (3/6/12 months). Retained for the not-yet-live
+// paid checkout + historical Payment rows; the access model is now tier-based
+// (see SubscriptionTier), not day-based.
 enum SubscriptionPlan {
   M3
   M6
   M12
 }
 
+// Capability tier: access is scoped by how many students a coach may manage, not
+// by time. FREE is permanent (1 student). Paid tiers (pricing "coming soon"):
+// ECONOMY = 10, NORMAL = 25, PRO = unlimited. Per-student programs are unlimited
+// on every tier. Quota → student count map lives in src/lib/plans.ts.
+enum SubscriptionTier {
+  FREE
+  ECONOMY
+  NORMAL
+  PRO
+}
+
 enum SubscriptionStatus {
-  TRIALING
+  TRIALING // legacy (15-day trial); no new rows use it — kept for old payload compat
   ACTIVE
   EXPIRED
   CANCELED
@@ -310,10 +324,11 @@ model TemplateExercise {
 model Subscription {
   id        String             @id @default(cuid())
   coachId   String
-  plan      SubscriptionPlan?
+  tier      SubscriptionTier   @default(FREE)
+  plan      SubscriptionPlan? // set only for legacy/paid time-based rows
   status    SubscriptionStatus
   startsAt  DateTime           @default(now())
-  endsAt    DateTime
+  endsAt    DateTime? // null = never expires (FREE + tier-based plans)
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 

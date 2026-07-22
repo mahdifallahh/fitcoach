@@ -89,18 +89,19 @@ export class AdminService {
       take: 100,
       include: {
         user: { select: { phone: true, email: true, createdAt: true } },
-        subscriptions: { orderBy: { endsAt: "desc" }, take: 1 },
+        subscriptions: { orderBy: { createdAt: "desc" }, take: 1 },
         _count: { select: { programs: true, students: true, exercises: true } },
       },
     });
 
     return coaches.map((c) => {
       const sub = c.subscriptions[0] ?? null;
+      // Tier rows never expire (endsAt null); only a legacy paid plan can lapse.
       const live =
         !!sub &&
         (sub.status === SubscriptionStatus.TRIALING ||
           sub.status === SubscriptionStatus.ACTIVE) &&
-        sub.endsAt.getTime() > Date.now();
+        (sub.endsAt === null || sub.endsAt.getTime() > Date.now());
       return {
         userId: c.userId,
         name: c.name,
@@ -109,7 +110,7 @@ export class AdminService {
         email: c.user.email,
         joinedAt: c.user.createdAt,
         subscription: sub
-          ? { status: sub.status, plan: sub.plan, endsAt: sub.endsAt, live }
+          ? { status: sub.status, tier: sub.tier, plan: sub.plan, endsAt: sub.endsAt, live }
           : null,
         counts: c._count,
       };
@@ -140,10 +141,12 @@ export class AdminService {
 
     const current = await this.prisma.subscription.findFirst({
       where: { coachId: coachUserId },
-      orderBy: { endsAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
     const now = new Date();
-    const base = current && current.endsAt > now ? current.endsAt : now;
+    // A tier row (endsAt null) means the grant starts from now.
+    const base =
+      current && current.endsAt && current.endsAt > now ? current.endsAt : now;
     const endsAt = new Date(base.getTime() + days * DAY_MS);
 
     if (current) {
@@ -166,7 +169,7 @@ export class AdminService {
   async expireSubscription(coachUserId: string) {
     const current = await this.prisma.subscription.findFirst({
       where: { coachId: coachUserId },
-      orderBy: { endsAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
     if (!current)
       throw new NotFoundException({

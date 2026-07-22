@@ -1,67 +1,77 @@
 import "server-only";
 import {
   SubscriptionStatus,
+  SubscriptionTier,
   type PrismaClient,
   type SubscriptionPlan,
 } from "@prisma/client";
-import { PLANS, TRIAL_DAYS, addMonths } from "./plans";
-import { ConflictException } from "../http/errors";
+import { PLANS, TIER_MAX_STUDENTS, addMonths } from "./plans";
 
 export class SubscriptionsService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  /** Latest subscription row for a coach (trial or paid). */
+  /** Current subscription row for a coach (one per coach in the tier model). */
   getCurrent(coachId: string) {
     return this.prisma.subscription.findFirst({
       where: { coachId },
-      orderBy: { endsAt: "desc" },
+      orderBy: { createdAt: "desc" }, // endsAt is nullable now; order by creation
     });
   }
 
   /**
-   * Coach-initiated, one-time free trial. Unlike the old auto-start-at-signup
-   * behavior, a coach has no subscription row until they activate this themselves
-   * from the billing page. Since this creates the coach's very first subscription
-   * row, any existing row (trial or paid, even if since expired) blocks a second
-   * free trial.
+   * Idempotently ensure the coach has a subscription. Every coach is at least on
+   * the permanent FREE tier; this creates that row if it's missing (new coaches
+   * get it at signup, existing ones via the tier migration, so this is mostly a
+   * safety net). Replaces the old one-time 15-day `activateTrial`.
    */
-  async activateTrial(coachId: string) {
+  async ensureFreePlan(coachId: string) {
     const current = await this.getCurrent(coachId);
-    if (current) {
-      throw new ConflictException({
-        code: "TRIAL_ALREADY_USED",
-        message: "Your free trial has already been used",
-      });
-    }
-    const now = new Date();
+    if (current) return current;
     return this.prisma.subscription.create({
       data: {
         coachId,
-        status: SubscriptionStatus.TRIALING,
-        startsAt: now,
-        endsAt: new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000),
+        tier: SubscriptionTier.FREE,
+        status: SubscriptionStatus.ACTIVE,
+        endsAt: null, // FREE never expires
       },
     });
   }
 
-  /** True while the coach can create/edit (trial not expired, or active paid plan). */
-  async isActive(coachId: string): Promise<boolean> {
+  /** How many students a coach's tier allows (null = unlimited). */
+  async maxStudents(coachId: string): Promise<number | null> {
     const sub = await this.getCurrent(coachId);
-    if (!sub) return false;
-    const live =
-      sub.status === SubscriptionStatus.TRIALING ||
-      sub.status === SubscriptionStatus.ACTIVE;
-    return live && sub.endsAt.getTime() > Date.now();
+    const tier = sub?.tier ?? SubscriptionTier.FREE;
+    return TIER_MAX_STUDENTS[tier];
   }
 
   /**
-   * Activate or extend a paid plan. Extends from the later of now / current end
-   * (so paying before expiry stacks). Reuses the existing row (the trial).
+   * True while the coach may create/edit. Tier-based rows (FREE + paid) have a
+   * null `endsAt` and are live whenever ACTIVE. Legacy time-based rows (a paid
+   * plan with an `endsAt`) stay live only until that date. A coach with no row
+   * at all is treated as FREE-active (the migration backfills rows, but this
+   * keeps the guard safe if one is ever missing).
+   */
+  async isActive(coachId: string): Promise<boolean> {
+    const sub = await this.getCurrent(coachId);
+    if (!sub) return true; // implicit FREE
+    const live =
+      sub.status === SubscriptionStatus.ACTIVE ||
+      sub.status === SubscriptionStatus.TRIALING;
+    if (!live) return false;
+    // Tier-based (never-expiring) rows have endsAt === null → always live.
+    return sub.endsAt === null || sub.endsAt.getTime() > Date.now();
+  }
+
+  /**
+   * Activate or extend a legacy paid (time-based) plan. Unused while paid pricing
+   * is "coming soon", but kept wired for when checkout goes live. Extends from the
+   * later of now / current end so paying before expiry stacks.
    */
   async activateOrExtend(coachId: string, plan: SubscriptionPlan) {
     const current = await this.getCurrent(coachId);
     const now = new Date();
-    const base = current && current.endsAt > now ? current.endsAt : now;
+    const base =
+      current && current.endsAt && current.endsAt > now ? current.endsAt : now;
     const endsAt = addMonths(base, PLANS[plan].months);
 
     if (current) {
@@ -71,17 +81,14 @@ export class SubscriptionsService {
       });
     }
     return this.prisma.subscription.create({
-      data: {
-        coachId,
-        plan,
-        status: SubscriptionStatus.ACTIVE,
-        startsAt: now,
-        endsAt,
-      },
+      data: { coachId, plan, status: SubscriptionStatus.ACTIVE, startsAt: now, endsAt },
     });
   }
 
-  /** Sweep expired trials/plans → EXPIRED. Returns affected count. */
+  /**
+   * Sweep overdue time-based (paid) plans → EXPIRED. Never touches tier rows,
+   * which have a null `endsAt` (excluded by the `lt` comparison).
+   */
   async expireDue(): Promise<number> {
     const { count } = await this.prisma.subscription.updateMany({
       where: {

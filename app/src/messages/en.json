@@ -48,6 +48,7 @@
     "instagram": "Instagram",
     "telegram": "Telegram",
     "bale": "Bale",
+    "enamad": "Enamad e-trust seal",
     "terms": "Terms & Conditions",
     "privacy": "Privacy Policy"
   },
@@ -94,9 +95,9 @@
     },
     "pricing": {
       "title": "Pricing",
-      "subtitle": "Plans are based on how many students you coach. Start with a 15-day free trial; it's always free for students.",
-      "trialTitle": "15 days free, no card required",
-      "trialDesc": "Start now and try every feature without paying.",
+      "subtitle": "Plans are based on how many students you coach. Start on the free plan; it's always free for students.",
+      "trialTitle": "Free plan — up to 1 student",
+      "trialDesc": "Start free now and write a program for your first student. Upgrade whenever you're ready.",
       "trialCta": "Start free",
       "tier_ECONOMY_name": "Economy",
       "tier_NORMAL_name": "Standard",
@@ -105,7 +106,7 @@
       "unlimitedStudents": "Unlimited students",
       "comingSoon": "Coming soon",
       "popular": "Recommended",
-      "trialNote": "Plan prices will be announced soon. Until then, start with 15 days free."
+      "trialNote": "Higher plan prices will be announced soon. Until then, start on the free plan."
     },
     "howTitle": "How it works",
     "howSubtitle": "Whether you coach or train, get going in three simple steps.",
@@ -134,7 +135,7 @@
       "q2": "How do I sign in?",
       "a2": "With your phone number. The first time you verify by SMS code and choose a password; after that you sign in with just that password (or a one-time code whenever you prefer).",
       "q3": "How much does it cost?",
-      "a3": "Coaches get a 15-day free trial. After that, you pick a plan based on how many students you manage: Economy (up to 10 students), Normal (up to 50 students), or Professional (unlimited students). Plan pricing is coming soon. It's always free for students.",
+      "a3": "Coaches start on the free plan (up to 1 student, always free). Upgrade for more: Economy (up to 10 students), Standard (up to 25 students), or Professional (unlimited students). You can write and edit multiple programs per student. Plan pricing is coming soon. It's always free for students.",
       "q4": "What if a coach wrote a program before I signed up?",
       "a4": "Just register with the same number the coach entered — every program links to your account automatically."
     },
@@ -233,10 +234,6 @@
     "studentTitle": "Student dashboard",
     "welcome": "Welcome",
     "signedInAs": "Signed in as",
-    "trial": "Free trial",
-    "trialEndsOn": "Trial ends {date}",
-    "active": "Active subscription",
-    "expired": "Subscription expired",
     "logout": "Log out",
     "comingSoon": "This area is coming soon",
     "logoutError": "Log out failed"
@@ -255,7 +252,6 @@
     "step4Text": "Add your card number and price so students see them on the request form."
   },
   "coachHome": {
-    "noSub": "No subscription",
     "quickActions": "Quick actions",
     "action_writeProgram": "Write a program",
     "action_addExercise": "Add exercise",
@@ -385,20 +381,9 @@
   },
   "billing": {
     "title": "Subscription",
-    "subtitle": "Keep building and editing programs with an active subscription.",
-    "trial": "Free trial",
-    "active": "Active",
-    "expired": "Expired",
-    "trialEnds": "Trial ends {date}",
+    "subtitle": "Your plan is based on how many students you coach; write and edit as many programs per student as you like.",
     "activeUntil": "Active until {date}",
     "expiredOn": "Expired on {date}",
-    "noSub": "No subscription",
-    "startTrialTitle": "Start your free trial",
-    "startTrialDesc": "15 days free to build and edit programs — no card required. This trial can only be activated once.",
-    "startTrial": "Activate free trial",
-    "activating": "Activating…",
-    "trialActivated": "Free trial activated",
-    "trialActivateFailed": "Couldn't activate the trial",
     "choosePlan": "Choose a plan",
     "monthsCount": "{count} months",
     "subscribe": "Subscribe",
@@ -427,12 +412,12 @@
     "statusPaid": "Paid",
     "statusPending": "Pending",
     "statusFailed": "Failed",
-    "bannerExpired": "Your trial has ended. Subscribe to create or edit programs (your existing data stays viewable).",
+    "bannerExpired": "Your plan's write access has ended. Renew to keep creating or editing (your existing data stays viewable).",
     "bannerCta": "View plans",
-    "bannerNoTrial": "You haven't activated your free trial yet. Activate 15 free days to start building programs.",
-    "bannerTrialCta": "Activate free trial",
-    "lockedTitle": "An active subscription is required to create or edit — for now you can only view.",
-    "loadError": "Could not load billing info"
+    "lockedTitle": "An active plan is required to create or edit — for now you can only view.",
+    "loadError": "Could not load billing info",
+    "currentPlan": "Current plan",
+    "tier_FREE_name": "Free"
   },
   "profile": {
     "title": "Coach profile",
@@ -860,6 +845,10 @@
     "pay_PENDING": "Pending",
     "pay_PAID": "Paid",
     "pay_FAILED": "Failed",
-    "pay_REFUNDED": "Refunded"
+    "pay_REFUNDED": "Refunded",
+    "tier_FREE": "Free",
+    "tier_ECONOMY": "Economy",
+    "tier_NORMAL": "Standard",
+    "tier_PRO": "Professional"
   }
 }

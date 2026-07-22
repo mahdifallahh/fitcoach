@@ -12,7 +12,8 @@ export function startCron(): void {
   if (started) return;
   started = true;
 
-  // Hourly: flip lapsed trials/plans to EXPIRED (coach becomes read-only).
+  // Hourly: flip lapsed time-based (paid) plans to EXPIRED (coach becomes
+  // read-only). Permanent tier rows have a null endsAt and are never swept.
   cron.schedule("0 * * * *", async () => {
     try {
       const n = await getSubscriptions().expireDue();

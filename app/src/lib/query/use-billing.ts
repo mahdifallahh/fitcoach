@@ -11,17 +11,6 @@ export function useBilling() {
   return useQuery({ queryKey: BILLING_KEY, queryFn: () => billingApi.get() });
 }
 
-export function useActivateTrial() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => billingApi.activateTrial(),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: BILLING_KEY });
-      qc.invalidateQueries({ queryKey: ME_QUERY_KEY });
-    },
-  });
-}
-
 export function useCheckout() {
   return useMutation({
     mutationFn: ({ plan, gateway, locale }: { plan: SubscriptionPlan; gateway: CheckoutGateway; locale: 'fa' | 'en' }) =>

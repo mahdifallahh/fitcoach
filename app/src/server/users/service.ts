@@ -1,5 +1,12 @@
 import "server-only";
-import { Prisma, Role, type PrismaClient, type User } from "@prisma/client";
+import {
+  Prisma,
+  Role,
+  SubscriptionStatus,
+  SubscriptionTier,
+  type PrismaClient,
+  type User,
+} from "@prisma/client";
 import type { IdentifierChannel } from "../utils/identifier";
 import { generateUniqueHandle } from "../utils/handle";
 
@@ -32,7 +39,7 @@ export class UsersService {
       where: { id },
       include: {
         coachProfile: {
-          include: { subscriptions: { orderBy: { endsAt: "desc" }, take: 1 } },
+          include: { subscriptions: { orderBy: { createdAt: "desc" }, take: 1 } },
         },
       },
     });
@@ -52,15 +59,15 @@ export class UsersService {
           }
         : null,
       subscription: sub
-        ? { status: sub.status, plan: sub.plan, endsAt: sub.endsAt }
+        ? { status: sub.status, tier: sub.tier, plan: sub.plan, endsAt: sub.endsAt }
         : null,
     };
   }
 
   /**
    * Creates a user for the given identifier/role. Coaches get a starter profile
-   * (no subscription yet — they activate their one-time free trial themselves from
-   * the billing page); students claim any pre-authored profiles. All in one tx.
+   * plus a permanent FREE subscription (1 student, never expires); students claim
+   * any pre-authored profiles. All in one tx.
    */
   async createUser(input: CreateUserInput): Promise<User> {
     const { identifier, channel, role, locale } = input;
@@ -88,6 +95,16 @@ export class UsersService {
         );
         await tx.coachProfile.create({
           data: { userId: user.id, name: coachName, handle },
+        });
+        // Every coach starts on the permanent, free tier (1 student, never
+        // expires) — no activation step. Paid tiers upgrade this row later.
+        await tx.subscription.create({
+          data: {
+            coachId: user.id,
+            tier: SubscriptionTier.FREE,
+            status: SubscriptionStatus.ACTIVE,
+            endsAt: null,
+          },
         });
       } else if (role === Role.STUDENT) {
         await this.claimStudentProfiles(tx, user.id, channel, identifier);

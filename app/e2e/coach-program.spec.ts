@@ -1,6 +1,6 @@
 import { test, expect } from './helpers/test';
 import { L } from './helpers/labels';
-import { setupCoachWithTrial, uniquePhone } from './helpers/auth';
+import { setupCoach, uniquePhone } from './helpers/auth';
 
 /**
  * A coach needs at least one exercise in the library before they can build a
@@ -17,7 +17,7 @@ async function createExercise(page: import('@playwright/test').Page, name: strin
 
 test.describe('coach program builder', () => {
   test('a coach can write a program for a brand-new student by phone and publish it', async ({ page }) => {
-    await setupCoachWithTrial(page);
+    await setupCoach(page);
     const exName = `اسکوات ${Date.now()}`;
     await createExercise(page, exName);
 
@@ -39,7 +39,7 @@ test.describe('coach program builder', () => {
   });
 
   test('missing student contact / name blocks save with a validation toast', async ({ page }) => {
-    await setupCoachWithTrial(page);
+    await setupCoach(page);
     await page.goto('/fa/coach/programs/new');
     await page.getByRole('button', { name: L.builder.saveDraft }).click();
     await expect(page.getByText(L.builder.missingMeta)).toBeVisible();
@@ -49,7 +49,7 @@ test.describe('coach program builder', () => {
 
 test.describe('coach program templates', () => {
   test('a coach can create a reusable template and assign it to a student', async ({ page }) => {
-    await setupCoachWithTrial(page);
+    await setupCoach(page);
     const exName = `ددلیفت ${Date.now()}`;
     await createExercise(page, exName);
 

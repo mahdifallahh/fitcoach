@@ -192,7 +192,7 @@ export class PaymentsService {
       data: { subscriptionId: sub.id },
     });
     console.log(
-      `[payments] ${payment.id} paid → subscription ${sub.id} active until ${sub.endsAt.toISOString()}`,
+      `[payments] ${payment.id} paid → subscription ${sub.id} active until ${sub.endsAt?.toISOString() ?? "∞"}`,
     );
   }
 

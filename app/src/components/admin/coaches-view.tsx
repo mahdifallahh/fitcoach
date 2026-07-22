@@ -69,8 +69,15 @@ function CoachCard({ coach }: { coach: AdminCoach }) {
   const [days, setDays] = React.useState('30');
 
   const sub = coach.subscription;
+  // Tier rows have no end date; only legacy paid plans show one.
   const subLabel = sub
-    ? `${t(`sub_${sub.status}`)} · ${format.dateTime(new Date(sub.endsAt), { dateStyle: 'medium' })}`
+    ? [
+        t(`tier_${sub.tier}`),
+        t(`sub_${sub.status}`),
+        sub.endsAt ? format.dateTime(new Date(sub.endsAt), { dateStyle: 'medium' }) : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
     : t('noSub');
 
   function grant() {

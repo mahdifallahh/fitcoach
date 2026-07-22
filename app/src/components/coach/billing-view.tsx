@@ -4,15 +4,10 @@ import * as React from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Check, CreditCard, Loader2 } from "lucide-react";
-import {
-  useActivateTrial,
-  useBilling,
-  useDevComplete,
-} from "@/lib/query/use-billing";
-import { TIERS } from "@/lib/plans";
+import { CreditCard } from "lucide-react";
+import { useBilling, useDevComplete } from "@/lib/query/use-billing";
+import { TIERS, TIER_MAX_STUDENTS, type TierCode } from "@/lib/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TierCard } from "@/components/shared/tier-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,7 +20,6 @@ export function BillingView() {
   const params = useSearchParams();
   const { data, isLoading, isError, refetch } = useBilling();
   const devComplete = useDevComplete();
-  const activateTrial = useActivateTrial();
   const handled = React.useRef(false);
 
   // Handle the return from checkout: dev-simulate completion, or a gateway status.
@@ -46,13 +40,6 @@ export function BillingView() {
     if (typeof window !== "undefined")
       window.history.replaceState(null, "", window.location.pathname);
   }, [params, devComplete, t]);
-
-  function startTrial() {
-    activateTrial.mutate(undefined, {
-      onSuccess: () => toast.success(t("trialActivated")),
-      onError: () => toast.error(t("trialActivateFailed")),
-    });
-  }
 
   if (isError) {
     return (
@@ -77,25 +64,25 @@ export function BillingView() {
   }
 
   const sub = data.subscription;
-  const statusLabel =
-    sub?.status === "TRIALING"
-      ? t("trial")
-      : sub?.status === "ACTIVE"
-        ? t("active")
-        : sub
-          ? t("expired")
-          : t("noSub");
-  const statusVariant =
-    sub?.status === "ACTIVE" || sub?.status === "TRIALING"
-      ? "default"
-      : "secondary";
-  const dateLine = sub
-    ? sub.status === "TRIALING"
-      ? t("trialEnds", { date: fmtDate(sub.endsAt) })
-      : sub.status === "ACTIVE"
-        ? t("activeUntil", { date: fmtDate(sub.endsAt) })
-        : t("expiredOn", { date: fmtDate(sub.endsAt) })
-    : "";
+  // Every coach is at least FREE; a missing row is treated as FREE.
+  const tier: TierCode = sub?.tier ?? "FREE";
+  const maxStudents = TIER_MAX_STUDENTS[tier];
+  const capLine =
+    maxStudents === null
+      ? t("unlimitedStudents")
+      : t("upToStudents", { count: maxStudents });
+  // Only a legacy time-based paid plan carries a real end date.
+  const lapsed =
+    !!sub &&
+    (sub.status === "EXPIRED" ||
+      sub.status === "CANCELED" ||
+      (sub.endsAt !== null && new Date(sub.endsAt).getTime() < Date.now()));
+  const dateLine =
+    sub && sub.endsAt !== null && !lapsed
+      ? t("activeUntil", { date: fmtDate(sub.endsAt) })
+      : lapsed && sub?.endsAt
+        ? t("expiredOn", { date: fmtDate(sub.endsAt) })
+        : "";
 
   function fmtDate(d: string) {
     return format.dateTime(new Date(d), { dateStyle: "medium" });
@@ -108,42 +95,24 @@ export function BillingView() {
         <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      {/* Current status */}
-      {!sub ? (
-        <Card className="max-w-md border-primary/40 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-lg">{t("startTrialTitle")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {t("startTrialDesc")}
-            </p>
-            <Button onClick={startTrial} disabled={activateTrial.isPending}>
-              {activateTrial.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Check className="size-4" />
-              )}
-              {activateTrial.isPending ? t("activating") : t("startTrial")}
-            </Button>
+      {/* Current plan — tier + student cap (Free never expires). */}
+      <Card className="max-w-md">
+        <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
+          <div>
+            <p className="text-xs text-muted-foreground">{t("currentPlan")}</p>
+            <CardTitle className="text-lg">{t(`tier_${tier}_name`)}</CardTitle>
+          </div>
+          <Badge variant={lapsed ? "secondary" : "default"}>
+            <CreditCard className="me-1 size-3.5" />
+            {capLine}
+          </Badge>
+        </CardHeader>
+        {dateLine && (
+          <CardContent>
+            <p className="text-sm text-muted-foreground">{dateLine}</p>
           </CardContent>
-        </Card>
-      ) : (
-        <Card className="max-w-md">
-          <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-            <CardTitle className="text-lg">{statusLabel}</CardTitle>
-            <Badge variant={statusVariant}>
-              <CreditCard className="me-1 size-3.5" />
-              {sub?.plan ?? "—"}
-            </Badge>
-          </CardHeader>
-          {dateLine && (
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{dateLine}</p>
-            </CardContent>
-          )}
-        </Card>
-      )}
+        )}
+      </Card>
 
       {data.simulateMode && (
         <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-300">

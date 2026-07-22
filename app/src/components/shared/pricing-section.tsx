@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { TierCard } from '@/components/shared/tier-card';
 
 /**
- * Public pricing on the landing page. Tiers are scoped by student count; prices
- * are "coming soon" for now, so the only live call-to-action is the 15-day free
- * trial (activated inside the coach billing panel after sign-up).
+ * Public pricing on the landing page. Tiers are scoped by student count; paid
+ * prices are "coming soon", so the live call-to-action is the permanent free
+ * plan (1 student), which every coach starts on at sign-up.
  */
 export async function PricingSection() {
   const t = await getTranslations('landing.pricing');
@@ -20,7 +20,7 @@ export async function PricingSection() {
         <p className="max-w-lg text-muted-foreground">{t('subtitle')}</p>
       </div>
 
-      {/* Free trial — the one actionable offer right now */}
+      {/* Free plan — the one actionable offer right now */}
       <div className="container mt-8 flex justify-center">
         <div className="flex w-full max-w-3xl flex-col items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center sm:flex-row sm:text-start">
           <div className="flex items-center gap-3">

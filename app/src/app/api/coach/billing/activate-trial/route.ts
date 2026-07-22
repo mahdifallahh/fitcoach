@@ -4,8 +4,12 @@ import { getSubscriptions } from '@/server/container';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Coach-initiated, one-time free trial (no subscription is created at signup). */
+/**
+ * Ensure the coach is on the permanent FREE plan (idempotent). Coaches are
+ * provisioned with FREE at signup; this is a safety net that returns the existing
+ * row or creates a FREE one. (Path kept for compatibility — no more 15-day trial.)
+ */
 export const POST = withRoute(
-  ({ user }) => getSubscriptions().activateTrial(user.id),
+  ({ user }) => getSubscriptions().ensureFreePlan(user.id),
   { role: 'COACH' },
 );

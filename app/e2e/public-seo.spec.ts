@@ -1,5 +1,5 @@
 import { test, expect } from './helpers/test';
-import { setupCoachWithTrial } from './helpers/auth';
+import { setupCoach } from './helpers/auth';
 
 test.describe('public SEO surface', () => {
   test('robots.txt allows public pages, disallows panels, and points at the sitemap', async ({ request, baseURL }) => {
@@ -34,7 +34,7 @@ test.describe('public SEO surface', () => {
   });
 
   test("a coach's public /c/<handle> page renders their profile with Person JSON-LD", async ({ page }) => {
-    await setupCoachWithTrial(page);
+    await setupCoach(page);
     await page.goto('/fa/coach/profile');
 
     // Every phone-signup coach gets an auto-generated handle immediately, so the

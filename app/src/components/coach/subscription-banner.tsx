@@ -6,7 +6,12 @@ import { Link, usePathname } from "@/i18n/routing";
 import { useMe } from "@/lib/query/use-auth";
 import { Button } from "@/components/ui/button";
 
-/** Shown to coaches whose trial/plan has lapsed (write access is blocked server-side). */
+/**
+ * Shown only to coaches whose legacy *paid* plan has lapsed (write access blocked
+ * server-side). The permanent FREE tier never expires (`endsAt === null`), so
+ * free coaches never see this — the panel stays fully writable within their
+ * student cap.
+ */
 export function SubscriptionBanner() {
   const t = useTranslations("billing");
   const pathname = usePathname();
@@ -19,21 +24,7 @@ export function SubscriptionBanner() {
     !!sub &&
     (sub.status === "EXPIRED" ||
       sub.status === "CANCELED" ||
-      new Date(sub.endsAt).getTime() < Date.now());
-  if (!sub && !expired) {
-    // Never activated a subscription — offer the one-time free trial instead of "expired" wording.
-    return (
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-        <p className="flex items-center gap-2 text-sm">
-          <AlertTriangle className="size-4 shrink-0 text-primary" />
-          {t("bannerNoTrial")}
-        </p>
-        <Button asChild size="sm">
-          <Link href="/coach/billing">{t("bannerTrialCta")}</Link>
-        </Button>
-      </div>
-    );
-  }
+      (sub.endsAt !== null && new Date(sub.endsAt).getTime() < Date.now()));
   if (!expired) return null;
 
   return (

@@ -8,7 +8,7 @@
  *   Coach   phone  +989120000000
  *   Student phone  +989121111111   (register with this to see the seeded program)
  */
-import { PrismaClient, Role, SubscriptionStatus } from '@prisma/client';
+import { PrismaClient, Role, SubscriptionStatus, SubscriptionTier } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 
 const prisma = new PrismaClient();
@@ -39,15 +39,16 @@ async function main(): Promise<void> {
     },
   });
 
-  // ── Trial subscription (15 days) ───────────────────────────────────────────
+  // ── Free subscription (permanent, 1 student) ───────────────────────────────
   const existingSub = await prisma.subscription.findFirst({ where: { coachId: coachUser.id } });
   if (!existingSub) {
     await prisma.subscription.create({
       data: {
         coachId: coachUser.id,
-        status: SubscriptionStatus.TRIALING,
+        tier: SubscriptionTier.FREE,
+        status: SubscriptionStatus.ACTIVE,
         startsAt: new Date(),
-        endsAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+        endsAt: null,
       },
     });
   }
