@@ -13,13 +13,22 @@ import '../globals.css';
 // `latin` is preloaded alongside `arabic`: fa pages always contain Latin glyphs
 // (digits, "fitlo", URLs), and without the subset those characters waited for
 // late CSS-discovered fetches — a visible reflow mid-render. Tahoma leads the
-// fallback stack because it's the metrically-closest Arabic-capable system font
-// during the brief `swap` window (next/font's size-adjusted fallback only tunes
-// Latin metrics).
+// fallback stack because it's the metrically-closest Arabic-capable system font.
+//
+// `display: 'optional'` (not 'swap'): measured on Lighthouse mobile (Moto G,
+// Slow 4G), the web font arrives ~1.6s after first paint, and next/font's
+// auto-generated "Vazirmatn Fallback" renders the body ~24–32px shorter than
+// the real face — so the mid-render swap dropped everything below the hero,
+// costing 0.111 CLS and pushing LCP to 2.5s (the large hero H1 repainting when
+// the font landed). `optional` gives the font a ~100ms window, then commits to
+// the fallback for the rest of that pageview: no mid-render swap → CLS ~0 and
+// the text-LCP paints at FCP (~0.9s). The font still preloads + caches, so it
+// shows on fast connections and every repeat visit; only a cold, throttled
+// first load renders in the fallback.
 const vazirmatn = Vazirmatn({
   subsets: ['arabic', 'latin'],
   variable: '--font-vazir',
-  display: 'swap',
+  display: 'optional',
   fallback: ['Tahoma', 'Arial', 'sans-serif'],
 });
 // Inter is only the en-locale face (Vazirmatn covers Latin on fa pages), so don't

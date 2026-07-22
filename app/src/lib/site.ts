@@ -11,26 +11,44 @@ import { routing } from '@/i18n/routing';
  * For per-request routes (sitemap/robots) prefer `resolveOrigin()`, which falls
  * back to the actual request host so those never emit localhost URLs.
  */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://fitlo.ir').replace(/\/$/, '');
-
+const FALLBACK_SITE_URL = 'https://fitlo.ir';
 const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i;
 
-// A production deploy that still resolves to a local/loopback origin means
-// NEXT_PUBLIC_SITE_URL wasn't actually applied on the server (a stray
-// `.env.local` on the host, or the hosting panel's env value never got set) —
-// every generated URL (sitemap, canonical, OG, JSON-LD) silently ends up
-// pointing at localhost. Surface it loudly in server logs instead of letting
-// it ship unnoticed until, say, Search Console flags the sitemap.
-/** One-time production warning when the baked origin is a localhost value. */
+const RAW_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '');
+
+// `NEXT_PUBLIC_*` is inlined at BUILD time. If a *production* build picks up a
+// localhost origin — a stray `.env.local` copied into the build, or a mis-set
+// hosting env panel — every prerendered canonical/hreflang/OG tag ships pointing
+// at localhost, which tells Google the real domain is a duplicate of a dead host
+// (and fails Lighthouse's rel=canonical audit). So in a production build we
+// *reject* a loopback origin and fall back to the real domain rather than baking
+// the bad value. Dev builds keep localhost (handy for local canonical checks).
+const BAKED_LOCAL_IN_PROD = process.env.NODE_ENV === 'production' && LOCAL_ORIGIN.test(RAW_SITE_URL);
+
+export const SITE_URL = !RAW_SITE_URL || BAKED_LOCAL_IN_PROD ? FALLBACK_SITE_URL : RAW_SITE_URL;
+
+if (BAKED_LOCAL_IN_PROD) {
+  // eslint-disable-next-line no-console
+  console.error(
+    `[fitlo] NEXT_PUBLIC_SITE_URL was "${RAW_SITE_URL}" during a production build — ` +
+      `overriding to "${FALLBACK_SITE_URL}" so canonical/OG/JSON-LD don't ship localhost URLs. ` +
+      'Set NEXT_PUBLIC_SITE_URL to the real public domain in the build env to silence this.',
+  );
+}
+
+// A production deploy whose baked origin still looks local means the override
+// above didn't have a real domain to use either. Surface it loudly in server
+// logs instead of letting it ship unnoticed until Search Console flags it.
+/** One-time production warning when the resolved origin is still a localhost value. */
 function warnIfLocalOriginOnce() {
   const g = globalThis as { __fitloSiteUrlWarned?: boolean };
   if (g.__fitloSiteUrlWarned || process.env.NODE_ENV !== 'production') return;
   g.__fitloSiteUrlWarned = true;
   // eslint-disable-next-line no-console
   console.error(
-    `[fitlo] NEXT_PUBLIC_SITE_URL is "${SITE_URL}" in production. ` +
-      'Set it to the real public domain (e.g. https://fitlo.ir) in the server env and REBUILD — ' +
-      'canonical tags, OG images and JSON-LD are baked at build time and are currently wrong. ' +
+    `[fitlo] SITE_URL resolved to "${SITE_URL}" in production. ` +
+      'Set NEXT_PUBLIC_SITE_URL to the real public domain (e.g. https://fitlo.ir) and REBUILD — ' +
+      'canonical tags, OG images and JSON-LD are baked at build time. ' +
       '(sitemap/robots self-correct from the request host, so those stay valid.)',
   );
 }

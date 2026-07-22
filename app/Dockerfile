@@ -49,8 +49,16 @@ CMD ["sh", "docker-entrypoint.sh"]
 
 # ── Build (produce standalone output) ────────────────────────────────────
 FROM base AS build
+# NEXT_PUBLIC_* are inlined into the client bundle + prerendered HTML at build
+# time, so the canonical/hreflang/OG origin MUST be correct HERE (a runtime env
+# can't fix already-baked tags). Default to the production domain; override per
+# build with `docker build --build-arg NEXT_PUBLIC_SITE_URL=https://your.domain`.
+# (.dockerignore already keeps dev .env* files out of the build context, and
+# lib/site.ts rejects a localhost value in production as a final safety net.)
+ARG NEXT_PUBLIC_SITE_URL=https://fitlo.ir
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    NEXT_OUTPUT=standalone
+    NEXT_OUTPUT=standalone \
+    NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
