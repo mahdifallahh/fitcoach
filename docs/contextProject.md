@@ -256,6 +256,18 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
     marketing surface. If the sheet ever grows large (many new global styles), re-measure.
   - `src/app/layout.tsx` (passthrough) + `src/app/not-found.tsx` (self-contained bilingual 404) exist so
     the global `/404` prerenders through the app router — required for `next build` to pass.
+  - **User-uploaded images (avatars) are raw `<img>`, NOT `next/image`** — the optimizer runs
+    server-side and can't reach the browser-only S3 *public* endpoint (dev: `localhost:9100` is the
+    container, not the host; the split endpoints make `/_next/image` **500**). On the public coach page
+    (`c/[handle]/page.tsx`) the avatar is the LCP element, so the raw `<img>` still carries explicit
+    `width/height` (no CLS, passes the audit) + `fetchPriority="high"`. Bytes are capped at *upload* time
+    instead: `lib/image.ts` `downscaleImage()` (canvas → 512px WebP, best-effort, GIFs passed through) runs
+    before the presigned PUT in `profile-form.tsx` — a phone photo drops ~90% before it ever becomes the
+    page's LCP image. Reuse `downscaleImage` for any other public raster upload; don't reach for `next/image`.
+  - **TTFB is the dominant FCP/LCP cost, not code** — measured 400–900 ms on the live origin (no CDN). The
+    landing/blog are already SSG and the critical path is otherwise collapsed (inline CSS, no render-blocking
+    links), so the highest-leverage remaining win is an edge cache / CDN in front of the origin, not further
+    bundle trimming.
 
 ---
 
