@@ -174,7 +174,13 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   `languageAlternates()` (fa/en + `x-default`). **Gotcha (bit us once):** `NEXT_PUBLIC_*` is inlined at
   **build** time, so if the host's env panel doesn't set `NEXT_PUBLIC_SITE_URL` — or a stray `.env.local` in
   the deployed files supplies its dev value — the baked `SITE_URL` becomes `localhost`, and canonical/OG/JSON-LD
-  ship wrong. **`sitemap.ts` + `robots.ts` are hardened against this**: they're `force-dynamic` and call
+  ship wrong. **This actually shipped once** (the live `/fa` emitted `<link rel=canonical href="http://localhost:3000/fa">`,
+  failing Lighthouse's rel=canonical audit and telling Google the real domain is a dupe of a dead host). **Now
+  hardened at three layers:** (1) `site.ts` **rejects a loopback `NEXT_PUBLIC_SITE_URL` during a production build**
+  (`NODE_ENV==='production'`) and falls back to `https://fitlo.ir`, `console.error`-ing once — so even a leaked dev
+  value can't poison the baked tags (a legit non-localhost staging URL is still honored); (2) the Dockerfile build
+  stage sets `ARG NEXT_PUBLIC_SITE_URL=https://fitlo.ir` (override per build); (3) `.dockerignore` keeps `.env*` out
+  of the image. **`sitemap.ts` + `robots.ts` are hardened separately**: they're `force-dynamic` and call
   `resolveOrigin()` (in `site.ts`), which prefers a non-localhost `SITE_URL` but otherwise derives the origin
   from the request's `x-forwarded-host`/`host` header — so a sitemap's `<loc>` entries always match the host it
   was fetched from (exactly what Search Console's "URL not allowed" check enforces). `resolveOrigin()` also
