@@ -1,12 +1,20 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
 import { isStandalone } from '@/lib/hooks/use-pwa-install';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { InstallDialog } from './install-dialog';
+
+// The dialog drags in Radix Dialog (portal, focus-scope, remove-scroll). It's
+// only needed once the user actually clicks "install", so defer its chunk —
+// the marketing header renders this button on every public page and shouldn't
+// ship the modal's JS into the landing/blog critical path (mobile TBT).
+const InstallDialog = dynamic(() => import('./install-dialog').then((m) => m.InstallDialog), {
+  ssr: false,
+});
 
 /**
  * Persistent "Install app" button for the header. Hidden once the app is running
@@ -33,6 +41,9 @@ export function InstallButton({
   const [checked, setChecked] = React.useState(false);
   const [installed, setInstalled] = React.useState(false);
   const [open, setOpen] = React.useState(false);
+  // Stays true once the dialog has been opened, so its lazy chunk loads on the
+  // first click and remains mounted afterward (close/re-open animate normally).
+  const [dialogMounted, setDialogMounted] = React.useState(false);
 
   React.useEffect(() => {
     setInstalled(isStandalone());
@@ -57,12 +68,15 @@ export function InstallButton({
         className={cn(!checked && 'invisible', className)}
         aria-label={t('installButton')}
         title={t('installButton')}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setDialogMounted(true);
+          setOpen(true);
+        }}
       >
         <Download className="size-4" />
         {!iconOnly && t('installButton')}
       </Button>
-      <InstallDialog open={open} onOpenChange={setOpen} />
+      {dialogMounted && <InstallDialog open={open} onOpenChange={setOpen} />}
     </>
   );
 }
