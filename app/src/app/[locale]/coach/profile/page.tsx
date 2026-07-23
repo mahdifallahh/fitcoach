@@ -6,6 +6,7 @@ import { ProfileForm } from '@/components/coach/profile-form';
 import { useCoachProfile } from '@/lib/query/use-coach-profile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/shared/error-state';
+import { DeleteAccountCard } from '@/components/shared/delete-account-card';
 
 export default function CoachProfilePage() {
   return (
@@ -38,6 +39,9 @@ function ProfileContent() {
       ) : (
         <ProfileForm profile={data} />
       )}
+
+      {/* Account-level, so it lives at the bottom of the settings page. */}
+      <DeleteAccountCard />
     </div>
   );
 }

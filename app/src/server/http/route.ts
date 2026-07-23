@@ -64,7 +64,19 @@ export function withRoute<B = undefined>(
           const roles = Array.isArray(options.role)
             ? options.role
             : [options.role];
-          if (!roles.includes(user.role)) {
+          // Capability-based, not primary-role-based: one account can hold both
+          // a coach and a student side, so a COACH-guarded route accepts anyone
+          // with the coach capability. ADMIN stays tied to the primary role.
+          // (Bound to a const so the null-narrowing survives into the closure.)
+          const principal = user;
+          const allowed = roles.some((r) =>
+            r === "COACH"
+              ? principal.isCoach
+              : r === "STUDENT"
+                ? principal.isStudent
+                : principal.role === r,
+          );
+          if (!allowed) {
             throw new ForbiddenException({
               code: "FORBIDDEN_ROLE",
               message: "Insufficient role",
@@ -73,7 +85,7 @@ export function withRoute<B = undefined>(
         }
         if (
           options.requiresSub &&
-          user.role === "COACH" &&
+          user.isCoach &&
           !(await getSubscriptions().isActive(user.id))
         ) {
           throw new HttpException(

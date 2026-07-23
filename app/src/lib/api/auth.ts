@@ -46,3 +46,25 @@ export function roleHome(role: Role): string {
   if (role === 'ADMIN') return '/admin';
   return role === 'COACH' ? '/coach' : '/student';
 }
+
+/**
+ * Whether the account may enter a given panel. One phone can hold both a coach
+ * and a student side, so this is decided by capability — never by the single
+ * primary `role` (which only still gates ADMIN).
+ */
+export function hasCapability(user: CurrentUser, role: Role): boolean {
+  if (role === 'ADMIN') return user.role === 'ADMIN';
+  return role === 'COACH' ? user.isCoach : user.isStudent;
+}
+
+/**
+ * Where to send this account by default: its primary role's panel when that
+ * side is actually enabled, otherwise whichever side it does have.
+ */
+export function defaultHome(user: CurrentUser): string {
+  if (user.role === 'ADMIN') return '/admin';
+  if (hasCapability(user, user.role)) return roleHome(user.role);
+  if (user.isCoach) return '/coach';
+  if (user.isStudent) return '/student';
+  return roleHome(user.role);
+}

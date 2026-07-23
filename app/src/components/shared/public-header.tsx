@@ -17,6 +17,7 @@ export function PublicHeader() {
   const [open, setOpen] = React.useState(false);
 
   const navLinks = [
+    { href: '/#coaches', label: t('coaches') },
     { href: '/about', label: t('about') },
     { href: '/#faq', label: t('faq') },
     { href: '/blog', label: t('blog') },

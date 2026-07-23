@@ -82,7 +82,15 @@ model User {
   id           String   @id @default(cuid())
   phone        String?  @unique
   email        String?  @unique
+  // The account's *primary* role: which panel it lands on after login, and the
+  // only thing that marks an ADMIN. Coach/student access is granted by the
+  // capability flags below, not by this — one phone can be both.
   role         Role
+  // Capabilities. A single account can hold a coach side and a student side at
+  // the same time; these are the source of truth for panel/API access, so the
+  // request guard never needs a join. `isCoach` implies a CoachProfile exists.
+  isCoach      Boolean  @default(false)
+  isStudent    Boolean  @default(false)
   locale       String   @default("fa")
   passwordHash String? // scrypt hash; set after first OTP signup, then used for password login
   createdAt    DateTime @default(now())

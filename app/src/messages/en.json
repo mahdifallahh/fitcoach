@@ -38,6 +38,7 @@
     "tagline": "The bilingual coaching & training-program platform — for coaches and their athletes.",
     "exploreHeading": "Explore",
     "accountHeading": "Sign in",
+    "coaches": "Coaches",
     "about": "About us",
     "faq": "FAQ",
     "blog": "Blog",
@@ -92,6 +93,11 @@
       "library": "Your own exercise library — GIFs, video links, and notes",
       "pdf": "One-tap PDF export",
       "bilingual": "Persian & English, RTL-ready"
+    },
+    "coaches": {
+      "title": "Coaches on fitlo",
+      "subtitle": "Trainers writing programs on fitlo. Tap a card to see their page and request a program.",
+      "view": "View coach"
     },
     "pricing": {
       "title": "Pricing",
@@ -844,5 +850,33 @@
     "tier_ECONOMY": "Economy",
     "tier_NORMAL": "Standard",
     "tier_PRO": "Professional"
+  },
+  "roleSwitcher": {
+    "title": "Account mode",
+    "mode_COACH": "Coach",
+    "mode_STUDENT": "Student",
+    "current": "Current mode",
+    "switchTo": "Switch to this mode",
+    "notActive": "Not active — tap to enable",
+    "activated": "{mode} mode enabled",
+    "activateError": "Couldn't enable that mode",
+    "hint": "One phone number can be both a coach and a student."
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "description": "Your account and its data are removed permanently.",
+    "warnCoach": "All your programs, exercises, students and requests are deleted.",
+    "warnStudent": "You lose access to your programs; the programs your coach wrote stay with them.",
+    "warnIrreversible": "This cannot be undone.",
+    "cta": "Delete account",
+    "dialogTitle": "Delete your account?",
+    "dialogBody": "To confirm, enter your password and type the confirmation word.",
+    "passwordLabel": "Current password",
+    "confirmLabel": "Type “{word}” to confirm",
+    "confirmWord": "DELETE",
+    "confirmCta": "Delete permanently",
+    "cancel": "Cancel",
+    "deleted": "Account deleted",
+    "error": "Could not delete the account"
   }
 }

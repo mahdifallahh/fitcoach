@@ -11,8 +11,14 @@ export const REFRESH_COOKIE = "refresh_token";
 /** Refresh cookie is scoped so it's only sent to the auth endpoints. */
 export const REFRESH_COOKIE_PATH = "/api/auth";
 
+/** Account capabilities carried in the session (one phone may hold both). */
+export interface UserCapabilities {
+  isCoach: boolean;
+  isStudent: boolean;
+}
+
 /** Payload embedded in the access JWT. */
-export interface JwtPayload {
+export interface JwtPayload extends UserCapabilities {
   sub: string;
   role: Role;
 }
@@ -35,8 +41,16 @@ export class TokenService {
     );
   }
 
-  async signAccessToken(userId: string, role: Role): Promise<string> {
-    return new SignJWT({ role })
+  async signAccessToken(
+    userId: string,
+    role: Role,
+    caps?: Partial<UserCapabilities>,
+  ): Promise<string> {
+    return new SignJWT({
+      role,
+      isCoach: caps?.isCoach ?? false,
+      isStudent: caps?.isStudent ?? false,
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject(userId)
       .setIssuedAt()
@@ -46,7 +60,16 @@ export class TokenService {
 
   async verifyAccessToken(token: string): Promise<JwtPayload> {
     const { payload } = await jwtVerify(token, this.accessSecret);
-    return { sub: payload.sub as string, role: payload.role as Role };
+    const role = payload.role as Role;
+    // Tokens minted before dual-role shipped carry no capability claims. Derive
+    // them from the single role so in-flight sessions keep working until the
+    // next refresh re-mints the token with real flags.
+    return {
+      sub: payload.sub as string,
+      role,
+      isCoach: (payload.isCoach as boolean | undefined) ?? role === "COACH",
+      isStudent: (payload.isStudent as boolean | undefined) ?? role === "STUDENT",
+    };
   }
 
   /** Create + persist a new refresh token; returns the raw value for the cookie. */
@@ -68,7 +91,12 @@ export class TokenService {
   async rotateRefreshToken(
     raw: string | undefined,
     userAgent?: string,
-  ): Promise<{ userId: string; role: Role; newRefresh: string }> {
+  ): Promise<{
+    userId: string;
+    role: Role;
+    caps: UserCapabilities;
+    newRefresh: string;
+  }> {
     if (!raw) {
       throw new UnauthorizedException({
         code: "INVALID_REFRESH",
@@ -90,7 +118,12 @@ export class TokenService {
       data: { revokedAt: new Date() },
     });
     const newRefresh = await this.issueRefreshToken(record.userId, userAgent);
-    return { userId: record.userId, role: record.user.role, newRefresh };
+    return {
+      userId: record.userId,
+      role: record.user.role,
+      caps: { isCoach: record.user.isCoach, isStudent: record.user.isStudent },
+      newRefresh,
+    };
   }
 
   async revokeRefreshToken(raw: string | undefined): Promise<void> {

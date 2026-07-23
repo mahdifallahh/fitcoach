@@ -26,6 +26,10 @@ plain classes under `src/server/<feature>/service.ts` wired via a singleton cont
 **phone/email before that student has an account**; when the student later registers, all prior programs
 auto-link to them. Implemented via `StudentProfile.userId` being **nullable until claimed**.
 
+**One phone, both roles.** A single account can hold a coach side *and* a student side (capability flags —
+see §4 "Dual-role"), switched from a header role-switcher. Accounts can also be **permanently deleted**
+(re-auth + type-to-confirm; `DELETE /api/account`).
+
 **Status:** all 9 build phases implemented + the NestJS→Next.js consolidation complete (verified in Docker:
 single app on `:3000`, migrate-on-boot, 46 tests green, PDF renders). See `docs/progress.md`.
 
@@ -106,6 +110,18 @@ No global guards; each route opts in via `withRoute` options. Default: authentic
 restricts. `requiresSub: true` gates writes → **402** when a coach's trial/plan lapses (reads stay open =
 read-only). `public: true` skips auth.
 
+**Dual-role — one phone can be both a coach and a student.** `User.role` is now only the *primary/landing*
+role and the ADMIN marker; **capability flags `User.isCoach` / `User.isStudent`** are the source of truth for
+panel + API access. They ride in the access JWT (`tokens.ts` `UserCapabilities`; old tokens fall back to
+deriving caps from `role` until the next refresh), so `withRoute`'s `role: 'COACH'|'STUDENT'` check and the
+`requiresSub`/coach check are **capability-based, no DB join**. Signup sets the matching flag; the other side
+is turned on later via `POST /api/account/roles` (`users.enableCoach`/`enableStudent` — idempotent: creates
+the CoachProfile+handle or claims student profiles, then the route re-mints the access cookie so the new
+panel works immediately). The **student-linking rule keys on `isStudent`, not `role`** (a coach who also
+trains still gets programs linked). UI: `components/shared/role-switcher.tsx` in the dashboard header shows
+the current mode and switches/activates the other; `AuthGuard` + `lib/api/auth.ts` `hasCapability`/
+`defaultHome` gate panels by capability.
+
 The **UI mirrors this** so write buttons don't look clickable-then-fail: `lib/hooks/use-write-access.ts`
 (`useWriteAccess()`) returns `canWrite` (coach has an active/unexpired TRIALING|ACTIVE sub — also false for a
 coach who hasn't activated the free trial yet, matching the server). The create/save/delete/assign actions in
@@ -136,7 +152,10 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **Routing:** `src/app/[locale]/...` (next-intl, `localePrefix: 'always'`, default `fa`). `i18n/routing.ts`
   exports locale-aware `Link, useRouter, usePathname, redirect`. **Always import nav from `@/i18n/routing`,
   not `next/link`/`next/navigation`** (except `useParams`/`useSearchParams`).
-- **Pages:** `[locale]/page.tsx` (marketing landing: hero → features → how-it-works → FAQ → CTA → footer),
+- **Pages:** `[locale]/page.tsx` (marketing landing: hero → features → how-it-works → **coach directory** →
+  pricing → PWA → FAQ → CTA → footer. The `CoachesSection` card grid links to each `/c/<handle>`; it reads the
+  DB so the page is **ISR — `export const revalidate = 600`** to keep static delivery, and the section
+  soft-fails to nothing when the DB is unreachable at build),
   `blog/` + `blog/[slug]` (bilingual content, statically prerendered), `login` (**phone + OTP only**),
   `coach/{page,profile,exercises,programs/{page,new,[id]/edit},billing,requests,intake}`,
   `student/{page,coaches/[coachId],programs/[id],requests}`, and **public** `c/[handle]` (server-rendered,
@@ -263,7 +282,9 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 
 13 models. PK = cuid unless noted. Key fields + relations:
 
-- **User** (`id`, `phone?`@unique, `email?`@unique, `passwordHash?` reserved, `role` Role, `locale`).
+- **User** (`id`, `phone?`@unique, `email?`@unique, `passwordHash?`, `role` Role = primary/landing role +
+  ADMIN marker, **`isCoach`/`isStudent`** capability flags = the real access gate — one phone can be both,
+  `locale`).
 - **OtpToken** (`identifier`, `channel` OtpChannel, `purpose` OtpPurpose, `codeHash`, `expiresAt`,
   `consumedAt?`, `attempts`) — codes stored **hashed**, single-use, rate-limited.
 - **RefreshToken** (`userId`, `tokenHash`@unique, `userAgent?`, `expiresAt`, `revokedAt?`) — rotated on use.
@@ -310,9 +331,17 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   branches on this), `POST /auth/login` (`{identifier,password}` → 401 `BAD_CREDENTIALS`), `POST /auth/otp/request`,
   `POST /auth/otp/verify` (returns `isNew` → new accounts are prompted to set a password),
   `POST /auth/set-password` (authed; scrypt hash), `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`.
+- **account** (authed; cookie-setting, so hand-written not `withRoute`): `POST /account/roles` (`{role}` — turn
+  on the coach/student side of this account, returns a refreshed access cookie), `DELETE /account`
+  (`{password}` — permanent GDPR-style erasure; **re-authenticates with the password**, rate-limited, clears
+  cookies. `users.deleteAccount` deletes in dependency order — programs/templates before exercises, since
+  `ProgramExercise`/`TemplateExercise` → Exercise is `onDelete: Restrict` — and *releases* claimed
+  StudentProfiles (`userId → null`) so a deleted student doesn't destroy the coach's authored programs).
 - **coach-profile** (COACH): `GET /coach/profile`, `PATCH /coach/profile` (incl. public `handle`, card/price),
   `POST /coach/profile/avatar-upload-url`.
-- **public-coach** (public): `GET /public/coaches/:handle` → public page payload.
+- **public-coach** (public): `GET /public/coaches/:handle` → public page payload; `GET /public/coaches` →
+  landing **coach directory** (`listPublic`: only "presentable" profiles — has a handle + real content, and a
+  name the coach actually set, so raw phone-number default names are never exposed; capped at 24).
 - **categories** (COACH): `GET /coach/categories`, `POST` *(gated)*, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
 - **exercises** (COACH): `GET /coach/exercises?search=&categoryId=`, `POST` *(gated)*,
   `POST /coach/exercises/gif-upload-url`, `GET/:id`, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.

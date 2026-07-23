@@ -7,10 +7,14 @@ import { Loader2 } from 'lucide-react';
 import { useMe } from '@/lib/query/use-auth';
 import { useRouter, usePathname } from '@/i18n/routing';
 import { ApiError } from '@/lib/api/client';
-import { roleHome } from '@/lib/api/auth';
+import { defaultHome, hasCapability } from '@/lib/api/auth';
 import type { Role } from '@/lib/api/types';
 
-/** Client-side route guard: ensures an authenticated user of the required role. */
+/**
+ * Client-side route guard: ensures an authenticated account that may enter this
+ * panel. Checked by **capability**, so an account holding both a coach and a
+ * student side can open either panel without being bounced.
+ */
 export function AuthGuard({ role, children }: { role: Role; children: React.ReactNode }) {
   const t = useTranslations('auth');
   const { data, isLoading, isError, error } = useMe();
@@ -27,12 +31,14 @@ export function AuthGuard({ role, children }: { role: Role; children: React.Reac
       }
       const next = encodeURIComponent(pathname);
       router.replace(`/login?role=${role.toLowerCase()}&next=${next}`);
-    } else if (data.role !== role) {
-      router.replace(roleHome(data.role));
+    } else if (!hasCapability(data, role)) {
+      // Signed in, but this side of the account isn't enabled — send them to a
+      // panel they can actually use (they can turn the other side on there).
+      router.replace(defaultHome(data));
     }
   }, [isLoading, isError, data, error, role, router, pathname, t]);
 
-  if (isLoading || isError || !data || data.role !== role) {
+  if (isLoading || isError || !data || !hasCapability(data, role)) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />

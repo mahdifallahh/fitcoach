@@ -2,7 +2,6 @@ import "server-only";
 import {
   Prisma,
   ProgramStatus,
-  Role,
   type PrismaClient,
   type StudentProfile,
 } from "@prisma/client";
@@ -70,10 +69,11 @@ export class StudentsService {
     }
     const match = channel === "EMAIL" ? { email: value } : { phone: value };
 
-    // Link to an existing student account if one already registered with this contact.
+    // Link to an existing account that has its student side enabled. Checked by
+    // capability, not primary role: a coach who also trains (isStudent) must get
+    // programs linked to the same account, not stranded on an unclaimed profile.
     const existingUser = await tx.user.findUnique({ where: match });
-    const userId =
-      existingUser?.role === Role.STUDENT ? existingUser.id : undefined;
+    const userId = existingUser?.isStudent ? existingUser.id : undefined;
 
     const statData = {
       ...(stats.age !== undefined ? { age: stats.age } : {}),

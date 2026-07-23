@@ -9,7 +9,14 @@ function makeService(overrides: {
   otp?: any;
   config?: any;
 }) {
-  const users = overrides.users ?? {};
+  // Capabilities are read whenever a session is issued, so every service gets a
+  // default stub; individual tests can still override it.
+  const users = {
+    getCapabilities: jest
+      .fn()
+      .mockResolvedValue({ isCoach: false, isStudent: false }),
+    ...(overrides.users ?? {}),
+  };
   const tokens = overrides.tokens ?? {
     signAccessToken: jest.fn().mockResolvedValue("access"),
     issueRefreshToken: jest.fn().mockResolvedValue("refresh"),

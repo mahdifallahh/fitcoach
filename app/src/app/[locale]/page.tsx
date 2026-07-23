@@ -21,6 +21,7 @@ import { PublicHeader } from '@/components/shared/public-header';
 import { PublicFooter } from '@/components/shared/public-footer';
 import { PwaInstallSection } from '@/components/shared/pwa-install-section';
 import { PricingSection } from '@/components/shared/pricing-section';
+import { CoachesSection } from '@/components/shared/coaches-section';
 import { JsonLd } from '@/components/shared/json-ld';
 
 export async function generateMetadata({
@@ -175,6 +176,9 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
           </div>
         </section>
 
+        {/* Real coaches on the platform — social proof + internal links to /c/<handle> */}
+        <CoachesSection />
+
         <PricingSection />
 
         <PwaInstallSection />
@@ -246,6 +250,13 @@ function RoleColumn({
 }
 
 // Pre-render both locales at build time.
+/**
+ * ISR: the coach directory reads the DB, but the landing is the LCP-critical
+ * page, so it stays statically delivered and is regenerated every 10 minutes
+ * instead of rendering per request.
+ */
+export const revalidate = 600;
+
 export function generateStaticParams(): { locale: Locale }[] {
   return (['fa', 'en'] as Locale[]).map((locale) => ({ locale }));
 }

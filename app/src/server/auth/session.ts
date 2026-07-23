@@ -18,7 +18,12 @@ export async function getSession(req?: NextRequest): Promise<AuthUser | null> {
   if (!token) return null;
   try {
     const payload = await getTokens().verifyAccessToken(token);
-    return { id: payload.sub, role: payload.role };
+    return {
+      id: payload.sub,
+      role: payload.role,
+      isCoach: payload.isCoach,
+      isStudent: payload.isStudent,
+    };
   } catch {
     return null;
   }

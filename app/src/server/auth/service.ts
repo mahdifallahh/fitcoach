@@ -146,11 +146,9 @@ export class AuthService {
     rawRefresh: string | undefined,
     userAgent?: string,
   ): Promise<AuthResult> {
-    const { userId, role, newRefresh } = await this.tokens.rotateRefreshToken(
-      rawRefresh,
-      userAgent,
-    );
-    const accessToken = await this.tokens.signAccessToken(userId, role);
+    const { userId, role, caps, newRefresh } =
+      await this.tokens.rotateRefreshToken(rawRefresh, userAgent);
+    const accessToken = await this.tokens.signAccessToken(userId, role, caps);
     const user = await this.users.getProfileSnapshot(userId);
     return { user: user!, accessToken, refreshToken: newRefresh };
   }
@@ -163,12 +161,33 @@ export class AuthService {
     return this.users.getProfileSnapshot(userId);
   }
 
+  /**
+   * Re-mint just the access token after the account's capabilities change
+   * (enabling the coach or student side). The refresh token is untouched — this
+   * isn't a new sign-in, only a claims refresh so the new panel is reachable
+   * immediately instead of after the next token refresh.
+   */
+  async reissueAccessToken(userId: string): Promise<string> {
+    const user = await this.users.getProfileSnapshot(userId);
+    if (!user) {
+      throw new UnauthorizedException({
+        code: "USER_NOT_FOUND",
+        message: "User not found",
+      });
+    }
+    const caps = await this.users.getCapabilities(userId);
+    return this.tokens.signAccessToken(userId, user.role, caps);
+  }
+
   private async issueSession(
     userId: string,
     role: Role,
     userAgent?: string,
   ): Promise<AuthResult> {
-    const accessToken = await this.tokens.signAccessToken(userId, role);
+    // Capabilities live on the token so the request guard needs no join. Read
+    // them fresh here, since enabling a role must take effect on next sign-in.
+    const caps = await this.users.getCapabilities(userId);
+    const accessToken = await this.tokens.signAccessToken(userId, role, caps);
     const refreshToken = await this.tokens.issueRefreshToken(userId, userAgent);
     const user = await this.users.getProfileSnapshot(userId);
     return { user: user!, accessToken, refreshToken };

@@ -7,6 +7,7 @@ import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { InstallButton } from "@/components/pwa/install-button";
+import { RoleSwitcher } from "@/components/shared/role-switcher";
 
 /** Shared app chrome for authenticated panels (header + content container). */
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <Logo size="md" priority />
         </Link>
         <div className="flex items-center gap-1">
+          {/* Which side of the account you're in, and how to switch. */}
+          <RoleSwitcher />
           {/* Full label on ≥sm, icon-only on tight mobile headers. */}
           <InstallButton className="hidden sm:inline-flex" />
           <InstallButton className="sm:hidden" iconOnly />

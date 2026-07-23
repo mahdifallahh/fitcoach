@@ -8,7 +8,11 @@ export interface CurrentUser {
   id: string;
   phone: string | null;
   email: string | null;
+  /** Primary/landing role (and the ADMIN marker). */
   role: Role;
+  /** Capabilities — one account can hold both sides; drives the role switcher. */
+  isCoach: boolean;
+  isStudent: boolean;
   locale: string;
   coachProfile: { name: string; avatarUrl: string | null; bio: string | null } | null;
   subscription: {
