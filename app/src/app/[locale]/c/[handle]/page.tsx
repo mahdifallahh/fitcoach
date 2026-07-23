@@ -93,10 +93,22 @@ export default async function PublicCoachPage({
           ) : (
             <div className="flex flex-col items-center text-center">
               {coach.avatarUrl ? (
+                // Deliberately a raw <img>, NOT next/image: avatars live on the
+                // S3 *public* endpoint, which the browser reaches directly but the
+                // server-side image optimizer can't (dev: localhost:9100 is the
+                // host, not the container; the split endpoints make /_next/image
+                // 500). This is the page's LCP element, so give it explicit
+                // dimensions (no CLS + passes the "explicit width/height" audit)
+                // and fetchPriority="high" so it isn't deprioritized behind the
+                // header logo requests.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={coach.avatarUrl}
                   alt={coach.name}
+                  width={96}
+                  height={96}
+                  fetchPriority="high"
+                  decoding="async"
                   className="size-24 rounded-full object-cover ring-2 ring-primary/20"
                 />
               ) : (

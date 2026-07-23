@@ -193,7 +193,13 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   `languageAlternates()` (fa/en + `x-default`). **Gotcha (bit us once):** `NEXT_PUBLIC_*` is inlined at
   **build** time, so if the host's env panel doesn't set `NEXT_PUBLIC_SITE_URL` — or a stray `.env.local` in
   the deployed files supplies its dev value — the baked `SITE_URL` becomes `localhost`, and canonical/OG/JSON-LD
-  ship wrong. **`sitemap.ts` + `robots.ts` are hardened against this**: they're `force-dynamic` and call
+  ship wrong. **This actually shipped once** (the live `/fa` emitted `<link rel=canonical href="http://localhost:3000/fa">`,
+  failing Lighthouse's rel=canonical audit and telling Google the real domain is a dupe of a dead host). **Now
+  hardened at three layers:** (1) `site.ts` **rejects a loopback `NEXT_PUBLIC_SITE_URL` during a production build**
+  (`NODE_ENV==='production'`) and falls back to `https://fitlo.ir`, `console.error`-ing once — so even a leaked dev
+  value can't poison the baked tags (a legit non-localhost staging URL is still honored); (2) the Dockerfile build
+  stage sets `ARG NEXT_PUBLIC_SITE_URL=https://fitlo.ir` (override per build); (3) `.dockerignore` keeps `.env*` out
+  of the image. **`sitemap.ts` + `robots.ts` are hardened separately**: they're `force-dynamic` and call
   `resolveOrigin()` (in `site.ts`), which prefers a non-localhost `SITE_URL` but otherwise derives the origin
   from the request's `x-forwarded-host`/`host` header — so a sitemap's `<loc>` entries always match the host it
   was fetched from (exactly what Search Console's "URL not allowed" check enforces). `resolveOrigin()` also
@@ -275,6 +281,18 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
     marketing surface. If the sheet ever grows large (many new global styles), re-measure.
   - `src/app/layout.tsx` (passthrough) + `src/app/not-found.tsx` (self-contained bilingual 404) exist so
     the global `/404` prerenders through the app router — required for `next build` to pass.
+  - **User-uploaded images (avatars) are raw `<img>`, NOT `next/image`** — the optimizer runs
+    server-side and can't reach the browser-only S3 *public* endpoint (dev: `localhost:9100` is the
+    container, not the host; the split endpoints make `/_next/image` **500**). On the public coach page
+    (`c/[handle]/page.tsx`) the avatar is the LCP element, so the raw `<img>` still carries explicit
+    `width/height` (no CLS, passes the audit) + `fetchPriority="high"`. Bytes are capped at *upload* time
+    instead: `lib/image.ts` `downscaleImage()` (canvas → 512px WebP, best-effort, GIFs passed through) runs
+    before the presigned PUT in `profile-form.tsx` — a phone photo drops ~90% before it ever becomes the
+    page's LCP image. Reuse `downscaleImage` for any other public raster upload; don't reach for `next/image`.
+  - **TTFB is the dominant FCP/LCP cost, not code** — measured 400–900 ms on the live origin (no CDN). The
+    landing/blog are already SSG and the critical path is otherwise collapsed (inline CSS, no render-blocking
+    links), so the highest-leverage remaining win is an edge cache / CDN in front of the origin, not further
+    bundle trimming.
 
 ---
 
