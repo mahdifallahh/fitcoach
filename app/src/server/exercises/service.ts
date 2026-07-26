@@ -2,6 +2,7 @@ import "server-only";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { StorageService } from "../storage";
 import { BadRequestException, NotFoundException } from "../http/errors";
+import { pageParams, paginated, type Paginated } from "../http/pagination";
 import type {
   CreateExerciseDto,
   ListExercisesQueryDto,
@@ -21,21 +22,44 @@ export class ExercisesService {
     private readonly storage: StorageService,
   ) {}
 
-  /** Loads the coach's full list, then applies search/category filtering in-memory. */
+  /**
+   * One page of the coach's library, filtered by search + category.
+   *
+   * Filtering runs in SQL rather than over a full in-memory load of the library:
+   * a coach's exercise list grows without bound, and paging is meaningless if
+   * every request still reads every row. Search matches the exercise name or its
+   * category name, case-insensitively.
+   */
   async list(
     coachId: string,
     query: ListExercisesQueryDto,
-  ): Promise<ExerciseWithCategory[]> {
-    const all = await this.allForCoach(coachId);
-    const search = query.search?.trim().toLowerCase();
-    return all.filter((ex) => {
-      if (query.categoryId && ex.categoryId !== query.categoryId) return false;
-      if (search) {
-        const haystack = `${ex.name} ${ex.category?.name ?? ""}`.toLowerCase();
-        if (!haystack.includes(search)) return false;
-      }
-      return true;
-    });
+  ): Promise<Paginated<ExerciseWithCategory>> {
+    const params = pageParams(query);
+    const search = query.search?.trim();
+    const where: Prisma.ExerciseWhereInput = {
+      coachId,
+      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { category: { name: { contains: search, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.exercise.findMany({
+        where,
+        include: exerciseInclude,
+        orderBy: { createdAt: "desc" },
+        skip: params.skip,
+        take: params.take,
+      }),
+      this.prisma.exercise.count({ where }),
+    ]);
+    return paginated(items, total, params);
   }
 
   async get(coachId: string, id: string): Promise<ExerciseWithCategory> {
@@ -117,14 +141,6 @@ export class ExercisesService {
     return this.storage.createUploadTarget("gifs", {
       keyPrefix: coachId,
       contentType,
-    });
-  }
-
-  private allForCoach(coachId: string): Promise<ExerciseWithCategory[]> {
-    return this.prisma.exercise.findMany({
-      where: { coachId },
-      include: exerciseInclude,
-      orderBy: { createdAt: "desc" },
     });
   }
 

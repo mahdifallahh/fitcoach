@@ -3,6 +3,7 @@ import { ProgramRequestStatus, type PrismaClient } from "@prisma/client";
 import { StorageService } from "../storage";
 import { StudentsService } from "../students/service";
 import { BadRequestException, NotFoundException } from "../http/errors";
+import { pageParams, paginated, type ListQuery } from "../http/pagination";
 import type {
   CreateProgramRequestDto,
   UpdateRequestStatusDto,
@@ -89,14 +90,26 @@ export class ProgramRequestsService {
     });
   }
 
-  /** A coach's inbox: requests with short-lived signed photo URLs + a contact for prefill. */
-  async listForCoach(coachId: string) {
-    const requests = await this.prisma.programRequest.findMany({
-      where: { coachId },
-      orderBy: { createdAt: "desc" },
-      include: { student: { select: { phone: true, email: true } } },
-    });
-    return Promise.all(
+  /**
+   * A coach's inbox: one page of requests with short-lived signed photo URLs and
+   * a contact for prefill. Paging matters more here than on other lists — each
+   * row costs four S3 presign calls, so an unbounded inbox would fan out
+   * unboundedly on every load.
+   */
+  async listForCoach(coachId: string, query: ListQuery = {}) {
+    const params = pageParams(query);
+    const where = { coachId };
+    const [requests, total] = await Promise.all([
+      this.prisma.programRequest.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: { student: { select: { phone: true, email: true } } },
+        skip: params.skip,
+        take: params.take,
+      }),
+      this.prisma.programRequest.count({ where }),
+    ]);
+    const items = await Promise.all(
       requests.map(async (r) => {
         const sign = (key: string | null) =>
           key
@@ -127,6 +140,7 @@ export class ProgramRequestsService {
         };
       }),
     );
+    return paginated(items, total, params);
   }
 
   /** Coach accepts (→ writes a program) or declines a request with a reason (ownership enforced). */

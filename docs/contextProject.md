@@ -118,9 +118,9 @@ deriving caps from `role` until the next refresh), so `withRoute`'s `role: 'COAC
 is turned on later via `POST /api/account/roles` (`users.enableCoach`/`enableStudent` — idempotent: creates
 the CoachProfile+handle or claims student profiles, then the route re-mints the access cookie so the new
 panel works immediately). The **student-linking rule keys on `isStudent`, not `role`** (a coach who also
-trains still gets programs linked). UI: `components/shared/role-switcher.tsx` in the dashboard header shows
-the current mode and switches/activates the other; `AuthGuard` + `lib/api/auth.ts` `hasCapability`/
-`defaultHome` gate panels by capability.
+trains still gets programs linked). UI: the mode switch lives in the header's **`profile-menu.tsx`** (shows
+the current mode, switches to the other, or activates it in place); `AuthGuard` + `lib/api/auth.ts`
+`hasCapability`/`defaultHome` gate panels by capability.
 
 The **UI mirrors this** so write buttons don't look clickable-then-fail: `lib/hooks/use-write-access.ts`
 (`useWriteAccess()`) returns `canWrite` (coach has an active/unexpired TRIALING|ACTIVE sub — also false for a
@@ -173,9 +173,10 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   build a program + search by category, supersets/trisets, ready-made templates, how students see programs, the
   public link, the request form, why the card number). Content is data-driven from `coachHelp.topics.<id>`
   (title/intro/`steps[]` via `t.raw`) — add a topic by extending the `TOPICS` array + both message files.
-- **components/** `ui/` shadcn primitives; `shared/` (`dashboard-shell`, `public-header`, `locale-switcher`,
-  `theme-toggle`, `gif-lightbox`, `error-state`, `field-error`, `json-ld`); `auth/` (`auth-form` 2-step OTP w/
-  dev auto-login, `auth-guard`, `logout-button`); `coach/` (`coach-page-layout`, `coach-nav`, `getting-started`,
+- **components/** `ui/` shadcn primitives; `shared/` (`dashboard-shell`, `profile-menu`, `user-avatar`,
+  `pagination`, `public-header`, `locale-switcher`, `theme-toggle`, `gif-lightbox`, `error-state`,
+  `field-error`, `json-ld`); `auth/` (`auth-form` 2-step OTP w/
+  dev auto-login, `auth-guard`); `coach/` (`coach-page-layout`, `coach-nav`, `getting-started`,
   `profile-form`, `exercise-library`, `program-list`, `billing-view`, `subscription-banner`,
   `download-pdf-button`, `requests-inbox`, `intake-settings`, **`program-builder/`** — the centerpiece);
   `student/` (`student-page-layout`, `student-nav`, `student-help`, `coaches-list`, `coach-programs`,
@@ -185,6 +186,32 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
 - **lib/query/**: TanStack hooks per feature. **messages/** `fa.json`/`en.json` — **all UI strings; zero
   hardcoded text.** Adding a string = add to both files + `useTranslations('namespace')`.
 - **RTL:** logical Tailwind props (`ps-/pe-/ms-/me-/start-/end-`) + `rtl-flip` for directional icons.
+
+### Pagination (every growing list)
+- **Contract:** list endpoints return `{ items, page, pageSize, total, totalPages }` — server type +
+  helpers in **`src/server/http/pagination.ts`** (`pageQuery(req)` reads the query string, `pageParams()`
+  clamps it, `paginated()` builds the envelope); the mirrored client type is `Paginated<T>` in
+  `lib/api/types.ts`. Defaults: **20/page, max 100**. Bad/negative/oversized values are *clamped, never
+  400'd*, so a mangled shared link still renders.
+- **Applies to:** `GET /coach/exercises`, `/coach/programs`, `/coach/program-templates`, `/coach/requests`.
+  Filtering happens **in SQL alongside the paging window** (the exercise list used to load the coach's whole
+  library into memory and filter there — paging is meaningless if every request still reads every row), and
+  the `count` uses the *same* `where`.
+- **UI:** shared `components/shared/pagination.tsx` (renders nothing for a single page; numbered window with
+  ellipses on ≥sm, "page X of Y" on phones). Hooks take `PageParams` and set `placeholderData: (prev) => prev`
+  so paging doesn't flash empty. **`lib/hooks/use-paged.ts` resets to page 1 when filters change** — without
+  it, searching while on page 3 asks for page 3 of a shorter result set and shows nothing.
+- The program-builder's exercise **picker** deliberately requests one large page (`pageSize: 50`) instead of
+  showing pager controls — it's search-driven.
+
+### App header / profile menu
+The authenticated header is intentionally just **brand + one avatar trigger**. It previously lined up five
+controls (role, install, locale, theme, logout — two with text labels), which wrapped on phones and squeezed
+the logo. All of them now live in **`components/shared/profile-menu.tsx`** (identity, account-mode switch,
+language, theme, install, profile, sign-out), and the brand link is `shrink-0`. `e2e/header-mobile.spec.ts`
+locks this in (no horizontal overflow at 360px, logo keeps its size). Popover behavior comes from
+`lib/hooks/use-dismissable.ts` (outside-click + Escape, restores focus). **Logout is inside this menu** — the
+e2e `logout()` helper opens it first.
 
 ### SEO & performance
 - **`lib/site.ts`** is the single source of truth for the public origin: `SITE_URL` comes from
@@ -478,17 +505,19 @@ the host directories, so verify build artifacts inside the container and install
 
 ## 10. Testing & quality
 
-- `cd app && pnpm test` — **48 Jest tests** in `src/server/**/*.spec.ts` (auth/OTP, identifier + handle
-  utils, exercise filter, program/superset shaping + ownership, subscription gating + activate/extend +
-  activateTrial + expiry, payment flow + idempotency, PDF template). ts-jest with `tsconfig.jest.json`;
-  `server-only` stubbed via `test/server-only.js`.
+- `cd app && pnpm test` — **80 Jest tests** in `src/server/**/*.spec.ts` (auth/OTP, identifier + handle
+  utils, exercise query building + paging/clamping, program/superset shaping + ownership, subscription tiers
+  + quota + expiry, dual-role capabilities + account deletion ordering, admin tier grants, payment flow +
+  idempotency, PDF template). ts-jest with `tsconfig.jest.json`; `server-only` stubbed via
+  `test/server-only.js`.
 - `pnpm build` (= typecheck + compile, incl. spec files) and `pnpm lint` clean.
 - `cd app && pnpm e2e` — **Playwright** suite in `e2e/**/*.spec.ts`, run against a live app (`docker compose
   up -d` first; `e2e/global-setup.ts` fails fast with instructions if nothing answers `/api/health`). Covers
   auth (signup/login/logout/wrong-password), the coach exercise library CRUD, the program builder + templates
-  (create, publish, assign-to-student), public SEO surface (robots/sitemap/canonical+hreflang/coach JSON-LD),
-  and the PWA install-prompt behavior. Selectors read copy from `src/messages/fa.json` via `e2e/helpers/
-  labels.ts` so they track UI text instead of duplicating it.
+  (create, publish, assign-to-student), **list pagination** (paging + reset-on-search + no pager on one page),
+  the **mobile panel header** (no overflow at 360px, logo size, profile menu contents), public SEO surface
+  (robots/sitemap/canonical+hreflang/coach JSON-LD), and the PWA install-prompt behavior. Selectors read copy
+  from `src/messages/fa.json` via `e2e/helpers/labels.ts` so they track UI text instead of duplicating it.
   - Default browser is Playwright's managed Chromium (`npx playwright install chromium`); on machines where
     that download is blocked, `PLAYWRIGHT_CHANNEL=msedge pnpm e2e` drives the host's installed Edge instead.
   - `POST /api/auth/otp/request` is rate-limited to 5 req/60s per client IP, and every worker/test signs up

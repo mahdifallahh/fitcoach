@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Exercise, UploadTarget } from './types';
+import type { Exercise, PageParams, Paginated, UploadTarget } from './types';
 
 export interface ExerciseInput {
   name: string;
@@ -10,7 +10,7 @@ export interface ExerciseInput {
   gifUrl?: string | null;
 }
 
-export interface ListExercisesParams {
+export interface ListExercisesParams extends PageParams {
   search?: string;
   categoryId?: string;
 }
@@ -19,12 +19,15 @@ function toQuery(params: ListExercisesParams): string {
   const sp = new URLSearchParams();
   if (params.search) sp.set('search', params.search);
   if (params.categoryId) sp.set('categoryId', params.categoryId);
+  if (params.page) sp.set('page', String(params.page));
+  if (params.pageSize) sp.set('pageSize', String(params.pageSize));
   const s = sp.toString();
   return s ? `?${s}` : '';
 }
 
 export const exercisesApi = {
-  list: (params: ListExercisesParams = {}) => api.get<Exercise[]>(`/coach/exercises${toQuery(params)}`),
+  list: (params: ListExercisesParams = {}) =>
+    api.get<Paginated<Exercise>>(`/coach/exercises${toQuery(params)}`),
   create: (input: ExerciseInput) => api.post<Exercise>('/coach/exercises', input),
   update: (id: string, input: Partial<ExerciseInput>) => api.patch<Exercise>(`/coach/exercises/${id}`, input),
   remove: (id: string) => api.delete<{ success: boolean }>(`/coach/exercises/${id}`),

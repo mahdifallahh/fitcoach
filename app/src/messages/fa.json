@@ -20,7 +20,8 @@
     "logoHome": "فیتلو — صفحه اصلی",
     "logoHomeMark": "نماد فیتلو",
     "logoBrand": "فیتلو — پلتفرم برنامه تمرینی",
-    "logoBrandMark": "نشان برند فیتلو"
+    "logoBrandMark": "نشان برند فیتلو",
+    "theme": "پوسته"
   },
   "pwa": {
     "installTitle": "نصب اپلیکیشن فیتلو",
@@ -878,5 +879,19 @@
     "cancel": "انصراف",
     "deleted": "حساب حذف شد",
     "error": "حذف حساب ممکن نشد"
+  },
+  "profileMenu": {
+    "open": "منوی حساب",
+    "account": "حساب من",
+    "profile": "پروفایل",
+    "logout": "خروج",
+    "logoutError": "خروج ناموفق بود"
+  },
+  "pagination": {
+    "label": "صفحه‌بندی",
+    "previous": "صفحه قبل",
+    "next": "صفحه بعد",
+    "pageOf": "صفحه {page} از {totalPages}",
+    "summary": "{total} مورد · صفحه {page} از {totalPages}"
   }
 }

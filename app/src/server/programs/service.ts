@@ -2,6 +2,7 @@ import "server-only";
 import { Prisma, ProgramStatus, type PrismaClient } from "@prisma/client";
 import { StudentsService } from "../students/service";
 import { BadRequestException, NotFoundException } from "../http/errors";
+import { pageParams, paginated, type ListQuery } from "../http/pagination";
 import type {
   CreateProgramDto,
   ProgramDayInputDto,
@@ -50,15 +51,24 @@ export class ProgramsService {
     private readonly students: StudentsService,
   ) {}
 
-  list(coachId: string) {
-    return this.prisma.program.findMany({
-      where: { coachId },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        student: { select: { phone: true, email: true } },
-        _count: { select: { days: true } },
-      },
-    });
+  /** One page of the coach's programs, newest-edited first. */
+  async list(coachId: string, query: ListQuery = {}) {
+    const params = pageParams(query);
+    const where = { coachId };
+    const [items, total] = await Promise.all([
+      this.prisma.program.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        include: {
+          student: { select: { phone: true, email: true } },
+          _count: { select: { days: true } },
+        },
+        skip: params.skip,
+        take: params.take,
+      }),
+      this.prisma.program.count({ where }),
+    ]);
+    return paginated(items, total, params);
   }
 
   async get(coachId: string, id: string) {

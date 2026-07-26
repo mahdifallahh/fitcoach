@@ -1,5 +1,6 @@
 import { withRoute } from '@/server/http/route';
 import { getExercises } from '@/server/container';
+import { pageQuery } from '@/server/http/pagination';
 import { createExerciseSchema } from '@/server/exercises/schemas';
 
 export const runtime = 'nodejs';
@@ -11,6 +12,7 @@ export const GET = withRoute(
     return getExercises().list(user.id, {
       search: sp.get('search') ?? undefined,
       categoryId: sp.get('categoryId') ?? undefined,
+      ...pageQuery(req),
     });
   },
   { role: 'COACH' },

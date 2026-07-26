@@ -1,5 +1,23 @@
 export type Role = 'COACH' | 'STUDENT' | 'ADMIN';
 
+/**
+ * One page of a list endpoint. Mirrors the server's `Paginated<T>`
+ * (`src/server/http/pagination.ts`) — keep the two in sync.
+ */
+export interface Paginated<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+/** Paging input shared by every paginated list request. */
+export interface PageParams {
+  page?: number;
+  pageSize?: number;
+}
+
 export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'EXPIRED' | 'CANCELED';
 export type SubscriptionPlan = 'M3' | 'M6' | 'M12';
 export type SubscriptionTier = 'FREE' | 'ECONOMY' | 'NORMAL' | 'PRO';

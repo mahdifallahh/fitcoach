@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ClipboardList, Lock, Pencil, Plus, Trash2 } from "lucide-react";
@@ -13,13 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
+import { Pagination } from "@/components/shared/pagination";
 
 export function ProgramList() {
   const t = useTranslations("programs");
   const tc = useTranslations("common");
   const tb = useTranslations("billing");
   const format = useFormatter();
-  const { data, isLoading, isError, refetch } = usePrograms();
+  const [page, setPage] = React.useState(1);
+  const { data, isLoading, isError, refetch } = usePrograms({ page });
+  const programs = data?.items;
   const del = useDeleteProgram();
   const { canWrite } = useWriteAccess();
 
@@ -57,14 +61,14 @@ export function ProgramList() {
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
-      ) : !data || data.length === 0 ? (
+      ) : !programs || programs.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
           <ClipboardList className="mb-3 size-10 text-muted-foreground" />
           <p className="text-muted-foreground">{t("empty")}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {data.map((p) => (
+          {programs.map((p) => (
             <Card key={p.id}>
               <CardContent className="flex flex-wrap items-center gap-3 p-4">
                 <div className="min-w-0 flex-1">
@@ -122,6 +126,15 @@ export function ProgramList() {
             </Card>
           ))}
         </div>
+      )}
+
+      {data && (
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          total={data.total}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );

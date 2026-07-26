@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import type { ProgramTemplateListItem } from '@/lib/api/types';
 import { useTemplates, useDeleteTemplate } from '@/lib/query/use-program-templates';
 import { useDebounce } from '@/lib/hooks/use-debounce';
+import { usePaged } from '@/lib/hooks/use-paged';
 import { useWriteAccess } from '@/lib/hooks/use-write-access';
 import { apiErrorMessage } from '@/lib/api/client';
 import { AssignTemplateDialog } from './assign-template-dialog';
@@ -16,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/shared/error-state';
+import { Pagination } from '@/components/shared/pagination';
 
 export function TemplateList() {
   const t = useTranslations('templates');
@@ -26,7 +28,9 @@ export function TemplateList() {
 
   const [search, setSearch] = React.useState('');
   const ds = useDebounce(search, 250);
-  const { data, isLoading, isError, refetch } = useTemplates(ds || undefined);
+  const [page, setPage] = usePaged(ds);
+  const { data, isLoading, isError, refetch } = useTemplates(ds || undefined, { page });
+  const templates = data?.items;
   const del = useDeleteTemplate();
 
   const [assignFor, setAssignFor] = React.useState<ProgramTemplateListItem | null>(null);
@@ -73,7 +77,7 @@ export function TemplateList() {
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
-      ) : !data || data.length === 0 ? (
+      ) : !templates || templates.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
           <LayoutTemplate className="mb-3 size-10 text-muted-foreground" />
           <p className="text-muted-foreground">{isSearching ? t('emptyFiltered') : t('empty')}</p>
@@ -88,7 +92,7 @@ export function TemplateList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {data.map((tpl) => (
+          {templates.map((tpl) => (
             <Card key={tpl.id}>
               <CardContent className="flex flex-wrap items-center gap-3 p-4">
                 <div className="min-w-0 flex-1">
@@ -140,6 +144,15 @@ export function TemplateList() {
             </Card>
           ))}
         </div>
+      )}
+
+      {data && (
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          total={data.total}
+          onPageChange={setPage}
+        />
       )}
 
       <AssignTemplateDialog

@@ -6,12 +6,17 @@ import {
   type CreateProgramPayload,
   type UpdateProgramPayload,
 } from '@/lib/api/programs';
-import type { ProgramStatus2 } from '@/lib/api/types';
+import type { PageParams, ProgramStatus2 } from '@/lib/api/types';
 
 export const PROGRAMS_KEY = ['coach', 'programs'] as const;
 
-export function usePrograms() {
-  return useQuery({ queryKey: PROGRAMS_KEY, queryFn: () => programsApi.list() });
+export function usePrograms(params: PageParams = {}) {
+  return useQuery({
+    queryKey: [...PROGRAMS_KEY, params],
+    queryFn: () => programsApi.list(params),
+    // Keep the previous page on screen while the next one loads (no flash).
+    placeholderData: (prev) => prev,
+  });
 }
 
 export function useProgram(id: string | undefined) {

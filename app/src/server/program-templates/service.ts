@@ -2,6 +2,7 @@ import "server-only";
 import { Prisma, ProgramStatus, type PrismaClient } from "@prisma/client";
 import { ProgramsService } from "../programs/service";
 import { BadRequestException, NotFoundException } from "../http/errors";
+import { pageParams, paginated } from "../http/pagination";
 import type { ProgramDayInputDto } from "../programs/schemas";
 import type {
   AssignTemplateDto,
@@ -45,18 +46,25 @@ export class ProgramTemplatesService {
     private readonly programs: ProgramsService,
   ) {}
 
-  list(coachId: string, query: ListTemplatesQueryDto = {}) {
+  /** One page of the coach's reusable templates, newest-edited first. */
+  async list(coachId: string, query: ListTemplatesQueryDto = {}) {
+    const params = pageParams(query);
     const search = query.search?.trim();
-    return this.prisma.programTemplate.findMany({
-      where: {
-        coachId,
-        ...(search
-          ? { name: { contains: search, mode: "insensitive" } }
-          : {}),
-      },
-      orderBy: { updatedAt: "desc" },
-      include: { _count: { select: { days: true } } },
-    });
+    const where = {
+      coachId,
+      ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.programTemplate.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        include: { _count: { select: { days: true } } },
+        skip: params.skip,
+        take: params.take,
+      }),
+      this.prisma.programTemplate.count({ where }),
+    ]);
+    return paginated(items, total, params);
   }
 
   async get(coachId: string, id: string): Promise<TemplateWithDays> {

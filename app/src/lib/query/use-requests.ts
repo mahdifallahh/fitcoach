@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { publicApi } from '@/lib/api/public';
 import { requestsApi } from '@/lib/api/requests';
-import type { ProgramRequestStatus } from '@/lib/api/types';
+import type { PageParams, ProgramRequestStatus } from '@/lib/api/types';
 
 export const COACH_REQUESTS_KEY = ['coach', 'requests'] as const;
 
@@ -16,8 +16,12 @@ export function usePublicCoach(handle: string | undefined) {
   });
 }
 
-export function useCoachRequests() {
-  return useQuery({ queryKey: COACH_REQUESTS_KEY, queryFn: () => requestsApi.listForCoach() });
+export function useCoachRequests(params: PageParams = {}) {
+  return useQuery({
+    queryKey: [...COACH_REQUESTS_KEY, params],
+    queryFn: () => requestsApi.listForCoach(params),
+    placeholderData: (prev) => prev,
+  });
 }
 
 export function useMyRequests() {

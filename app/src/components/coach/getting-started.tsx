@@ -41,14 +41,14 @@ export function GettingStarted() {
     },
     {
       icon: Dumbbell,
-      done: !!exercises && exercises.length > 0,
+      done: !!exercises && exercises.total > 0,
       title: t('step2Title'),
       text: t('step2Text'),
       href: '/coach/exercises',
     },
     {
       icon: PencilLine,
-      done: !!programs && programs.length > 0,
+      done: !!programs && programs.total > 0,
       title: t('step3Title'),
       text: t('step3Text'),
       href: '/coach/programs/new',

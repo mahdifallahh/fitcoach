@@ -54,9 +54,15 @@ export async function login(
   await page.waitForURL(roleHomeRe(role), { timeout: 20_000 });
 }
 
-/** Click the app-shell logout and wait until we leave the panel. */
+/**
+ * Sign out from the app shell and wait until we leave the panel. Logout lives
+ * inside the header's profile menu, so the menu is opened first.
+ */
 export async function logout(page: Page): Promise<void> {
-  await page.getByRole("button", { name: L.dashboard.logout }).click();
+  await page.getByRole("button", { name: L.profileMenu.open }).click();
+  await page
+    .getByRole("menuitem", { name: L.profileMenu.logout })
+    .click();
   await page.waitForURL(
     (url) => !/\/(coach|student|admin)(\b|\/)/.test(url.pathname),
     { timeout: 15_000 },

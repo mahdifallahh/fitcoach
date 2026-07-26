@@ -20,7 +20,8 @@
     "logoHome": "fitlo — home",
     "logoHomeMark": "fitlo icon",
     "logoBrand": "fitlo — training program platform",
-    "logoBrandMark": "fitlo brand emblem"
+    "logoBrandMark": "fitlo brand emblem",
+    "theme": "Theme"
   },
   "pwa": {
     "installTitle": "Install the fitlo app",
@@ -878,5 +879,19 @@
     "cancel": "Cancel",
     "deleted": "Account deleted",
     "error": "Could not delete the account"
+  },
+  "profileMenu": {
+    "open": "Account menu",
+    "account": "My account",
+    "profile": "Profile",
+    "logout": "Sign out",
+    "logoutError": "Could not sign out"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous page",
+    "next": "Next page",
+    "pageOf": "Page {page} of {totalPages}",
+    "summary": "{total} results · page {page} of {totalPages}"
   }
 }

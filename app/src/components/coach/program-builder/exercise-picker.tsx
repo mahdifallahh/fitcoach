@@ -32,10 +32,13 @@ export function ExercisePicker({
   const [search, setSearch] = React.useState('');
   const [categoryId, setCategoryId] = React.useState('');
   const ds = useDebounce(search, 250);
-  const { data: exercises, isLoading, isError, refetch } = useExercises({
+  // A picker is search-driven, so one generous page beats paging controls here.
+  const { data, isLoading, isError, refetch } = useExercises({
     search: ds || undefined,
     categoryId: categoryId || undefined,
+    pageSize: 50,
   });
+  const exercises = data?.items;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

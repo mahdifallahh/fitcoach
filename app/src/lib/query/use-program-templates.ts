@@ -7,14 +7,16 @@ import {
   type CreateTemplatePayload,
   type UpdateTemplatePayload,
 } from '@/lib/api/program-templates';
+import type { PageParams } from '@/lib/api/types';
 import { PROGRAMS_KEY } from './use-programs';
 
 export const TEMPLATES_KEY = ['coach', 'program-templates'] as const;
 
-export function useTemplates(search?: string) {
+export function useTemplates(search?: string, params: PageParams = {}) {
   return useQuery({
-    queryKey: [...TEMPLATES_KEY, search ?? ''],
-    queryFn: () => programTemplatesApi.list(search),
+    queryKey: [...TEMPLATES_KEY, search ?? '', params],
+    queryFn: () => programTemplatesApi.list(search, params),
+    placeholderData: (prev) => prev,
   });
 }
 

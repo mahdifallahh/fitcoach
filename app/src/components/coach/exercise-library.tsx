@@ -16,6 +16,7 @@ import type { Exercise } from "@/lib/api/types";
 import { useExercises, useDeleteExercise } from "@/lib/query/use-exercises";
 import { useCategories } from "@/lib/query/use-categories";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { usePaged } from "@/lib/hooks/use-paged";
 import { useWriteAccess } from "@/lib/hooks/use-write-access";
 import { apiErrorMessage } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GifLightbox } from "@/components/shared/gif-lightbox";
 import { ErrorState } from "@/components/shared/error-state";
+import { Pagination } from "@/components/shared/pagination";
 import { HelpCallout } from "@/components/shared/help-callout";
 import { ExerciseFormDialog } from "./exercise-form-dialog";
 import { CategoryManager } from "./category-manager";
@@ -39,15 +41,18 @@ export function ExerciseLibrary() {
   const [search, setSearch] = React.useState("");
   const [categoryId, setCategoryId] = React.useState("");
   const debouncedSearch = useDebounce(search, 300);
+  const [page, setPage] = usePaged(`${debouncedSearch}|${categoryId}`);
   const {
-    data: exercises,
+    data,
     isLoading,
     isError,
     refetch,
   } = useExercises({
     search: debouncedSearch || undefined,
     categoryId: categoryId || undefined,
+    page,
   });
+  const exercises = data?.items;
   const remove = useDeleteExercise();
 
   const [formOpen, setFormOpen] = React.useState(false);
@@ -178,6 +183,15 @@ export function ExerciseLibrary() {
             />
           ))}
         </div>
+      )}
+
+      {data && (
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          total={data.total}
+          onPageChange={setPage}
+        />
       )}
 
       <ExerciseFormDialog

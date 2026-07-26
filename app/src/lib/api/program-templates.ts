@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { PageParams, Paginated } from './types';
 import type { ProgramDayPayload } from './programs';
 import type {
   ProgramDetail,
@@ -32,12 +33,18 @@ export interface AssignTemplatePayload {
   requestId?: string;
 }
 
-const qs = (search?: string) =>
-  search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+const qs = (search: string | undefined, params: PageParams) => {
+  const sp = new URLSearchParams();
+  if (search && search.trim()) sp.set('search', search.trim());
+  if (params.page) sp.set('page', String(params.page));
+  if (params.pageSize) sp.set('pageSize', String(params.pageSize));
+  const s = sp.toString();
+  return s ? `?${s}` : '';
+};
 
 export const programTemplatesApi = {
-  list: (search?: string) =>
-    api.get<ProgramTemplateListItem[]>(`/coach/program-templates${qs(search)}`),
+  list: (search?: string, params: PageParams = {}) =>
+    api.get<Paginated<ProgramTemplateListItem>>(`/coach/program-templates${qs(search, params)}`),
   get: (id: string) => api.get<ProgramTemplateDetail>(`/coach/program-templates/${id}`),
   create: (payload: CreateTemplatePayload) =>
     api.post<ProgramTemplateDetail>('/coach/program-templates', payload),

@@ -25,6 +25,9 @@ export const updateTemplateSchema = z.object({
 
 export const listTemplatesQuerySchema = z.object({
   search: z.string().max(120).optional(),
+  // Paging arrives as raw query-string values; `pageParams` clamps them.
+  page: z.union([z.string(), z.number()]).nullish(),
+  pageSize: z.union([z.string(), z.number()]).nullish(),
 });
 
 // Materialize a program from a template for one student. Mirrors the student

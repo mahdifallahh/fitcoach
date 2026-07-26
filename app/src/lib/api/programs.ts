@@ -1,5 +1,6 @@
 import { api } from './client';
-import type { ProgramDetail, ProgramListItem, ProgramStatus2 } from './types';
+import { pageQuery } from './query';
+import type { PageParams, Paginated, ProgramDetail, ProgramListItem, ProgramStatus2 } from './types';
 
 export interface ProgramExercisePayload {
   exerciseId: string;
@@ -33,7 +34,8 @@ export interface CreateProgramPayload {
 export type UpdateProgramPayload = Partial<Omit<CreateProgramPayload, 'studentContact' | 'requestId'>>;
 
 export const programsApi = {
-  list: () => api.get<ProgramListItem[]>('/coach/programs'),
+  list: (params: PageParams = {}) =>
+    api.get<Paginated<ProgramListItem>>(`/coach/programs${pageQuery(params)}`),
   get: (id: string) => api.get<ProgramDetail>(`/coach/programs/${id}`),
   create: (payload: CreateProgramPayload) => api.post<ProgramDetail>('/coach/programs', payload),
   update: (id: string, payload: UpdateProgramPayload) =>

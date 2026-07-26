@@ -18,4 +18,7 @@ export type UpdateExerciseDto = z.infer<typeof updateExerciseSchema>;
 export interface ListExercisesQueryDto {
   search?: string;
   categoryId?: string;
+  /** Paging window; omitted values fall back to the shared defaults. */
+  page?: string | number | null;
+  pageSize?: string | number | null;
 }

@@ -18,11 +18,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
+import { Pagination } from "@/components/shared/pagination";
 
 export function RequestsInbox() {
   const t = useTranslations("requests");
   const tc = useTranslations("common");
-  const { data, isLoading, isError, refetch } = useCoachRequests();
+  const [page, setPage] = React.useState(1);
+  const { data, isLoading, isError, refetch } = useCoachRequests({ page });
+  const requests = data?.items;
 
   if (isError) {
     return (
@@ -51,17 +54,26 @@ export function RequestsInbox() {
         <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      {!data || data.length === 0 ? (
+      {!requests || requests.length === 0 ? (
         <div className="flex flex-col items-center rounded-xl border border-dashed py-16 text-center text-muted-foreground">
           <Inbox className="mb-2 size-8" />
           <p>{t("empty")}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {data.map((req) => (
+          {requests.map((req) => (
             <RequestCard key={req.id} req={req} />
           ))}
         </div>
+      )}
+
+      {data && (
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          total={data.total}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );

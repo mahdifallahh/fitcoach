@@ -1,5 +1,6 @@
 import { api } from './client';
-import type { CoachRequest, CreateProgramRequestInput, ProgramRequestStatus, StudentRequest } from './types';
+import { pageQuery } from './query';
+import type { CoachRequest, CreateProgramRequestInput, PageParams, Paginated, ProgramRequestStatus, StudentRequest } from './types';
 
 export const requestsApi = {
   // student
@@ -9,7 +10,8 @@ export const requestsApi = {
   mine: () => api.get<StudentRequest[]>('/student/requests'),
 
   // coach
-  listForCoach: () => api.get<CoachRequest[]>('/coach/requests'),
+  listForCoach: (params: PageParams = {}) =>
+    api.get<Paginated<CoachRequest>>(`/coach/requests${pageQuery(params)}`),
   setStatus: (id: string, status: ProgramRequestStatus, declineReason?: string) =>
     api.patch<CoachRequest>(`/coach/requests/${id}`, { status, declineReason }),
 };
