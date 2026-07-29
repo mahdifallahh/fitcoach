@@ -1,0 +1,15 @@
+-- Add the STARTER capability tier (3 students).
+--
+-- Why: the ladder jumped straight from FREE (1 student) to ECONOMY (10). A coach
+-- with 2-3 students had no option that matched their size — they either worked for
+-- free or paid for three times the capacity they needed. STARTER closes that gap
+-- and is the entry rung for a low-budget coach (see docs/business-plan.md §5-3).
+--
+-- `BEFORE 'ECONOMY'` places the value in ascending-capacity order inside the enum,
+-- because the admin tier dropdown and the pricing grid iterate the declared order.
+--
+-- Note: PostgreSQL allows ADD VALUE inside a transaction (12+) as long as the new
+-- value is not *used* in the same transaction — this migration only declares it, so
+-- Prisma's transactional `migrate deploy` is fine. No data change: no existing row
+-- moves to STARTER, and every coach keeps the tier they are on.
+ALTER TYPE "SubscriptionTier" ADD VALUE IF NOT EXISTS 'STARTER' BEFORE 'ECONOMY';

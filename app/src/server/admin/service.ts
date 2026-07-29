@@ -11,13 +11,14 @@ import { TIER_MAX_STUDENTS } from "../subscriptions/plans";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** All tiers in display order (FREE → PRO), so distributions are never sparse. */
-const TIER_ORDER: SubscriptionTier[] = [
-  SubscriptionTier.FREE,
-  SubscriptionTier.ECONOMY,
-  SubscriptionTier.NORMAL,
-  SubscriptionTier.PRO,
-];
+/**
+ * All tiers in display order (FREE → PRO), so distributions are never sparse.
+ * Derived from the Prisma enum rather than listed by hand: the schema declares
+ * tiers in ascending-capacity order, which is exactly the display order, and a
+ * hand-written list silently drops any tier added later (STARTER did exactly
+ * that until a round-trip test caught it — a literal array typechecks fine).
+ */
+const TIER_ORDER = Object.values(SubscriptionTier);
 
 /** Platform-owner operations behind the ADMIN role. Read-mostly + subscription grants. */
 export class AdminService {
@@ -70,14 +71,14 @@ export class AdminService {
       }),
     ]);
 
-    // Tier distribution, dense (every tier a key). Coaches with no subscription
-    // row at all are implicitly FREE, so fold that remainder into FREE.
-    const tiers: Record<SubscriptionTier, number> = {
-      FREE: 0,
-      ECONOMY: 0,
-      NORMAL: 0,
-      PRO: 0,
-    };
+    // Tier distribution, dense (every tier a key). Built from the enum itself so
+    // adding a tier can't silently drop it from the admin overview — the previous
+    // hand-written literal had to be remembered on every schema change.
+    // Coaches with no subscription row at all are implicitly FREE, so fold that
+    // remainder into FREE.
+    const tiers = Object.fromEntries(
+      Object.values(SubscriptionTier).map((tier) => [tier, 0]),
+    ) as Record<SubscriptionTier, number>;
     let subRows = 0;
     for (const row of subsByTier) {
       tiers[row.tier] = row._count._all;

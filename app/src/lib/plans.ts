@@ -20,10 +20,16 @@ export const PUBLIC_PLANS: Record<PlanCode, { months: number; priceIrr: number }
  * A coach may write unlimited programs per student on every tier; the cap is on
  * the number of distinct students.
  */
-export type TierCode = 'FREE' | 'ECONOMY' | 'NORMAL' | 'PRO';
+export type TierCode = 'FREE' | 'STARTER' | 'ECONOMY' | 'NORMAL' | 'PRO';
 
+/**
+ * Ascending capacity order — the admin dropdown and the pricing grid both iterate
+ * this object's keys, and `TIERS` below preserves it. Keep new tiers in their
+ * price position.
+ */
 export const TIER_MAX_STUDENTS: Record<TierCode, number | null> = {
   FREE: 1,
+  STARTER: 3,
   ECONOMY: 10,
   NORMAL: 25,
   PRO: null,
@@ -41,6 +47,7 @@ export const DEFAULT_TIER: TierCode = 'FREE';
 export type PaidTierCode = Exclude<TierCode, 'FREE'>;
 
 export const TIERS: { code: PaidTierCode; maxStudents: number | null; highlight?: boolean }[] = [
+  { code: 'STARTER', maxStudents: TIER_MAX_STUDENTS.STARTER },
   { code: 'ECONOMY', maxStudents: TIER_MAX_STUDENTS.ECONOMY },
   { code: 'NORMAL', maxStudents: TIER_MAX_STUDENTS.NORMAL, highlight: true },
   { code: 'PRO', maxStudents: TIER_MAX_STUDENTS.PRO },

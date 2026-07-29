@@ -1,5 +1,6 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
+import type { Readable } from 'node:stream';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -9,7 +10,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AppConfig } from './config';
 
-export type BucketKind = 'avatars' | 'gifs' | 'pdfs' | 'requests';
+export type BucketKind = 'avatars' | 'gifs' | 'pdfs' | 'requests' | 'videos';
 
 export interface UploadTarget {
   /** Presigned PUT URL the browser uploads the bytes to directly. */
@@ -62,6 +63,7 @@ export class StorageService {
       gifs: config.get('S3_BUCKET_GIFS'),
       pdfs: config.get('S3_BUCKET_PDFS'),
       requests: config.get('S3_BUCKET_REQUESTS'),
+      videos: config.get('S3_BUCKET_VIDEOS'),
     };
   }
 
@@ -102,6 +104,30 @@ export class StorageService {
   ): Promise<string> {
     await this.s3.send(
       new PutObjectCommand({ Bucket: this.buckets[kind], Key: key, Body: body, ContentType: contentType }),
+    );
+    return this.publicUrl(kind, key);
+  }
+
+  /**
+   * Server-side upload from a stream — for objects too big to hold in memory
+   * (compressed exercise videos). `contentLength` is required: S3 needs the size
+   * up front for a single-part PUT, and we always have it from `stat`.
+   */
+  async putStream(
+    kind: BucketKind,
+    key: string,
+    body: Readable,
+    contentType: string,
+    contentLength: number,
+  ): Promise<string> {
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.buckets[kind],
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        ContentLength: contentLength,
+      }),
     );
     return this.publicUrl(kind, key);
   }

@@ -11,16 +11,19 @@ grepping the whole codebase for orientation. Update it when you change architect
 or touch the data model — it decays fast if left stale.
 
 Other docs worth knowing about: `docs/architecture.md`, `docs/data-model.md`, `docs/code-structure.md`,
-`docs/setup.md`, `docs/i18n-and-rtl.md`, `docs/logoContext.md` (brand assets + light/dark primary colors),
-`docs/api.md`, `docs/progress.md` (living per-phase build checklist), `docs/decisions/` (ADRs).
+`docs/setup.md`, `docs/i18n-and-rtl.md`, `docs/api.md`, `docs/progress.md` (living per-phase build
+checklist), `docs/decisions/` (ADRs),
+`docs/business-plan.md` (Persian — market, pricing, GTM, and the revenue-blocking gaps in §8 فاز ۰).
 
 ## What this is
 
 **fitlo** — a full-stack, mobile-first, bilingual (Persian RTL default / English LTR) PWA for personal
 trainers and their students. Coaches manage an exercise library and author day-by-day training programs
-(with supersets) with PDF export; students view programs written for them. Coaches monetize via
-subscriptions (a coach-activated 15-day free trial, one-time only → 3/6/12-month plans) paid through
-ZarinPal (IRR) or Stripe (international). Coaches also get a public link-in-bio page (`/c/<handle>`) where
+(with supersets) with PDF export; students view programs written for them. Monetization is **tier-based,
+not time-based**: every coach is provisioned at signup on a permanent free tier (`FREE`, 1 student), and
+paid tiers raise the student cap (`ECONOMY` 10 / `NORMAL` 25 / `PRO` unlimited). **Public pricing is not set
+yet** — the tier cards render "coming soon" and checkout is not offered; the legacy 3/6/12-month ZarinPal
+flow stays wired for when prices land. Coaches also get a public link-in-bio page (`/c/<handle>`) where
 prospective students submit an intake request (stats, photos, payment receipt) that lands in the coach's inbox.
 
 **Single-app architecture.** This was originally two apps (NestJS API + Next.js UI); it is now **one Next.js
@@ -33,9 +36,11 @@ service.ts` as plain classes wired through a tiny singleton container (`src/serv
 *before that student has an account*. When the student later registers with the same phone, every program
 previously written for them is automatically linked (`StudentProfile.userId` is nullable until claimed).
 
-**Auth is phone + OTP only** (no email/password, no magic-link in the UI). In non-production, `POST
-/api/auth/otp/request` echoes the code back as `devCode`, and the login form auto-fills and auto-submits it —
-so local login is a single click with no need to read logs.
+**Auth is phone-first: OTP to sign up, password to sign back in.** The login form calls `/auth/check`
+first — a known account *with* a password goes to the password step (`/auth/login`, scrypt), everything else
+goes through SMS OTP, and a brand-new account is then prompted to set a password. There is no magic-link in
+the UI. In non-production, `POST /api/auth/otp/request` echoes the code back as `devCode`, and the login form
+auto-fills and auto-submits it — so local login is a single click with no need to read logs.
 
 ## Commands
 
@@ -61,7 +66,7 @@ infra on the default in-network ports (`postgres:5432`, `minio:9000`) — the re
 pnpm dev                    # next dev (UI + /api)
 pnpm build                  # next build — this is also the typecheck step (no separate tsc script)
 pnpm lint                   # next lint
-pnpm test                   # jest — server-layer specs under src/server/**/*.spec.ts (46 tests)
+pnpm test                   # jest — server-layer specs under src/server/**/*.spec.ts (80 tests, 13 suites)
 pnpm test -- <pattern>      # run specs matching a file/name, e.g. pnpm test -- programs
 pnpm e2e                    # playwright — e2e/**/*.spec.ts against a live app (docker compose up first)
 pnpm e2e:headed             # same, with a visible browser
@@ -127,9 +132,23 @@ container — `WATCHPACK_POLLING` helps but doesn't always catch brand-new files
   fixed-window limiter (`src/server/http/rate-limit.ts`), fine for the single Node server.
 - **Storage:** S3/MinIO via `src/server/storage.ts`, which keeps two clients — one for server-side ops
   (internal endpoint) and one for presigning (public endpoint), because a presigned URL's signature embeds the
-  host it was signed for. Buckets `avatars`/`gifs`/`pdfs` are public-read; `requests` (student intake photos/
-  receipts) is private — the coach inbox reads them via short-lived presigned GETs.
+  host it was signed for. Buckets `avatars`/`gifs`/`pdfs`/`videos` are public-read; `requests` (student intake
+  photos/receipts) is private — the coach inbox reads them via short-lived presigned GETs.
+- **Exercise video (`src/server/video/*`):** the one upload that does *not* use a presigned PUT — the bytes
+  must pass through the server to be transcoded. `POST /api/coach/exercises/video-upload?filename=…` takes the
+  **raw file as the body** (never `formData()`, which would buffer 100 MB into the heap) and streams it to a
+  per-request UUID temp dir, aborting mid-stream past the size cap. ffprobe proves it's really a video, then
+  ffmpeg re-encodes it (`libx264` CRF 28, `scale='min(1280,iw)':-2`, AAC 96k, `+faststart`) and the result is
+  streamed to the `videos` bucket; the temp dir is removed in a `finally` on every path. All tunables are env
+  vars (`config.ts`) grouped into a typed `VideoConfig`; failures are a closed `VIDEO_*` code union that the
+  client maps to translated sentences. The graph (`SpawnFfmpegRunner` → `VideoCompressor` → `VideoService`) is
+  assembled in `container.ts` so each layer is testable with fakes.
 - **PDF:** Puppeteer renders an RTL-aware HTML template (`src/server/pdf/template.ts`) to a PDF cached on
-  `Program.pdfUrl`, invalidated via `pdfStaleAt` on every program edit. `puppeteer-core` is lazy-imported
-  (`webpackIgnore`) so the app still boots if Chromium isn't present; the endpoint degrades to a clean 503
-  instead of a 500. The Docker image installs Chromium; PDF renders end-to-end there.
+  `Program.pdfUrl`, invalidated via `pdfStaleAt` on every program edit. The cache **key carries the locale**
+  (`<coach>/<program>-<fa|en>.pdf`) — one column holds the last-generated locale, so asking for the other one
+  re-renders rather than handing back the wrong language. `puppeteer-core` is imported lazily (inside the
+  request, so boot never needs it) but with a **literal specifier**, which is what lets Next's output tracing
+  copy it into the standalone production build. The browser binary is auto-detected per platform
+  (`chromeCandidates` — Linux paths, plus Windows/macOS Chrome/Edge so a native `pnpm dev` renders too);
+  `PUPPETEER_EXECUTABLE_PATH` wins when it exists on disk, and is ignored when it doesn't. With no browser at
+  all the endpoint degrades to a clean 503, never a 500.

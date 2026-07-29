@@ -43,10 +43,14 @@ enum SubscriptionPlan {
 
 // Capability tier: access is scoped by how many students a coach may manage, not
 // by time. FREE is permanent (1 student). Paid tiers (pricing "coming soon"):
-// ECONOMY = 10, NORMAL = 25, PRO = unlimited. Per-student programs are unlimited
-// on every tier. Quota → student count map lives in src/lib/plans.ts.
+// STARTER = 3, ECONOMY = 10, NORMAL = 25, PRO = unlimited. Per-student programs
+// are unlimited on every tier. Quota → student count map lives in src/lib/plans.ts.
+//
+// Declared in ascending capacity order; the admin tier dropdown and the pricing
+// grid both iterate this order, so keep new tiers in their price position.
 enum SubscriptionTier {
   FREE
+  STARTER
   ECONOMY
   NORMAL
   PRO

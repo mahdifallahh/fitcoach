@@ -27,12 +27,21 @@ export function DownloadPdfButton({
   const [loading, setLoading] = React.useState(false);
 
   async function download() {
+    // Generating the PDF takes seconds, and by then the click gesture has expired —
+    // a `window.open` after the await is treated as an unsolicited popup and blocked,
+    // so the download silently never happens. Claim the tab synchronously *inside*
+    // the gesture, then point it at the file once we have the URL.
+    const tab = window.open("", "_blank");
+    if (tab) tab.opener = null; // same protection `noopener` would have given
+
     setLoading(true);
     try {
       const get = fetcher ?? programsApi.pdf;
       const { url } = await get(programId, locale === "en" ? "en" : "fa");
-      window.open(url, "_blank", "noopener");
+      if (tab) tab.location.replace(url);
+      else window.location.assign(url); // popup blocked entirely → navigate instead
     } catch {
+      tab?.close(); // don't strand the user on a blank tab
       toast.error(t("pdfError"));
     } finally {
       setLoading(false);

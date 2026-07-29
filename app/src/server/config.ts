@@ -28,6 +28,37 @@ export const envSchema = z.object({
   S3_BUCKET_GIFS: z.string().default("gifs"),
   S3_BUCKET_PDFS: z.string().default("pdfs"),
   S3_BUCKET_REQUESTS: z.string().default("requests"), // private (intake photos)
+  S3_BUCKET_VIDEOS: z.string().default("videos"), // exercise demo clips
+
+  // Exercise video upload + ffmpeg compression. Every tunable lives here; the
+  // typed, grouped view the video code consumes is built in `server/video/config.ts`.
+  //
+  // The size ceiling is deliberately a NEXT_PUBLIC_ var: the browser reads the same
+  // number to reject an oversized file before spending the user's bandwidth, and the
+  // server reads it again because a client-side limit is a courtesy, not a control.
+  NEXT_PUBLIC_VIDEO_MAX_UPLOAD_MB: z.coerce.number().int().positive().default(100),
+  FFMPEG_PATH: z.string().optional(),
+  FFPROBE_PATH: z.string().optional(),
+  /** x264 quality: lower = better + bigger. 26–28 is the sweet spot for demo clips. */
+  VIDEO_CRF: z.coerce.number().int().min(0).max(51).default(28),
+  VIDEO_PRESET: z
+    .enum([
+      "ultrafast",
+      "superfast",
+      "veryfast",
+      "faster",
+      "fast",
+      "medium",
+      "slow",
+      "slower",
+      "veryslow",
+    ])
+    .default("veryfast"),
+  /** Downscale anything wider than this; smaller clips are left alone. */
+  VIDEO_MAX_WIDTH: z.coerce.number().int().positive().default(1280),
+  VIDEO_AUDIO_BITRATE_KBPS: z.coerce.number().int().positive().default(96),
+  /** Hard ceiling on a single ffmpeg run, so one bad file can't pin a worker. */
+  VIDEO_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
 
   // JWT
   JWT_ACCESS_SECRET: z.string().min(1),

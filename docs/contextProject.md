@@ -10,12 +10,18 @@
 
 **fitlo** — a full-stack, mobile-first, **bilingual (fa-RTL default / en-LTR) PWA** where **coaches**
 write training programs + manage an exercise library, and **students** view the programs written for them.
-Monetization = coach-only subscriptions (a coach-activated, one-time 15-day free trial → paid plans) via
-**ZarinPal (IRR)** (Stripe is present in code but disabled for checkout). **Public pricing is currently
-"coming soon"**: the landing + billing pages show three *student-scoped* tiers — Economy (≤10 students),
-Standard (≤50), Professional (unlimited) — from `lib/plans.ts` `TIERS` with **no price** and disabled buy
-buttons; the only live CTA is the free trial. The month-based `PUBLIC_PLANS`/server `PLANS` + ZarinPal checkout
-stay wired for when real prices are set (the billing view no longer calls checkout meanwhile).
+Monetization = coach-only subscriptions, **tier-based (student-scoped), not time-based**. The old one-time
+15-day trial is **gone**: `UsersService.createUser` provisions every new coach with a permanent
+`FREE` subscription row (`status: ACTIVE`, `endsAt: null`) at signup, so no activation step exists.
+Tiers and their student caps come from `lib/plans.ts` `TIER_MAX_STUDENTS` (the single source of truth,
+re-exported by `server/subscriptions/plans.ts`): **FREE 1 · ECONOMY 10 · NORMAL 25 · PRO unlimited** —
+programs *per student* are unlimited on every tier.
+
+**Public pricing is currently "coming soon"**: the landing + billing pages render the three paid tiers from
+`TIERS` with **no price** and disabled buy buttons, and the billing view never calls checkout. The legacy
+month-based catalog (`lib/plans.ts` `PUBLIC_PLANS` / `server/subscriptions/plans.ts` `PLANS` — M3/M6/M12) and
+the **ZarinPal (IRR)** checkout stay wired for when real prices land (Stripe is present in code but disabled
+for checkout).
 
 **Single-app architecture.** Originally two apps (NestJS API + Next.js UI); **now one Next.js app**
 (`app/`) that serves the UI *and* the REST API as Route Handlers under `src/app/api/**`. There is no
@@ -31,7 +37,7 @@ see §4 "Dual-role"), switched from a header role-switcher. Accounts can also be
 (re-auth + type-to-confirm; `DELETE /api/account`).
 
 **Status:** all 9 build phases implemented + the NestJS→Next.js consolidation complete (verified in Docker:
-single app on `:3000`, migrate-on-boot, 46 tests green, PDF renders). See `docs/progress.md`.
+single app on `:3000`, migrate-on-boot, 80 tests green, PDF renders). See `docs/progress.md`.
 
 ---
 
@@ -107,8 +113,13 @@ Ported Nest services became plain TS classes; only their imports changed (Nest e
 
 ### Auth/role/subscription gating
 No global guards; each route opts in via `withRoute` options. Default: authenticated. `role: 'COACH'|'STUDENT'`
-restricts. `requiresSub: true` gates writes → **402** when a coach's trial/plan lapses (reads stay open =
-read-only). `public: true` skips auth.
+restricts. `requiresSub: true` gates writes → **402** when the coach's subscription isn't live (reads stay
+open = read-only). `public: true` skips auth.
+
+**In the tier model this gate almost never fires.** `SubscriptionsService.isActive` treats a coach with no
+row as FREE-active, and tier rows have `endsAt: null` → live whenever `ACTIVE`. Only a *legacy* time-based
+paid row (non-null `endsAt` in the past) or an explicitly `EXPIRED`/`CANCELED` row sends the panel
+read-only. Keep `requiresSub` on write routes anyway — it's the hook paid enforcement will hang from.
 
 **Dual-role — one phone can be both a coach and a student.** `User.role` is now only the *primary/landing*
 role and the ADMIN marker; **capability flags `User.isCoach` / `User.isStudent`** are the source of truth for
@@ -123,8 +134,8 @@ the current mode, switches to the other, or activates it in place); `AuthGuard` 
 `hasCapability`/`defaultHome` gate panels by capability.
 
 The **UI mirrors this** so write buttons don't look clickable-then-fail: `lib/hooks/use-write-access.ts`
-(`useWriteAccess()`) returns `canWrite` (coach has an active/unexpired TRIALING|ACTIVE sub — also false for a
-coach who hasn't activated the free trial yet, matching the server). The create/save/delete/assign actions in
+(`useWriteAccess()`) returns `canWrite` using the exact same rule as `isActive` (no row → FREE-active;
+`endsAt === null` → never lapses), so a FREE coach can always write. The create/save/delete/assign actions in
 `program-list`, `template-list`, `exercise-library`, both builders and `profile-form` disable + show a lock icon
 with the `billing.lockedTitle` tooltip; `subscription-banner` explains why and links to billing. The server 402
 remains the source of truth.
@@ -156,9 +167,11 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   pricing → PWA → FAQ → CTA → footer. The `CoachesSection` card grid links to each `/c/<handle>`; it reads the
   DB so the page is **ISR — `export const revalidate = 600`** to keep static delivery, and the section
   soft-fails to nothing when the DB is unreachable at build),
-  `blog/` + `blog/[slug]` (bilingual content, statically prerendered), `login` (**phone + OTP only**),
-  `coach/{page,profile,exercises,programs/{page,new,[id]/edit},billing,requests,intake}`,
-  `student/{page,coaches/[coachId],programs/[id],requests}`, and **public** `c/[handle]` (server-rendered,
+  `blog/` + `blog/[slug]` (bilingual content, statically prerendered), `about`, `terms`, `privacy`,
+  `login` (phone → password or OTP), `launch` (what the installed PWA opens to),
+  `coach/{page,profile,exercises,programs/{page,new,[id]/edit},templates/{page,new,[id]/edit},billing,
+  requests,intake,help}`, `student/{page,coaches/[coachId],programs/[id],requests}`,
+  `admin/{page,coaches,payments}`, and **public** `c/[handle]` (server-rendered,
   indexable) + `c/[handle]/request` (auth-gated intake form). `error.tsx` is the locale error boundary.
 - **API routes:** `src/app/api/**/route.ts` — one folder per endpoint, mirroring the §8 paths. Thin: import a
   service getter from `@/server/container` and wrap with `withRoute`.
@@ -174,13 +187,18 @@ error:   { "success": false, "error": { "code": "STRING_CODE", "message": "...",
   public link, the request form, why the card number). Content is data-driven from `coachHelp.topics.<id>`
   (title/intro/`steps[]` via `t.raw`) — add a topic by extending the `TOPICS` array + both message files.
 - **components/** `ui/` shadcn primitives; `shared/` (`dashboard-shell`, `profile-menu`, `user-avatar`,
-  `pagination`, `public-header`, `locale-switcher`, `theme-toggle`, `gif-lightbox`, `error-state`,
-  `field-error`, `json-ld`); `auth/` (`auth-form` 2-step OTP w/
-  dev auto-login, `auth-guard`); `coach/` (`coach-page-layout`, `coach-nav`, `getting-started`,
-  `profile-form`, `exercise-library`, `program-list`, `billing-view`, `subscription-banner`,
-  `download-pdf-button`, `requests-inbox`, `intake-settings`, **`program-builder/`** — the centerpiece);
+  `pagination`, `public-header`, `public-footer`, `locale-switcher`, `theme-toggle`, `gif-lightbox`,
+  `error-state`, `field-error`, `json-ld`, `logo`, `brand-icons`, `coaches-section`, `pricing-section`,
+  `tier-card`, `legal-article`, `help-callout`, `scrollable-tabs`, `delete-account-card`,
+  `obfuscated-email`, `enamad-seal`, `pwa-install-section`); `auth/` (`auth-form` — check → password or
+  OTP → set-password, w/ dev auto-login; `auth-guard`); `coach/` (`coach-page-layout`, `coach-nav`,
+  `getting-started`, `coach-help`, `profile-form`, `exercise-library`, `exercise-form-dialog`,
+  `category-manager`, `program-list`, `template-list`, `assign-template-dialog`, `public-page-card`,
+  `billing-view`, `subscription-banner`, `download-pdf-button`, `requests-inbox`, `intake-settings`,
+  **`program-builder/`** — the centerpiece — and `template-builder/` which reuses it);
   `student/` (`student-page-layout`, `student-nav`, `student-help`, `coaches-list`, `coach-programs`,
-  `program-viewer`, `my-requests`); `providers/`; `pwa/`.
+  `program-viewer`, `my-requests`); `admin/` (`admin-page-layout`, `admin-nav`, `overview-view`,
+  `coaches-view`, `payments-view`); `providers/`; `pwa/`.
 - **lib/api/**: `client.ts` (fetch wrapper: base URL **`''`** same-origin, `credentials:'include'`, envelope
   unwrap, **auto-refresh on 401**), per-feature modules, `upload.ts` (presigned-PUT helper), `types.ts`.
 - **lib/query/**: TanStack hooks per feature. **messages/** `fa.json`/`en.json` — **all UI strings; zero
@@ -253,8 +271,10 @@ e2e `logout()` helper opens it first.
   Each public page exports `generateMetadata` with locale title/description, canonical, hreflang and OG tags —
   **NB:** a page-level `openGraph` replaces the layout's whole object, so each restates `images: ['/og.png']`.
   **JSON-LD** via `components/shared/json-ld.tsx`: Organization (+sameAs socials, ContactPoint) + WebSite +
-  **WebApplication with the three plan Offers** + FAQPage (landing), Article + BreadcrumbList (blog post),
-  ProfilePage + Person (`/c/<handle>`).
+  **WebApplication** + FAQPage (landing — the graph is built inline in `[locale]/page.tsx`), Article +
+  BreadcrumbList (blog post), ProfilePage + Person (`/c/<handle>`). The WebApplication carries a **single
+  free `Offer` (`price: 0`, IRR)** — matching the "pricing coming soon" story; add per-tier Offers only when
+  real prices ship, or the markup will advertise prices the site doesn't sell.
 - **GEO:** `public/llms.txt` — a plain-markdown product summary for AI answer engines; keep it in sync with
   the pricing/feature story when either changes.
 - **`lib/blog.ts`** holds the posts as typed, bilingual content blocks (`p` / `h2` / `ul`) — no markdown
@@ -325,7 +345,7 @@ e2e `logout()` helper opens it first.
 
 ## 7. Data model (Prisma — `app/prisma/schema.prisma`)
 
-13 models. PK = cuid unless noted. Key fields + relations:
+16 models. PK = cuid unless noted. Key fields + relations:
 
 - **User** (`id`, `phone?`@unique, `email?`@unique, `passwordHash?`, `role` Role = primary/landing role +
   ADMIN marker, **`isCoach`/`isStudent`** capability flags = the real access gate — one phone can be both,
@@ -353,7 +373,9 @@ e2e `logout()` helper opens it first.
   `ProgramTemplate(coachId, name, description?, daysPerWeek)`. A coach authors one once and **assigns** it to
   any student — which materializes a real Program via `ProgramsService.create` (so student find-or-create,
   exercise-ownership checks and the `requestId` accept side-effect all behave identically).
-- **Subscription** (`coachId`, `plan` SubscriptionPlan, `status` SubscriptionStatus, `startsAt`, `endsAt`).
+- **Subscription** (`coachId`, **`tier` SubscriptionTier** (default FREE — the live access model),
+  `plan` SubscriptionPlan? (legacy time-based rows only), `status` SubscriptionStatus, `startsAt`,
+  **`endsAt?` — null = never expires**, which is what every tier row has). One row per coach.
 - **Payment** (`coachId`, `subscriptionId?`, `gateway` PaymentGateway, `plan`, `amount` Int (minor units),
   `currency`, `status` PaymentStatus, `reference?` @@unique([gateway,reference]), `raw` Json).
 - **ProgramRequest** (`coachId`, `studentUserId`, `studentProfileId?`, `fullName`, `phone?`, `age?`,
@@ -364,8 +386,10 @@ e2e `logout()` helper opens it first.
   saved**, via `requestId` on program create) or declines with a reason the student sees.
 
 **Enums:** `Role(COACH|STUDENT|ADMIN)`, `OtpChannel(SMS|EMAIL)`, `OtpPurpose(LOGIN|MAGIC_LINK)`,
-`ProgramStatus(DRAFT|PUBLISHED)`, `SubscriptionPlan(M3|M6|M12)`,
-`SubscriptionStatus(TRIALING|ACTIVE|EXPIRED|CANCELED)`, `PaymentGateway(ZARINPAL|STRIPE)`,
+`ProgramStatus(DRAFT|PUBLISHED)`, **`SubscriptionTier(FREE|ECONOMY|NORMAL|PRO)`** (the live access model),
+`SubscriptionPlan(M3|M6|M12)` (legacy time-based),
+`SubscriptionStatus(TRIALING|ACTIVE|EXPIRED|CANCELED)` — **TRIALING is legacy**, no new row uses it,
+`PaymentGateway(ZARINPAL|STRIPE)`,
 `PaymentStatus(PENDING|PAID|FAILED|REFUNDED)`, `ProgramRequestStatus(PENDING|ACCEPTED|DECLINED)`.
 
 ---
@@ -389,7 +413,8 @@ e2e `logout()` helper opens it first.
   name the coach actually set, so raw phone-number default names are never exposed; capped at 24).
 - **categories** (COACH): `GET /coach/categories`, `POST` *(gated)*, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
 - **exercises** (COACH): `GET /coach/exercises?search=&categoryId=`, `POST` *(gated)*,
-  `POST /coach/exercises/gif-upload-url`, `GET/:id`, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
+  `POST /coach/exercises/gif-upload-url`, `POST /coach/exercises/video-upload?filename=` *(gated; raw video
+  body → transcoded MP4, see §8 key flows)*, `GET/:id`, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
 - **programs** (COACH): `GET /coach/programs`, `POST` *(gated; `requestId?` → marks that request ACCEPTED)*,
   `GET/:id`, `PATCH/:id` *(gated)*, `PATCH/:id/status` *(gated)*, `DELETE/:id` *(gated)*,
   `GET /coach/programs/:id/pdf?locale=fa|en`.
@@ -402,9 +427,12 @@ e2e `logout()` helper opens it first.
 - **program-requests** — student: `POST /student/requests/image-upload-url` (presigned PUT → private bucket),
   `POST /student/requests`, `GET /student/requests`. Coach: `GET /coach/requests` (inbox, presigned photo URLs
   + prefill `contact`), `PATCH /coach/requests/:id` (ACCEPTED/DECLINED; DECLINED requires `declineReason`).
-- **billing** (COACH): `GET /coach/billing`, `POST /coach/billing/activate-trial` (one-time free trial, 409
-  `TRIAL_ALREADY_USED` if a subscription row already exists), `POST /coach/billing/checkout`,
-  `POST /coach/billing/dev/complete/:paymentId` (non-prod simulate).
+- **billing** (COACH): `GET /coach/billing` (current row + legacy plan catalog + last 20 payments +
+  `simulateMode`), `POST /coach/billing/activate-trial` — **name kept for compatibility only**; it now calls
+  `subscriptions.ensureFreePlan` (idempotent: returns the existing row or creates a FREE one, never 409s) and
+  **nothing in the UI calls it**, since coaches are provisioned with FREE at signup.
+  `POST /coach/billing/checkout` (legacy month plans; not reachable from the UI while pricing is
+  "coming soon"), `POST /coach/billing/dev/complete/:paymentId` (non-prod simulate).
 - **gateway webhooks** (public): `GET /coach/billing/zarinpal/callback` (redirect),
   `POST /payments/stripe/webhook` (raw body via `req.text()`).
 - **admin** (ADMIN — owner panel at `/[locale]/admin`): `GET /admin/overview` (totals, **tier distribution**
@@ -422,7 +450,8 @@ e2e `logout()` helper opens it first.
   ADMIN accounts get no coach profile and no student claiming.
 - **health:** `GET /api/health` (liveness; container healthcheck).
 
-*(gated)* = `requiresSub: true` → 402 when trial/plan lapsed.
+*(gated)* = `requiresSub: true` → 402 when the coach's subscription isn't live. In the tier model that means
+a lapsed *legacy* paid row or an EXPIRED/CANCELED one; a FREE coach always passes (see §4).
 
 ### Key flows
 - **Auth:** the login form (`auth-form.tsx`) first calls `/auth/check`. **Known account with a password** →
@@ -435,15 +464,68 @@ e2e `logout()` helper opens it first.
   `refresh_token` (path `/api/auth`, hashed in DB, rotated). First login creates the User (coach gets a starter
   profile but **no subscription yet**; student claims unlinked profiles; owner phones from `ADMIN_PHONES` → ADMIN).
 - **Uploads:** client asks `*-upload-url` → presigned **PUT** URL (signed with the **public** S3 endpoint) →
-  browser PUTs to MinIO → client saves the `publicUrl`. Buckets `avatars/gifs/pdfs` public-read; **`requests`**
-  (intake photos) **private** — request stores object **keys**, coach inbox returns presigned GET URLs.
+  browser PUTs to MinIO → client saves the `publicUrl`. Buckets `avatars/gifs/pdfs/videos` public-read;
+  **`requests`** (intake photos) **private** — request stores object **keys**, coach inbox returns presigned
+  GET URLs.
+- **Exercise video — the one upload that bypasses the presigned pattern** (`src/server/video/*`): the bytes
+  have to reach the server because they get transcoded. `POST /api/coach/exercises/video-upload?filename=…`
+  (COACH + `requiresSub`) takes the **raw file as the request body**:
+  - **Streaming, not buffering.** `req.formData()` would pull the whole upload into the heap, which defeats the
+    point of a 100 MB limit — the handler pipes `req.body` straight to a temp file and counts bytes as they
+    arrive, destroying the stream the moment it passes the cap. `Content-Length` is checked too, but only as a
+    courtesy: a client can lie about or omit it, so the stream cap is the real control.
+  - **Validation is layered:** MIME type *and* filename extension must agree (`VIDEO_FORMATS` maps one to the
+    other — a `.zip` renamed `.mp4` fails the pair check), then **`ffprobe` proves the bytes are actually a
+    video**. Only the last one is trustworthy; the first two just avoid wasting an upload.
+  - **Encoding recipe** (`buildCompressArgs`, pure + unit-tested): `libx264` CRF 28 / preset `veryfast`,
+    `scale='min(1280,iw)':-2` (downscale only, even height for yuv420p), AAC 96k or `-an` when silent,
+    `-pix_fmt yuv420p`, **`-movflags +faststart`** so playback starts before the file finishes downloading.
+    Measured: a 15 MB 1080p clip → 550 KB at 1280×720 in ~6 s.
+  - **Resources:** one UUID temp dir per request (no collisions between concurrent uploads), removed in a
+    `finally` on *every* path; the read stream handed to S3 is explicitly destroyed, because an open handle
+    makes the cleanup fail on Windows and leaks a temp file per upload.
+  - **Errors** are a closed `VIDEO_*` union (`video/errors.ts`) with per-code HTTP status (413 too large,
+    504 timeout, 503 tooling/encoding, 400 the rest); `lib/api/video-upload.ts` + `exercise-video-field.tsx`
+    map each code to a translated sentence, so the coach never sees a raw 500.
+  - **DI:** `SpawnFfmpegRunner` (binary lookup: `FFMPEG_PATH` if it exists on disk → PATH → platform
+    locations, same idea as the Chromium lookup) → `VideoCompressor` → `VideoService`, wired in
+    `container.ts` via `getVideo()`. The runner is an interface, so the compressor's specs drive it with a
+    fake and need no ffmpeg installed.
+  - **Client:** `XMLHttpRequest`, not `fetch` — `fetch` still has no upload-progress event and a 100 MB
+    upload with no progress bar looks frozen. Two distinct waits are shown: a determinate bar while bytes
+    are in flight, then an indeterminate one while the server transcodes.
+  - Uploaded clips and pasted external links (YouTube/Aparat) share the single `Exercise.videoUrl` column;
+    `deleteByPublicUrl` no-ops on anything outside our bucket, so replacing an upload cleans up the old
+    object while a YouTube link is never touched.
 - **PDF:** `server/pdf/` renders an RTL HTML template with Puppeteer → uploads to `pdfs` → caches
-  `Program.pdfUrl`; regenerates when `pdfStaleAt` set (every edit). `puppeteer-core` lazy-loaded
-  (`webpackIgnore`); returns **503** if Chromium absent. Docker image has Chromium → renders end-to-end.
-- **Subscriptions/payments:** no subscription is created at signup — the coach activates a **one-time,
-  15-day free trial** themselves from the billing page (`POST /coach/billing/activate-trial` →
-  `subscriptions.activateTrial`, blocked with 409 `TRIAL_ALREADY_USED` if a subscription row already exists,
-  even an expired one). `subscriptions` also has `isActive`/`activateOrExtend`/hourly cron `expireDue`.
+  `Program.pdfUrl`. Three things decide whether it re-renders: no cached file, `pdfStaleAt` set (every edit),
+  or **the cached file is in the other locale**. The object key is `<coachId>/<programId>-<fa|en>.pdf` and a
+  cache hit requires `pdfUrl` to equal the URL *that locale* would produce — there is only one column, so it
+  holds the last-generated locale and the other one re-renders. (Trade-off: toggling fa↔en re-renders each
+  time. Both objects stay in the bucket; storing both URLs would need a schema change. Rows created before the
+  key carried a locale miss once, then heal.)
+  - **Browser discovery is per-platform** (`chromeCandidates(platform, env)` — exported and unit-tested):
+    `PUPPETEER_EXECUTABLE_PATH` first **but only if it exists on disk**, then Linux paths, then Windows
+    (`%PROGRAMFILES%`/`(x86)`/`%LOCALAPPDATA%` → Chrome, Chromium, Edge) and macOS app bundles. This is what
+    makes a **native `pnpm dev` on Windows/macOS render PDFs**: the shared `.env` points at
+    `/usr/bin/chromium` for the container, which of course doesn't exist on the host — before the fallback
+    existed, every native PDF request 503'd with "no Chromium binary found" even with Chrome installed.
+  - `puppeteer-core` is imported lazily *inside the request* (boot never needs it) but with a **literal
+    specifier**. A non-literal one is invisible to Next's output tracing, which silently leaves the package
+    out of the standalone production image → 503 in prod only. Keep it literal;
+    `serverExternalPackages` already keeps it out of the webpack bundle.
+  - The launched browser is pooled and **dropped when it disconnects**; a render that fails for any reason
+    other than an `AppError` retries once on a fresh browser, then returns 503 `PDF_RENDER_FAILED`. A dead
+    handle used to surface as an unmapped 500.
+  - Docker image has Chromium + `fonts-noto-core` → Persian renders with Noto Naskh Arabic. A native Windows
+    render falls back to Arial (readable, just not the intended face).
+- **Subscriptions/payments:** a **permanent `FREE` subscription row is created at signup** inside
+  `UsersService.createUser`'s transaction (`tier: FREE`, `status: ACTIVE`, `endsAt: null`) — there is no
+  activation step and no trial. `SubscriptionsService` exposes `getCurrent`/`ensureFreePlan` (idempotent
+  safety net)/`maxStudents` (tier → student cap)/`isActive`/`activateOrExtend` (legacy paid) + the hourly
+  cron `expireDue`, which only ever touches rows with a non-null `endsAt` (i.e. legacy paid rows — tier rows
+  are excluded by the `lt` comparison). Tier changes today come from the **admin panel**
+  (`AdminService.setCoachTier`), not from a payment.
   `payments` has `PaymentProvider` + `ZarinpalProvider` (v4 REST). **ZarinPal is the only checkout gateway** —
   Stripe is disabled (allowed gateways live in `server/payments/gateways.ts`; the `StripeProvider` + webhook
   route are kept for historical `Payment` rows and easy re-enable, but no new Stripe checkout is offered). No
@@ -500,6 +582,15 @@ the host directories, so verify build artifacts inside the container and install
   that inspects thrown errors — Next dev can evaluate `errors.ts` in two bundles.
 - **Real payments** need ZarinPal/Stripe creds; the **simulate** flow stands in for dev.
 - **Swagger** was dropped with NestJS (add an OpenAPI generator later if wanted).
+- **The student cap is advisory, not enforced.** `SubscriptionsService.maxStudents()` has **no production
+  call site** — `StudentsService.findOrCreateForProgram` (the one place a new StudentProfile is born, via
+  program create, template assign and intake submit) never consults it. So a FREE coach can add unlimited
+  students today; the cap only surfaces as the admin panel's `atQuota` badge. **Enforcing it means adding
+  the check in `findOrCreateForProgram`** (count distinct students for the coach when the contact doesn't
+  already match a profile → throw a 402-ish `STUDENT_QUOTA_REACHED`), plus UI copy in both message files.
+- **A paid checkout would not raise the tier.** `subscriptions.activateOrExtend` (what
+  `payments.markPaidAndActivate` calls) writes only `plan` + `endsAt` and leaves `tier` untouched, so a real
+  payment today grants a legacy time-based row, not an upgrade. Wire plan→tier before enabling pricing.
 
 ---
 
@@ -537,13 +628,15 @@ the host directories, so verify build artifacts inside the container and install
 | API call from UI | `src/lib/api/<feature>.ts` + `src/lib/query/use-<feature>.ts` |
 | Auth / cookies / JWT | `src/server/auth/*`, `src/server/http/route.ts` (`getSession`, `withRoute`) |
 | Uploads | `src/server/storage.ts` + `src/lib/api/upload.ts` |
+| Exercise video upload / compression | `src/server/video/{config,errors,ffmpeg,validation,compressor,service}.ts` (+ 3 spec files) → `getVideo()` in `container.ts`; route `api/coach/exercises/video-upload`; UI `components/coach/exercise-video-field.tsx` + `lib/api/video-upload.ts`. Tunables are env vars in `server/config.ts` |
+| PDF export | `src/server/pdf/{service,template}.ts` (+ `service.spec.ts` for the locale cache & browser discovery); routes `api/{coach,student}/programs/[id]/pdf`; UI `components/coach/download-pdf-button.tsx` |
 | Program builder | `src/components/coach/program-builder/*` (prefill student via `?student=`, request via `?request=` on `/coach/programs/new`) |
 | Program templates ("برنامه‌های آماده") | `src/server/program-templates/*` + `src/app/api/coach/program-templates/*`; UI `src/app/[locale]/coach/templates/*`, `components/coach/{template-list,assign-template-dialog}.tsx` + `components/coach/template-builder/*` (reuses program-builder sub-components + `daysToBuilderDays`); **assign** delegates to `ProgramsService.create` |
-| Subscription / trial gating | `withRoute({ requiresSub: true })` + `src/server/subscriptions/*` (`activateTrial` = the coach's one-time free trial) |
+| Subscription / tier gating | `withRoute({ requiresSub: true })` + `src/server/subscriptions/*`; caps in `src/lib/plans.ts` `TIER_MAX_STUDENTS`; tier grants in `src/server/admin/service.ts` `setCoachTier`. No trial exists — coaches are provisioned FREE at signup in `users/service.ts` |
 | Public coach page / handle | `src/server/public-coach/*`, `src/server/utils/handle.ts`; UI `src/app/[locale]/c/[handle]/*` |
 | Program requests (intake) | `src/server/program-requests/*`; UI `src/app/[locale]/c/[handle]/request`, `components/coach/requests-inbox.tsx` |
 | Background cron / expiry | `src/instrumentation.ts` + `src/server/cron.ts` + `src/server/subscriptions/service.ts` |
-| Payments / webhooks / trial activation | `src/server/payments/*`, `src/server/subscriptions/service.ts`; routes `src/app/api/coach/billing/*`. Month-based plan prices live in `src/server/subscriptions/plans.ts` (kept for future paid checkout); `src/lib/plans.ts` holds both that client-safe `PUBLIC_PLANS` mirror **and** the display-only student-scoped `TIERS` shown as "coming soon" on the landing (`components/shared/pricing-section.tsx`) + billing (`components/coach/billing-view.tsx`) |
+| Payments / webhooks | `src/server/payments/*`, `src/server/subscriptions/service.ts`; routes `src/app/api/coach/billing/*`. Month-based plan prices live in `src/server/subscriptions/plans.ts` (kept for future paid checkout); `src/lib/plans.ts` holds both that client-safe `PUBLIC_PLANS` mirror **and** the display-only student-scoped `TIERS` shown as "coming soon" on the landing (`components/shared/pricing-section.tsx`) + billing (`components/coach/billing-view.tsx`) |
 | Admin / owner panel | `src/server/admin/*` + `src/app/api/admin/*`; UI `src/app/[locale]/admin/*` + `components/admin/*`; who-is-admin = `ADMIN_PHONES` env (promotion in `src/server/auth/service.ts`) |
 | PWA install | `public/manifest.webmanifest` (`start_url: "/launch"`), `public/sw.js`; shared state in `src/lib/hooks/use-pwa-install.ts`. **`components/pwa/install-dialog.tsx`** is the shared modal (native `beforeinstallprompt` button when available + per-platform manual steps, iOS/Android/desktop). It's opened by: **`install-button.tsx`** (persistent header "Install app" button in `dashboard-shell` + `public-header`, hidden when standalone), the auto-prompt **`install-prompt.tsx`** (opens once per **session** when entering an app area `/coach`·`/student`·`/admin` and not installed — never on the marketing pages), and the permanent `components/shared/pwa-install-section.tsx` on the landing. `app/[locale]/launch/page.tsx` is what the **installed** app opens to — an authenticated visitor is bounced to `roleHome()`; everyone else sees a minimal coach/student picker. Installability (native prompt + SW) is production-only (`NODE_ENV=production` + HTTPS) |
 

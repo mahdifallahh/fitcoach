@@ -20,7 +20,7 @@ export interface PageParams {
 
 export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'EXPIRED' | 'CANCELED';
 export type SubscriptionPlan = 'M3' | 'M6' | 'M12';
-export type SubscriptionTier = 'FREE' | 'ECONOMY' | 'NORMAL' | 'PRO';
+export type SubscriptionTier = 'FREE' | 'STARTER' | 'ECONOMY' | 'NORMAL' | 'PRO';
 
 export interface CurrentUser {
   id: string;

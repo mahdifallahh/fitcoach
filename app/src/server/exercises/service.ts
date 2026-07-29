@@ -127,6 +127,16 @@ export class ExercisesService {
     ) {
       await this.storage.deleteByPublicUrl("gifs", current.gifUrl);
     }
+    // `videoUrl` holds either an uploaded clip or a pasted external link;
+    // `deleteByPublicUrl` no-ops on anything that isn't in our own bucket, so a
+    // YouTube link is never touched.
+    if (
+      dto.videoUrl !== undefined &&
+      current.videoUrl &&
+      current.videoUrl !== dto.videoUrl
+    ) {
+      await this.storage.deleteByPublicUrl("videos", current.videoUrl);
+    }
     return updated;
   }
 
@@ -134,6 +144,7 @@ export class ExercisesService {
     const current = await this.get(coachId, id);
     await this.prisma.exercise.delete({ where: { id } });
     await this.storage.deleteByPublicUrl("gifs", current.gifUrl);
+    await this.storage.deleteByPublicUrl("videos", current.videoUrl);
     return { success: true };
   }
 

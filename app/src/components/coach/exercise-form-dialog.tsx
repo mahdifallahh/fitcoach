@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { FieldErrorText } from "@/components/shared/field-error";
+import { ExerciseVideoField } from "./exercise-video-field";
 
 const schema = z.object({
   name: z.string().min(1).max(120),
@@ -77,6 +78,7 @@ export function ExerciseFormDialog({
   });
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
   const gifUrl = watch("gifUrl");
+  const videoUrl = watch("videoUrl");
 
   // Sync form whenever the dialog opens (for create vs edit).
   React.useEffect(() => {
@@ -241,15 +243,10 @@ export function ExerciseFormDialog({
             <Textarea id="ex-desc" {...register("description")} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ex-video">{t("videoUrl")}</Label>
-            <Input
-              id="ex-video"
-              dir="ltr"
-              placeholder={t("videoUrlPlaceholder")}
-              {...register("videoUrl")}
-            />
-          </div>
+          <ExerciseVideoField
+            value={videoUrl ?? ""}
+            onChange={(url) => setValue("videoUrl", url, { shouldDirty: true })}
+          />
 
           <DialogFooter>
             <Button
