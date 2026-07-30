@@ -10,9 +10,18 @@ import type { StudentViewerExercise } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GifLightbox } from "@/components/shared/gif-lightbox";
-import { DownloadPdfButton } from "@/components/coach/download-pdf-button";
+import {
+  DownloadPdfButton,
+  type PdfSource,
+} from "@/components/coach/download-pdf-button";
 import { cn } from "@/lib/utils";
 import { ScrollableTabs } from "@/components/shared/scrollable-tabs";
+
+/** Same button, student endpoints: both are scoped to programs shared with them. */
+const STUDENT_PDF_SOURCE: PdfSource = {
+  pdf: studentApi.programPdf,
+  printHref: studentApi.programPrintHref,
+};
 
 interface Row {
   type: "single" | "superset";
@@ -85,7 +94,7 @@ export function ProgramViewer({ programId }: { programId: string }) {
           programId={programId}
           variant="outline"
           withLabel
-          fetcher={studentApi.programPdf}
+          source={STUDENT_PDF_SOURCE}
         />
       </header>
 

@@ -8,4 +8,7 @@ export const studentApi = {
   program: (id: string) => api.get<StudentProgramDetail>(`/student/programs/${id}`),
   programPdf: (id: string, locale: 'fa' | 'en') =>
     api.get<{ url: string; cached: boolean }>(`/student/programs/${id}/pdf?locale=${locale}`),
+  /** Printable HTML fallback — see `programsApi.printHref`. */
+  programPrintHref: (id: string, locale: 'fa' | 'en') =>
+    `/api/student/programs/${id}/print?locale=${locale}`,
 };

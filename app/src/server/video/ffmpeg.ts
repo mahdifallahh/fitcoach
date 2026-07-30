@@ -25,8 +25,12 @@ export interface RunOptions {
  * unit-tested without ffmpeg installed — see `compressor.spec.ts`.
  */
 export interface FfmpegRunner {
-  /** True when both binaries were found on this host. */
-  isAvailable(): boolean;
+  /**
+   * True when both binaries were found. Async because locating them touches the
+   * filesystem and may load the bundled-binary packages — work that does not
+   * belong in a constructor, and that must be allowed to fail softly.
+   */
+  isAvailable(): Promise<boolean>;
   probe(inputPath: string, timeoutMs: number): Promise<VideoProbe>;
   run(args: readonly string[], options: RunOptions): Promise<void>;
 }
@@ -86,27 +90,42 @@ const PROGRESS_TIME = /out_time_ms=(\d+)/g;
 
 /**
  * Runs the real binaries. Resolution order per binary: the configured path (only
- * if it exists on disk) → PATH → the platform's usual locations.
+ * if it exists on disk) → PATH → the platform's usual locations → the copy that
+ * ships in node_modules.
+ *
+ * That last step is what lets the app run on a managed Node host, which has no
+ * ffmpeg and no way to `apt install` one. A system binary still wins when there
+ * is one: it is newer and faster than the bundled build, so the Docker image
+ * keeps using its own and only a bare host falls back.
  */
 export class SpawnFfmpegRunner implements FfmpegRunner {
-  private readonly ffmpeg?: string;
-  private readonly ffprobe?: string;
+  /** Memoised — the lookup hits the filesystem and loads the fallback packages. */
+  private binaries?: Promise<{ ffmpeg?: string; ffprobe?: string }>;
   /** Set once the source duration is known, so `run` can report progress. */
   private totalDurationSec = 0;
 
-  constructor(configured: { ffmpegPath?: string; ffprobePath?: string } = {}) {
-    this.ffmpeg = resolveBinary("ffmpeg", configured.ffmpegPath);
-    this.ffprobe = resolveBinary("ffprobe", configured.ffprobePath);
+  constructor(
+    private readonly configured: {
+      ffmpegPath?: string;
+      ffprobePath?: string;
+    } = {},
+  ) {}
+
+  private resolve() {
+    this.binaries ??= resolveBinaries(this.configured);
+    return this.binaries;
   }
 
-  isAvailable(): boolean {
-    return !!this.ffmpeg && !!this.ffprobe;
+  async isAvailable(): Promise<boolean> {
+    const { ffmpeg, ffprobe } = await this.resolve();
+    return !!ffmpeg && !!ffprobe;
   }
 
   async probe(inputPath: string, timeoutMs: number): Promise<VideoProbe> {
-    if (!this.ffprobe) throw videoError("VIDEO_TOOLING_UNAVAILABLE");
+    const { ffprobe } = await this.resolve();
+    if (!ffprobe) throw videoError("VIDEO_TOOLING_UNAVAILABLE");
     const { stdout, code } = await exec(
-      this.ffprobe,
+      ffprobe,
       [
         "-v",
         "error",
@@ -143,9 +162,10 @@ export class SpawnFfmpegRunner implements FfmpegRunner {
   }
 
   async run(args: readonly string[], options: RunOptions): Promise<void> {
-    if (!this.ffmpeg) throw videoError("VIDEO_TOOLING_UNAVAILABLE");
+    const { ffmpeg } = await this.resolve();
+    if (!ffmpeg) throw videoError("VIDEO_TOOLING_UNAVAILABLE");
     const total = this.totalDurationSec;
-    const { code, timedOut, stderr } = await exec(this.ffmpeg, args, {
+    const { code, timedOut, stderr } = await exec(ffmpeg, args, {
       timeoutMs: options.timeoutMs,
       onStdout:
         options.onProgress && total > 0
@@ -168,13 +188,66 @@ export class SpawnFfmpegRunner implements FfmpegRunner {
   }
 }
 
-function resolveBinary(
+/** What `@ffmpeg-installer` / `@ffprobe-installer` expose. */
+interface InstalledBinary {
+  path: string;
+}
+
+/**
+ * ffmpeg + ffprobe shipped inside node_modules, for a host that has neither and
+ * no way to install one. Both packages deliver their binary as a platform-specific
+ * `optionalDependency`, so nothing is downloaded at install time beyond the registry
+ * fetch that installed everything else — which matters on a network where a
+ * postinstall reach-out to GitHub is the first thing to fail.
+ *
+ * The specifiers are literal so Next's output tracing copies the packages into the
+ * build, and a load failure is swallowed on purpose: an unsupported platform must
+ * degrade to a 503 on upload, never take the server down at boot.
+ */
+async function packagedBinaries(): Promise<{
+  ffmpeg?: string;
+  ffprobe?: string;
+}> {
+  const pathOf = (mod: unknown): string =>
+    ((mod as { default?: InstalledBinary }).default ?? (mod as InstalledBinary))
+      .path;
+  const [ffmpeg, ffprobe] = await Promise.all([
+    import("@ffmpeg-installer/ffmpeg")
+      .then(pathOf)
+      .catch(() => undefined),
+    import("@ffprobe-installer/ffprobe")
+      .then(pathOf)
+      .catch(() => undefined),
+  ]);
+  return { ffmpeg, ffprobe };
+}
+
+async function resolveBinaries(configured: {
+  ffmpegPath?: string;
+  ffprobePath?: string;
+}): Promise<{ ffmpeg?: string; ffprobe?: string }> {
+  const packaged = await packagedBinaries();
+  return {
+    ffmpeg: pickBinary("ffmpeg", configured.ffmpegPath, packaged.ffmpeg),
+    ffprobe: pickBinary("ffprobe", configured.ffprobePath, packaged.ffprobe),
+  };
+}
+
+/**
+ * First candidate that is actually on disk. A configured path that does not exist
+ * is skipped rather than fatal — one `.env` is shared by the container and a native
+ * dev run — and the bundled copy sits last so a real system binary always wins.
+ */
+function pickBinary(
   binary: "ffmpeg" | "ffprobe",
   configured?: string,
+  packaged?: string,
 ): string | undefined {
-  return [configured, ...ffmpegCandidates(binary, process.platform)].find(
-    (p): p is string => !!p && existsSync(p),
-  );
+  return [
+    configured,
+    ...ffmpegCandidates(binary, process.platform),
+    packaged,
+  ].find((p): p is string => !!p && existsSync(p));
 }
 
 interface ExecResult {

@@ -36,7 +36,12 @@ WORKDIR /app
 # Copy the schema here so `prisma generate` runs while network + openssl are
 # reliably available; the generated client is reused in later stages.
 FROM base AS deps
-COPY package.json pnpm-lock.yaml* ./
+# .npmrc MUST be here, not just in the later `COPY . .`: node_modules is built in
+# THIS stage, and .npmrc is what pins pnpm to the hoisted (npm-style) layout. Under
+# pnpm's default isolated layout, `next` cannot resolve autoprefixer or typescript
+# from its own location and `pnpm build` dies — the exact failure that took
+# production down. Copying it later would be too late; the install already happened.
+COPY package.json pnpm-lock.yaml* .npmrc ./
 COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile || pnpm install
 RUN pnpm prisma generate

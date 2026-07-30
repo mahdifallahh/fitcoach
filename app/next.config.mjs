@@ -10,6 +10,11 @@ const nextConfig = {
   output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   reactStrictMode: true,
   poweredByHeader: false,
+  // Lint in dev and CI (`pnpm lint`), not in the deploy build: eslint and
+  // eslint-config-next are devDependencies, so on a host that installs
+  // production deps only their absence would fail an otherwise valid build.
+  // Type errors still fail the build — `next build` remains the typecheck step.
+  eslint: { ignoreDuringBuilds: true },
   // Tree-shake per-icon/component imports from big barrel packages → smaller bundles.
   experimental: {
     optimizePackageImports: ['lucide-react'],
@@ -24,7 +29,14 @@ const nextConfig = {
   },
   // Keep native/server-only packages out of the bundle so their runtime engines
   // (Prisma query engine, Chromium launcher) load from node_modules at runtime.
-  serverExternalPackages: ['@prisma/client', 'puppeteer-core'],
+  // The ffmpeg/ffprobe installers derive their binary path from their own
+  // location on disk, so bundling them would hand back a path that doesn't exist.
+  serverExternalPackages: [
+    '@prisma/client',
+    'puppeteer-core',
+    '@ffmpeg-installer/ffmpeg',
+    '@ffprobe-installer/ffprobe',
+  ],
   images: {
     formats: ['image/avif', 'image/webp'],
     // Optimized remote images (avatars/GIF posters) can be re-served from the

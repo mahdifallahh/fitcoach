@@ -13,7 +13,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "types": ["node", "jest"],
+    // "jest" deliberately absent: it would make @types/jest a hard requirement of
+    // `next build`, and the production host installs test tooling. The Jest run
+    // gets its own types from tsconfig.jest.json, which re-declares both.
+    "types": ["node"],
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"]

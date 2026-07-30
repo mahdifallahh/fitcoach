@@ -45,4 +45,11 @@ export const programsApi = {
   remove: (id: string) => api.delete<{ success: boolean }>(`/coach/programs/${id}`),
   pdf: (id: string, locale: 'fa' | 'en') =>
     api.get<{ url: string; cached: boolean }>(`/coach/programs/${id}/pdf?locale=${locale}`),
+  /**
+   * Printable HTML for the same program — a plain href, not a fetch, because the
+   * browser has to *navigate* to it for its print dialog to open. Used when the
+   * server has no Chromium to render a real PDF with.
+   */
+  printHref: (id: string, locale: 'fa' | 'en') =>
+    `/api/coach/programs/${id}/print?locale=${locale}`,
 };

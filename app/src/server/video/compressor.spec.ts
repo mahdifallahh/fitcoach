@@ -108,7 +108,7 @@ class FakeRunner implements FfmpegRunner {
       output?: string;
     } = {},
   ) {}
-  isAvailable() {
+  async isAvailable() {
     return this.behaviour.available ?? true;
   }
   async probe(): Promise<VideoProbe> {

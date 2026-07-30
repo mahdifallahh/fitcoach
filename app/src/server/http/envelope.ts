@@ -56,7 +56,13 @@ export function mapError(err: unknown): NextResponse {
   }
 
   if (status >= 500) {
-    console.error("[api] unhandled error:", err);
+    // A 5xx we raised ourselves is a *handled* degradation with a known cause —
+    // PDF_UNAVAILABLE when the host has no Chromium, VIDEO_TOOLING_UNAVAILABLE
+    // when it has no ffmpeg. Dumping a stack for those buries the genuinely
+    // unexpected 500s in production logs, so give them one readable line and
+    // keep the stack for what nobody predicted.
+    if (isAppError(err)) console.error(`[api] ${code} (${status}): ${message}`);
+    else console.error("[api] unhandled error:", err);
   }
   if (code === "INTERNAL_ERROR" && status !== 500) code = statusToCode(status);
 

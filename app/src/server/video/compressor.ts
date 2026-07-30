@@ -101,16 +101,12 @@ export class VideoCompressor {
     private readonly settings: CompressionSettings,
   ) {}
 
-  get available(): boolean {
-    return this.runner.isAvailable();
-  }
-
   async compress(
     inputPath: string,
     outputPath: string,
     onProgress?: (fraction: number) => void,
   ): Promise<CompressResult> {
-    if (!this.runner.isAvailable()) {
+    if (!(await this.runner.isAvailable())) {
       throw videoError("VIDEO_TOOLING_UNAVAILABLE");
     }
 

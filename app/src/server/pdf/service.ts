@@ -120,6 +120,39 @@ export class PdfService {
    * `pdfStaleAt` was set by an edit, or when the cached file is in the *other*
    * locale. The result is cached on `Program.pdfUrl`.
    */
+  /**
+   * The printable document itself, as HTML — the *same* markup `getOrGenerate`
+   * hands to Chromium.
+   *
+   * This exists because server-side rendering needs a browser binary, and a
+   * managed Node host has none: not just Chrome itself but the dozen system
+   * libraries it links against, none of which are installable without root. So
+   * when there is no Chromium, the client opens this and prints it — the reader's
+   * own browser becomes the renderer. One template, two consumers; the layout can
+   * never drift between the two paths because there is only one of it.
+   */
+  async getPrintableHtml(
+    coachId: string,
+    programId: string,
+    locale: PdfLocale,
+  ): Promise<string> {
+    const program = await this.programs.get(coachId, programId); // enforces ownership
+    return this.renderHtml(program, coachId, locale);
+  }
+
+  /** Student-facing counterpart: prove ownership, then reuse the coach path. */
+  async getPrintableHtmlForStudent(
+    studentUserId: string,
+    programId: string,
+    locale: PdfLocale,
+  ): Promise<string> {
+    const program = await this.students.getProgramForStudent(
+      studentUserId,
+      programId,
+    ); // 404s if not owned/published
+    return this.getPrintableHtml(program.coachId, programId, locale);
+  }
+
   async getOrGenerate(coachId: string, programId: string, locale: PdfLocale) {
     const program = await this.programs.get(coachId, programId); // enforces ownership
     const key = `${coachId}/${programId}-${locale}.pdf`;
@@ -133,16 +166,7 @@ export class PdfService {
       return { url, cached: true };
     }
 
-    const coach = await this.prisma.coachProfile.findUnique({
-      where: { userId: coachId },
-      select: { name: true },
-    });
-    const html = renderProgramHtml(
-      program as unknown as PdfProgram,
-      coach?.name ?? "",
-      locale,
-      loadLogo(),
-    );
+    const html = await this.renderHtml(program, coachId, locale);
     const buffer = await this.renderPdf(html);
 
     await this.storage.putObject("pdfs", key, buffer, "application/pdf");
@@ -151,6 +175,24 @@ export class PdfService {
       data: { pdfUrl: url, pdfStaleAt: null },
     });
     return { url, cached: false };
+  }
+
+  /** Single place the program + coach name become the branded RTL document. */
+  private async renderHtml(
+    program: Awaited<ReturnType<ProgramsService["get"]>>,
+    coachId: string,
+    locale: PdfLocale,
+  ): Promise<string> {
+    const coach = await this.prisma.coachProfile.findUnique({
+      where: { userId: coachId },
+      select: { name: true },
+    });
+    return renderProgramHtml(
+      program as unknown as PdfProgram,
+      coach?.name ?? "",
+      locale,
+      loadLogo(),
+    );
   }
 
   // ── Chromium ──────────────────────────────────────────────────────────────
