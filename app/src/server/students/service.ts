@@ -50,6 +50,43 @@ export class StudentsService {
   }
 
   /**
+   * One student as their coach sees them: the stats on file, whether they have
+   * claimed their account yet, and every program written for them.
+   *
+   * `claimed` is the coach-facing half of the linking rule. A profile exists as
+   * soon as a program is written for a phone, but the person on the other end
+   * only sees anything once they register with that number — so a coach looking
+   * at "why hasn't he started?" needs to be told which of the two it is.
+   */
+  async getForCoach(coachId: string, studentProfileId: string) {
+    const student = await this.prisma.studentProfile.findFirst({
+      where: { id: studentProfileId, coachId },
+      include: {
+        programs: {
+          orderBy: { updatedAt: "desc" },
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            daysPerWeek: true,
+            createdAt: true,
+            updatedAt: true,
+            _count: { select: { days: true } },
+          },
+        },
+      },
+    });
+    if (!student) {
+      throw new NotFoundException({
+        code: "STUDENT_NOT_FOUND",
+        message: "Student not found",
+      });
+    }
+    const { userId, ...rest } = student;
+    return { ...rest, claimed: userId !== null };
+  }
+
+  /**
    * Find-or-create the coach's StudentProfile for a phone/email contact, updating
    * stats. Also forward-links to an already-registered student account (the
    * reverse — claiming on registration — is handled in UsersService).

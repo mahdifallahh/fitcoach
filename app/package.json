@@ -20,6 +20,18 @@
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
+  "pnpm": {
+    "//onlyBuiltDependencies": "pnpm 10 blocks postinstall scripts by default. These two ship a bare binary and use their install script to mark it executable — without it ffprobe lands as mode 644 and every video upload dies with EACCES on Linux, which is invisible on Windows where the exec bit does not exist.",
+    "onlyBuiltDependencies": [
+      "@ffmpeg-installer/ffmpeg",
+      "@ffprobe-installer/ffprobe",
+      "@ffmpeg-installer/linux-x64",
+      "@ffprobe-installer/linux-x64",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma"
+    ]
+  },
   "browserslist": [
     "chrome >= 111",
     "edge >= 111",

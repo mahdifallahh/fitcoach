@@ -282,7 +282,8 @@
     "billing": "اشتراک",
     "requests": "درخواست‌ها",
     "intake": "فرم شاگرد",
-    "help": "راهنما"
+    "help": "راهنما",
+    "students": "شاگردان"
   },
   "coachHelp": {
     "title": "راهنمای مربیان",
@@ -586,7 +587,11 @@
     "pdf": "دانلود PDF",
     "pdfError": "تولید PDF ممکن نشد",
     "deleteError": "حذف برنامه ممکن نشد",
-    "loadError": "بارگذاری برنامه‌ها ممکن نشد"
+    "loadError": "بارگذاری برنامه‌ها ممکن نشد",
+    "saveAsTemplate": "افزودن به برنامه‌های آماده",
+    "savedAsTemplate": "به برنامه‌های آماده اضافه شد.",
+    "openTemplate": "بازکردن",
+    "saveTemplateError": "افزودن به برنامه‌های آماده انجام نشد."
   },
   "builder": {
     "newTitle": "برنامه جدید",
@@ -909,5 +914,25 @@
     "next": "صفحه بعد",
     "pageOf": "صفحه {page} از {totalPages}",
     "summary": "{total} مورد · صفحه {page} از {totalPages}"
+  },
+  "students": {
+    "title": "شاگردان",
+    "loadError": "خطا در دریافت شاگردان.",
+    "empty": "هنوز شاگردی نداری.",
+    "emptyAction": "نوشتن اولین برنامه",
+    "programCount": "{count, plural, =0 {بدون برنامه} one {# برنامه} other {# برنامه}}",
+    "notJoined": "هنوز ثبت‌نام نکرده",
+    "joined": "ثبت‌نام کرده",
+    "notJoinedHint": "برنامه‌هایی که برایش نوشته‌ای ذخیره شده‌اند، ولی تا وقتی با همین شماره ثبت‌نام نکند نمی‌تواند ببیندشان. لینک ثبت‌نام را برایش بفرست.",
+    "backToList": "بازگشت به شاگردان",
+    "newProgram": "برنامهٔ جدید",
+    "age": "سن: {value}",
+    "height": "قد: {value} سانتی‌متر",
+    "weight": "وزن: {value} کیلوگرم",
+    "noStats": "اطلاعاتی ثبت نشده.",
+    "addedOn": "افزوده‌شده در {date}",
+    "historyTitle": "{count, plural, =0 {تاریخچهٔ برنامه‌ها} other {تاریخچهٔ برنامه‌ها (#)}}",
+    "noPrograms": "هنوز برنامه‌ای برایش نوشته نشده.",
+    "programMeta": "{days} روز · {perWeek} روز در هفته · آخرین ویرایش {date}"
   }
 }

@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Loader2, Plus, Save, Send } from 'lucide-react';
+import { SaveAsTemplateButton } from '@/components/coach/save-as-template-button';
 import { useRouter } from '@/i18n/routing';
 import type { Exercise, ProgramStatus2 } from '@/lib/api/types';
 import { useProgram, useCreateProgram, useUpdateProgram } from '@/lib/query/use-programs';
@@ -155,6 +156,9 @@ export function ProgramBuilder({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{isEdit ? t('editTitle') : t('newTitle')}</h1>
         <div className="flex gap-2">
+          {/* Only on an existing program: a template is a copy of something that
+              has already been written, and an unsaved draft has nothing to copy. */}
+          {isEdit && programId && <SaveAsTemplateButton programId={programId} />}
           <Button
             variant="outline"
             disabled={pending || !canWrite}

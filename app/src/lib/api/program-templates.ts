@@ -48,6 +48,12 @@ export const programTemplatesApi = {
   get: (id: string) => api.get<ProgramTemplateDetail>(`/coach/program-templates/${id}`),
   create: (payload: CreateTemplatePayload) =>
     api.post<ProgramTemplateDetail>('/coach/program-templates', payload),
+  /** Save a program the coach already wrote as a reusable template. */
+  createFromProgram: (programId: string, name?: string) =>
+    api.post<ProgramTemplateDetail>('/coach/program-templates/from-program', {
+      programId,
+      ...(name ? { name } : {}),
+    }),
   update: (id: string, payload: UpdateTemplatePayload) =>
     api.patch<ProgramTemplateDetail>(`/coach/program-templates/${id}`, payload),
   remove: (id: string) =>

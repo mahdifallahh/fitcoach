@@ -282,7 +282,8 @@
     "billing": "Billing",
     "requests": "Requests",
     "intake": "Student form",
-    "help": "Help"
+    "help": "Help",
+    "students": "Students"
   },
   "coachHelp": {
     "title": "Coach help center",
@@ -586,7 +587,11 @@
     "pdf": "PDF",
     "pdfError": "Could not generate the PDF",
     "deleteError": "Could not delete the program",
-    "loadError": "Could not load programs"
+    "loadError": "Could not load programs",
+    "saveAsTemplate": "Add to my templates",
+    "savedAsTemplate": "Added to your templates.",
+    "openTemplate": "Open",
+    "saveTemplateError": "Could not add it to your templates."
   },
   "builder": {
     "newTitle": "New program",
@@ -909,5 +914,25 @@
     "next": "Next page",
     "pageOf": "Page {page} of {totalPages}",
     "summary": "{total} results · page {page} of {totalPages}"
+  },
+  "students": {
+    "title": "Students",
+    "loadError": "Could not load your students.",
+    "empty": "No students yet.",
+    "emptyAction": "Write your first program",
+    "programCount": "{count, plural, =0 {No programs} one {# program} other {# programs}}",
+    "notJoined": "Not signed up yet",
+    "joined": "Signed up",
+    "notJoinedHint": "The programs you wrote are saved, but they cannot be opened until this person registers with the same number. Send them the sign-up link.",
+    "backToList": "Back to students",
+    "newProgram": "New program",
+    "age": "Age: {value}",
+    "height": "Height: {value} cm",
+    "weight": "Weight: {value} kg",
+    "noStats": "No details on file.",
+    "addedOn": "Added {date}",
+    "historyTitle": "{count, plural, =0 {Program history} other {Program history (#)}}",
+    "noPrograms": "No programs written for them yet.",
+    "programMeta": "{days} days · {perWeek}/week · last edited {date}"
   }
 }

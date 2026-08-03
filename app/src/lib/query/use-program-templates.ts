@@ -62,3 +62,13 @@ export function useAssignTemplate() {
     onSuccess: () => qc.invalidateQueries({ queryKey: PROGRAMS_KEY }),
   });
 }
+
+/** Save an existing program into the coach's template library. */
+export function useCreateTemplateFromProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ programId, name }: { programId: string; name?: string }) =>
+      programTemplatesApi.createFromProgram(programId, name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATES_KEY }),
+  });
+}

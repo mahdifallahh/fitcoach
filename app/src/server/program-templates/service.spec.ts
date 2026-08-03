@@ -122,3 +122,64 @@ describe("ProgramTemplatesService", () => {
     expect(programs.create).not.toHaveBeenCalled();
   });
 });
+
+describe("ProgramTemplatesService.createFromProgram", () => {
+  /** A saved program with a plain exercise and a two-move superset. */
+  const program = {
+    id: "p1",
+    name: "Hypertrophy — phase 1",
+    daysPerWeek: 4,
+    days: [
+      {
+        dayIndex: 1,
+        title: "Chest",
+        exercises: [
+          { exerciseId: "e1", sets: 4, reps: "8-12", notes: "add 2.5kg", order: 0, supersetGroupId: null, supersetOrder: null },
+          { exerciseId: "e2", sets: 3, reps: "15", notes: null, order: 1, supersetGroupId: "g1", supersetOrder: 0 },
+          { exerciseId: "e3", sets: 3, reps: "15", notes: null, order: 1, supersetGroupId: "g1", supersetOrder: 1 },
+        ],
+      },
+    ],
+  };
+
+  let prisma: any;
+  let programs: any;
+  let service: ProgramTemplatesService;
+
+  beforeEach(() => {
+    prisma = {
+      exercise: { count: jest.fn().mockResolvedValue(3) },
+      programTemplate: {
+        create: jest.fn().mockResolvedValue({ id: "t1" }),
+        findFirst: jest.fn().mockResolvedValue({ id: "t1", days: [] }),
+      },
+    };
+    programs = { get: jest.fn().mockResolvedValue(program) };
+    service = new ProgramTemplatesService(prisma, programs);
+  });
+
+  it("copies the program's structure, supersets included", async () => {
+    await service.createFromProgram("coach1", "p1");
+
+    // Ownership is proven by ProgramsService.get, which 404s on someone else's id.
+    expect(programs.get).toHaveBeenCalledWith("coach1", "p1");
+
+    const { data } = prisma.programTemplate.create.mock.calls[0][0];
+    expect(data.name).toBe("Hypertrophy — phase 1");
+    expect(data.daysPerWeek).toBe(4);
+    const created = data.days.create[0].exercises.create;
+    expect(created).toHaveLength(3);
+    expect(created[1]).toMatchObject({ supersetGroupId: "g1", supersetOrder: 0 });
+    expect(created[0]).toMatchObject({ notes: "add 2.5kg" });
+  });
+
+  it("lets the coach rename the template without touching the program", async () => {
+    await service.createFromProgram("coach1", "p1", "  My 4-day split  ");
+    expect(prisma.programTemplate.create.mock.calls[0][0].data.name).toBe("My 4-day split");
+  });
+
+  it("falls back to the program name when the override is blank", async () => {
+    await service.createFromProgram("coach1", "p1", "   ");
+    expect(prisma.programTemplate.create.mock.calls[0][0].data.name).toBe("Hypertrophy — phase 1");
+  });
+});

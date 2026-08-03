@@ -95,6 +95,37 @@ export class ProgramTemplatesService {
     return this.get(coachId, created.id);
   }
 
+  /**
+   * Turn a program the coach already wrote into a reusable template.
+   *
+   * The point of the feature: a coach builds a good 4-day split for one student,
+   * then wants to hand the same thing to the next five without rebuilding it.
+   * Delegates to `create` so exercise-ownership validation and the day/superset
+   * copy behave exactly as they do for a hand-built template — this method only
+   * decides *what* to copy, never how to store it.
+   */
+  async createFromProgram(coachId: string, programId: string, name?: string) {
+    const program = await this.programs.get(coachId, programId); // enforces ownership
+
+    return this.create(coachId, {
+      name: name?.trim() || program.name,
+      daysPerWeek: program.daysPerWeek,
+      days: program.days.map((d) => ({
+        dayIndex: d.dayIndex,
+        title: d.title ?? undefined,
+        exercises: d.exercises.map((e) => ({
+          exerciseId: e.exerciseId,
+          sets: e.sets,
+          reps: e.reps,
+          notes: e.notes ?? undefined,
+          order: e.order,
+          supersetGroupId: e.supersetGroupId ?? undefined,
+          supersetOrder: e.supersetOrder ?? undefined,
+        })),
+      })),
+    });
+  }
+
   async update(coachId: string, id: string, dto: UpdateTemplateDto) {
     await this.assertOwned(coachId, id);
     if (dto.days) await this.assertExercisesOwned(coachId, dto.days);

@@ -11,6 +11,7 @@ import {
   LayoutTemplate,
   LifeBuoy,
   User,
+  Users,
 } from "lucide-react";
 import { Link, usePathname } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { ScrollableTabs } from "@/components/shared/scrollable-tabs";
 const items = [
   { href: "/coach", key: "dashboard", icon: LayoutDashboard },
   { href: "/coach/requests", key: "requests", icon: Inbox },
+  { href: "/coach/students", key: "students", icon: Users },
   { href: "/coach/programs", key: "programs", icon: ClipboardList },
   { href: "/coach/templates", key: "templates", icon: LayoutTemplate },
   { href: "/coach/exercises", key: "exercises", icon: Dumbbell },

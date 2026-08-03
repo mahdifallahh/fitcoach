@@ -43,6 +43,14 @@ export const assignTemplateSchema = z.object({
   requestId: z.string().optional(),
 });
 
+// Save an existing program as a reusable template. Only the source and an
+// optional new name — everything else is copied from the program itself.
+export const templateFromProgramSchema = z.object({
+  programId: z.string().min(1),
+  name: z.string().min(1).max(120).optional(),
+});
+
+export type TemplateFromProgramDto = z.infer<typeof templateFromProgramSchema>;
 export type CreateTemplateDto = z.infer<typeof createTemplateSchema>;
 export type UpdateTemplateDto = z.infer<typeof updateTemplateSchema>;
 export type ListTemplatesQueryDto = z.infer<typeof listTemplatesQuerySchema>;

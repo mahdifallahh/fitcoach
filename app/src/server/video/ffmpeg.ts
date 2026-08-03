@@ -1,6 +1,6 @@
 import "server-only";
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { accessSync, constants } from "node:fs";
 import { videoError } from "./errors";
 
 /** What ffprobe tells us about the source file. */
@@ -234,9 +234,16 @@ async function resolveBinaries(configured: {
 }
 
 /**
- * First candidate that is actually on disk. A configured path that does not exist
- * is skipped rather than fatal — one `.env` is shared by the container and a native
- * dev run — and the bundled copy sits last so a real system binary always wins.
+ * First candidate that is actually on disk *and* runnable. A configured path that
+ * does not exist is skipped rather than fatal — one `.env` is shared by the
+ * container and a native dev run — and the bundled copy sits last so a real
+ * system binary always wins.
+ *
+ * Executability is checked, not assumed: the npm-shipped binaries get their exec
+ * bit from an install script, and a package manager that skips those (pnpm 10
+ * does by default) leaves a file that exists, passes `existsSync`, and then
+ * throws EACCES the first time a coach uploads. Better to not select it and
+ * return the documented 503 than to fail at spawn time.
  */
 function pickBinary(
   binary: "ffmpeg" | "ffprobe",
@@ -247,7 +254,18 @@ function pickBinary(
     configured,
     ...ffmpegCandidates(binary, process.platform),
     packaged,
-  ].find((p): p is string => !!p && existsSync(p));
+  ].find((p): p is string => !!p && isRunnable(p));
+}
+
+function isRunnable(path: string): boolean {
+  try {
+    // X_OK is meaningless on Windows (it reports every existing file as
+    // executable), which is exactly why this bug only shows up on Linux.
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 interface ExecResult {

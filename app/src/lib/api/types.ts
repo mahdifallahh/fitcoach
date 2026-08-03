@@ -371,3 +371,43 @@ export interface AdminPayment {
   createdAt: string;
   coach: { name: string; handle: string | null };
 }
+
+// ── Coach → students ────────────────────────────────────────────────────────
+
+export interface CoachStudentListItem {
+  id: string;
+  phone: string | null;
+  email: string | null;
+  age: number | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  /** null until the student registers with this phone/email and claims the profile. */
+  userId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count: { programs: number };
+}
+
+export interface CoachStudentProgram {
+  id: string;
+  name: string;
+  status: ProgramStatus2;
+  daysPerWeek: number;
+  createdAt: string;
+  updatedAt: string;
+  _count: { days: number };
+}
+
+export interface CoachStudentDetail {
+  id: string;
+  phone: string | null;
+  email: string | null;
+  age: number | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  /** Has this student signed up yet? False means they cannot see anything yet. */
+  claimed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  programs: CoachStudentProgram[];
+}
