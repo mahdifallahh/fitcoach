@@ -62,7 +62,14 @@ export function ExerciseFormDialog({
   const update = useUpdateExercise();
   const isEdit = !!exercise;
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const gifAbortRef = React.useRef<AbortController | null>(null);
   const [uploading, setUploading] = React.useState(false);
+  const [videoBusy, setVideoBusy] = React.useState(false);
+
+  // A GIF still in flight must not outlive the dialog: without this the upload
+  // finishes into a bucket nothing references, and `setValue` runs against a
+  // form that is gone. Mirrors what ExerciseVideoField does for the clip.
+  React.useEffect(() => () => gifAbortRef.current?.abort(), []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -83,6 +90,7 @@ export function ExerciseFormDialog({
   // Sync form whenever the dialog opens (for create vs edit).
   React.useEffect(() => {
     if (!open) return;
+    setVideoBusy(false); // a previous session's upload never carries over
     reset({
       name: exercise?.name ?? "",
       categoryId: exercise?.categoryId ?? "",
@@ -101,13 +109,22 @@ export function ExerciseFormDialog({
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type))
       return toast.error(t("invalidFile"));
     if (file.size > MAX_UPLOAD_BYTES) return toast.error(t("fileTooLarge"));
+
+    const controller = new AbortController();
+    gifAbortRef.current = controller;
     setUploading(true);
     try {
-      const url = await uploadFile(exercisesApi.gifUploadUrl, file);
+      const url = await uploadFile(
+        exercisesApi.gifUploadUrl,
+        file,
+        controller.signal,
+      );
       setValue("gifUrl", url, { shouldDirty: true });
     } catch (err) {
+      if (controller.signal.aborted) return; // dialog closed mid-upload
       toast.error(apiErrorMessage(err, t("saveError")));
     } finally {
+      gifAbortRef.current = null;
       setUploading(false);
     }
   }
@@ -246,6 +263,8 @@ export function ExerciseFormDialog({
           <ExerciseVideoField
             value={videoUrl ?? ""}
             onChange={(url) => setValue("videoUrl", url, { shouldDirty: true })}
+            onBusyChange={setVideoBusy}
+            disabled={pending}
           />
 
           <DialogFooter>
@@ -256,7 +275,9 @@ export function ExerciseFormDialog({
             >
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={pending || uploading}>
+            {/* videoBusy matters as much as the other two: it is the only one
+                whose upload the coach actually waited minutes for. */}
+            <Button type="submit" disabled={pending || uploading || videoBusy}>
               {pending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (

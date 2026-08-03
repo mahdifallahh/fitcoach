@@ -35,10 +35,18 @@ type Phase =
 export function ExerciseVideoField({
   value,
   onChange,
+  onBusyChange,
   disabled,
 }: {
   value: string;
   onChange: (url: string) => void;
+  /**
+   * Raised while bytes are in flight or the server is transcoding. The parent
+   * form has to know: submitting mid-upload saves the exercise with no video,
+   * unmounts this field, aborts the transfer, and leaves the coach believing a
+   * clip they waited on is attached. Nothing on screen would say otherwise.
+   */
+  onBusyChange?: (busy: boolean) => void;
   disabled?: boolean;
 }) {
   const t = useTranslations("exercises");
@@ -50,6 +58,7 @@ export function ExerciseVideoField({
   React.useEffect(() => () => abortRef.current?.abort(), []);
 
   const busy = phase.kind === "uploading" || phase.kind === "processing";
+  React.useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);
   const isUploadedClip = value.startsWith("http") && value.includes("/videos/");
 
   /** Client-side rejection reasons, as sentences that say what to do about it. */
@@ -111,7 +120,7 @@ export function ExerciseVideoField({
           className="flex-1"
           placeholder={t("videoUrlPlaceholder")}
           value={value}
-          disabled={busy}
+          disabled={busy || disabled}
           onChange={(e) => {
             onChange(e.target.value);
             if (phase.kind === "error") setPhase({ kind: "idle" });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { externalUrl } from "../utils/url";
 
 export const createExerciseSchema = z.object({
   name: z.string().min(1).max(120),
@@ -7,7 +8,10 @@ export const createExerciseSchema = z.object({
   defaultReps: z.string().max(40).optional(),
   description: z.string().max(2000).nullable().optional(),
   gifUrl: z.string().max(500).nullable().optional(),
-  videoUrl: z.string().max(500).nullable().optional(),
+  // Reaches an <a href> in the student's viewer and in the PDF — see externalUrl.
+  // Uploaded clips already arrive as absolute https URLs, so this only ever
+  // rewrites a pasted link like "youtu.be/abc".
+  videoUrl: externalUrl().nullable().optional(),
 });
 
 export const updateExerciseSchema = createExerciseSchema.partial();

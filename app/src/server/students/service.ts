@@ -81,9 +81,17 @@ export class StudentsService {
       ...(stats.weightKg !== undefined ? { weightKg: stats.weightKg } : {}),
     };
 
-    const existing = await tx.studentProfile.findFirst({
-      where: { coachId, ...match },
-    });
+    // Identity is the *account* whenever the contact resolves to one, and only
+    // the contact string otherwise. A coach who writes the first program to a
+    // phone and the second to the same person's email would otherwise get two
+    // profiles for one human: the programs split across them, and registering
+    // claims only the one whose channel they signed up with — the rest stay
+    // invisible forever. Matching on userId first collapses both to one row.
+    const existing =
+      (userId
+        ? await tx.studentProfile.findFirst({ where: { coachId, userId } })
+        : null) ??
+      (await tx.studentProfile.findFirst({ where: { coachId, ...match } }));
     if (existing) {
       return tx.studentProfile.update({
         where: { id: existing.id },

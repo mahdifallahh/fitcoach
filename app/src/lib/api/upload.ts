@@ -8,12 +8,15 @@ import type { UploadTarget } from './types';
 export async function uploadFile(
   getTarget: (contentType: string) => Promise<UploadTarget>,
   file: File,
+  /** Abort when the form that started the upload goes away — see the callers. */
+  signal?: AbortSignal,
 ): Promise<string> {
   const target = await getTarget(file.type);
   const res = await fetch(target.uploadUrl, {
     method: 'PUT',
     headers: { 'Content-Type': file.type },
     body: file,
+    signal,
   });
   if (!res.ok) {
     throw new Error(`Upload failed (${res.status})`);

@@ -27,6 +27,7 @@ function baseDto(): CreateProgramDto {
 describe('ProgramsService.create', () => {
   let prisma: any;
   let students: any;
+  let subscriptions: any;
   let service: ProgramsService;
   let tx: any;
 
@@ -38,7 +39,20 @@ describe('ProgramsService.create', () => {
       $transaction: jest.fn((cb: any) => cb(tx)),
     };
     students = { findOrCreateForProgram: jest.fn().mockResolvedValue({ id: 's1', age: 28 }) };
-    service = new ProgramsService(prisma, students);
+    subscriptions = { assertCanAddStudent: jest.fn().mockResolvedValue(undefined) };
+    service = new ProgramsService(prisma, students, subscriptions);
+  });
+
+  it('checks the tier cap inside the transaction, before the program is written', async () => {
+    prisma.exercise.count.mockResolvedValue(3);
+    const quota = new Error('over cap');
+    subscriptions.assertCanAddStudent.mockRejectedValue(quota);
+
+    await expect(service.create('coach1', baseDto())).rejects.toBe(quota);
+    // The refusal has to land before the write, or a rejected create still costs
+    // the coach a program row.
+    expect(subscriptions.assertCanAddStudent).toHaveBeenCalledWith('coach1', 's1', tx);
+    expect(tx.program.create).not.toHaveBeenCalled();
   });
 
   it('rejects exercises not owned by the coach', async () => {

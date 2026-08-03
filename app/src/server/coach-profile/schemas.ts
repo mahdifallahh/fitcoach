@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { HANDLE_REGEX } from "../utils/handle";
+import { externalUrl } from "../utils/url";
 
 export const socialLinkSchema = z.object({
   type: z.string().min(1).max(40),
   label: z.string().max(120).optional(),
-  url: z.string().min(1).max(500),
+  // Rendered as an <a href> on the public /c/<handle> page — see externalUrl.
+  url: externalUrl(),
 });
 
 export const updateCoachProfileSchema = z.object({

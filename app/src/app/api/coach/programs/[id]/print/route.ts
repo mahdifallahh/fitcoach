@@ -1,9 +1,11 @@
 import type { NextRequest } from 'next/server';
 import { getSession } from '@/server/auth/session';
 import { getPdf } from '@/server/container';
-import { mapError } from '@/server/http/envelope';
 import { ForbiddenException, UnauthorizedException } from '@/server/http/errors';
-import { printableHtmlResponse } from '@/server/pdf/print-response';
+import {
+  printableErrorResponse,
+  printableHtmlResponse,
+} from '@/server/pdf/print-response';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +22,7 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<Record<string, string>> },
 ) {
+  const locale = new URL(req.url).searchParams.get('locale') === 'en' ? 'en' : 'fa';
   try {
     const user = await getSession(req);
     if (!user) {
@@ -35,9 +38,8 @@ export async function GET(
       });
     }
     const { id } = await context.params;
-    const locale = new URL(req.url).searchParams.get('locale') === 'en' ? 'en' : 'fa';
     return printableHtmlResponse(await getPdf().getPrintableHtml(user.id, id, locale));
   } catch (err) {
-    return mapError(err);
+    return printableErrorResponse(err, locale);
   }
 }

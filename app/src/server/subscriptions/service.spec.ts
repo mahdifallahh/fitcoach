@@ -136,3 +136,69 @@ describe("SubscriptionsService", () => {
     });
   });
 });
+
+describe("SubscriptionsService — the student cap", () => {
+  /** A tx double: the raw lock is a no-op, the rest is per-test. */
+  function makeTx(overrides: any = {}) {
+    return {
+      $queryRaw: jest.fn().mockResolvedValue([]),
+      subscription: { findFirst: jest.fn().mockResolvedValue({ tier: SubscriptionTier.FREE }) },
+      program: { findFirst: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) },
+      ...overrides,
+    };
+  }
+
+  let service: SubscriptionsService;
+  beforeEach(() => {
+    service = new SubscriptionsService({} as any);
+  });
+
+  it("counts each student once, however many programs they have", async () => {
+    const tx = makeTx();
+    tx.program.findMany.mockResolvedValue([{ studentProfileId: "a" }, { studentProfileId: "b" }]);
+    expect(await service.countBillableStudents("c1", tx as any)).toBe(2);
+    // Distinctness is the database's job, not a post-filter we could get wrong.
+    expect(tx.program.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ distinct: ["studentProfileId"] }),
+    );
+  });
+
+  it("refuses a new student once the tier cap is reached", async () => {
+    const tx = makeTx();
+    tx.program.findMany.mockResolvedValue([{ studentProfileId: "other" }]); // FREE = 1
+    await expect(service.assertCanAddStudent("c1", "new-student", tx as any)).rejects.toMatchObject({
+      code: "STUDENT_QUOTA_EXCEEDED",
+      status: 402,
+      details: { counted: 1, max: 1 },
+    });
+  });
+
+  it("still lets a capped coach keep writing for a student they already have", async () => {
+    const tx = makeTx();
+    tx.program.findFirst.mockResolvedValue({ id: "p1" }); // already inside the window
+    tx.program.findMany.mockResolvedValue([{ studentProfileId: "existing" }]);
+    await expect(service.assertCanAddStudent("c1", "existing", tx as any)).resolves.toBeUndefined();
+  });
+
+  it("locks the coach's subscription row so two creates cannot both slip past", async () => {
+    const tx = makeTx();
+    await service.assertCanAddStudent("c1", "s1", tx as any).catch(() => undefined);
+    expect(tx.$queryRaw).toHaveBeenCalled();
+  });
+
+  it("skips the whole check — and the lock — on an unlimited tier", async () => {
+    const tx = makeTx({
+      subscription: { findFirst: jest.fn().mockResolvedValue({ tier: SubscriptionTier.PRO }) },
+    });
+    await expect(service.assertCanAddStudent("c1", "s1", tx as any)).resolves.toBeUndefined();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("treats a missing subscription row as FREE, never as unlimited", async () => {
+    const tx = makeTx({ subscription: { findFirst: jest.fn().mockResolvedValue(null) } });
+    tx.program.findMany.mockResolvedValue([{ studentProfileId: "other" }]);
+    await expect(service.assertCanAddStudent("c1", "new", tx as any)).rejects.toMatchObject({
+      code: "STUDENT_QUOTA_EXCEEDED",
+    });
+  });
+});

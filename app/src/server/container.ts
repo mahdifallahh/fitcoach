@@ -115,7 +115,11 @@ export function getStudents(): StudentsService {
 }
 
 export function getPrograms(): ProgramsService {
-  return (c.programs ??= new ProgramsService(getPrisma(), getStudents()));
+  return (c.programs ??= new ProgramsService(
+    getPrisma(),
+    getStudents(),
+    getSubscriptions(),
+  ));
 }
 
 export function getProgramTemplates(): ProgramTemplatesService {

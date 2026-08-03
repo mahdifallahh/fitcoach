@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma, ProgramStatus, type PrismaClient } from "@prisma/client";
 import { StudentsService } from "../students/service";
+import { SubscriptionsService } from "../subscriptions/service";
 import { BadRequestException, NotFoundException } from "../http/errors";
 import { pageParams, paginated, type ListQuery } from "../http/pagination";
 import type {
@@ -49,6 +50,7 @@ export class ProgramsService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly students: StudentsService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   /** One page of the coach's programs, newest-edited first. */
@@ -94,6 +96,12 @@ export class ProgramsService {
         { age: dto.age, heightCm: dto.heightCm, weightKg: dto.weightKg },
         tx,
       );
+      // The tier cap is enforced here and nowhere else, because this is the only
+      // place a coach *chooses* to take on a student — templates delegate to this
+      // method, and the public intake form must never spend a coach's quota on
+      // their behalf. Inside the transaction so a refused create leaves no
+      // half-made StudentProfile behind.
+      await this.subscriptions.assertCanAddStudent(coachId, student.id, tx);
       const created = await tx.program.create({
         data: {
           coachId,
