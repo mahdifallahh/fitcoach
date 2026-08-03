@@ -127,9 +127,10 @@ export class ExercisesService {
     ) {
       await this.storage.deleteByPublicUrl("gifs", current.gifUrl);
     }
-    // `videoUrl` holds either an uploaded clip or a pasted external link;
-    // `deleteByPublicUrl` no-ops on anything that isn't in our own bucket, so a
-    // YouTube link is never touched.
+    // `videoUrl` is a pasted external link now that uploading was removed, but
+    // clips uploaded before that are still in the `videos` bucket. Keep clearing
+    // it so those get collected as coaches edit; `deleteByPublicUrl` no-ops on
+    // anything outside our own bucket, so a YouTube link is never touched.
     if (
       dto.videoUrl !== undefined &&
       current.videoUrl &&

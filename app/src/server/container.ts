@@ -24,10 +24,6 @@ import { StripeProvider } from "./payments/providers/stripe";
 import { PaymentsService } from "./payments/service";
 import { PdfService } from "./pdf/service";
 import { AdminService } from "./admin/service";
-import { buildVideoConfig } from "./video/config";
-import { SpawnFfmpegRunner } from "./video/ffmpeg";
-import { VideoCompressor } from "./video/compressor";
-import { VideoService } from "./video/service";
 
 /**
  * Central DI container. Everything is a lazily-constructed singleton memoized on
@@ -55,7 +51,6 @@ interface Container {
   payments?: PaymentsService;
   pdf?: PdfService;
   admin?: AdminService;
-  video?: VideoService;
 }
 
 const g = globalThis as unknown as { __fitloContainer?: Container };
@@ -171,22 +166,6 @@ export function getPdf(): PdfService {
 
 export function getAdmin(): AdminService {
   return (c.admin ??= new AdminService(getPrisma()));
-}
-
-/**
- * Exercise-video pipeline. Assembled here rather than inside the service so the
- * ffmpeg runner, the compression settings and the storage client are all injected
- * — the service graph is constructed once and can be rebuilt with fakes in tests.
- */
-export function getVideo(): VideoService {
-  if (c.video) return c.video;
-  const videoConfig = buildVideoConfig(getConfig());
-  const runner = new SpawnFfmpegRunner({
-    ffmpegPath: videoConfig.ffmpegPath,
-    ffprobePath: videoConfig.ffprobePath,
-  });
-  const compressor = new VideoCompressor(runner, videoConfig.compression);
-  return (c.video = new VideoService(getStorage(), compressor, videoConfig));
 }
 
 // Re-export the shared singletons for convenience in route handlers/services.

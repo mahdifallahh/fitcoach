@@ -11,21 +11,20 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends openssl ca-certificates curl && \
     rm -rf /var/lib/apt/lists/*
 
-# ── Step 2: OPTIONAL – media tooling ─────────────────────────────────────
-# Chromium + fonts for the Puppeteer PDF render, ffmpeg for exercise-video
-# compression. Non-fatal: if the Debian mirror is unreachable the build still
-# succeeds — PdfService and VideoService both load their binary lazily and return
-# a clean 503 when it is absent, rather than failing at boot.
+# ── Step 2: OPTIONAL – Chromium for the PDF render ───────────────────────
+# Non-fatal: if the Debian mirror is unreachable the build still succeeds —
+# PdfService loads the browser lazily and falls back to the browser-print route
+# when there is none, rather than failing at boot.
 RUN printf 'Acquire::Retries "8";\nAcquire::ForceIPv4 "true";\n' \
       > /etc/apt/apt.conf.d/80-net && \
     sed -i 's|http://deb.debian.org|https://deb.debian.org|g' \
       /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      chromium fonts-liberation fonts-noto-core ffmpeg && \
+      chromium fonts-liberation fonts-noto-core && \
     rm -rf /var/lib/apt/lists/* || \
     { rm -rf /var/lib/apt/lists/* 2>/dev/null; \
-      echo "[dockerfile] Optional Chromium/fonts/ffmpeg not installed — PDF and video upload will degrade gracefully"; }
+      echo "[dockerfile] Optional Chromium/fonts not installed — PDF falls back to browser print"; }
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium

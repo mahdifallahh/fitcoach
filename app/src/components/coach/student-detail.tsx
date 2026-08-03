@@ -70,7 +70,9 @@ export function StudentDetail({ studentId }: { studentId: string }) {
               {student.claimed ? t('joined') : t('notJoined')}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {t('addedOn', { date: format.dateTime(new Date(student.createdAt), 'long') })}
+              {t('addedOn', {
+                date: format.dateTime(new Date(student.createdAt), { dateStyle: 'medium' }),
+              })}
             </span>
           </div>
 
@@ -116,7 +118,9 @@ export function StudentDetail({ studentId }: { studentId: string }) {
                     {t('programMeta', {
                       days: program._count.days,
                       perWeek: program.daysPerWeek,
-                      date: format.dateTime(new Date(program.updatedAt), 'long'),
+                      date: format.dateTime(new Date(program.updatedAt), {
+                        dateStyle: 'medium',
+                      }),
                     })}
                   </p>
                 </div>

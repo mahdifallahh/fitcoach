@@ -134,15 +134,14 @@ container — `WATCHPACK_POLLING` helps but doesn't always catch brand-new files
   (internal endpoint) and one for presigning (public endpoint), because a presigned URL's signature embeds the
   host it was signed for. Buckets `avatars`/`gifs`/`pdfs`/`videos` are public-read; `requests` (student intake
   photos/receipts) is private — the coach inbox reads them via short-lived presigned GETs.
-- **Exercise video (`src/server/video/*`):** the one upload that does *not* use a presigned PUT — the bytes
-  must pass through the server to be transcoded. `POST /api/coach/exercises/video-upload?filename=…` takes the
-  **raw file as the body** (never `formData()`, which would buffer 100 MB into the heap) and streams it to a
-  per-request UUID temp dir, aborting mid-stream past the size cap. ffprobe proves it's really a video, then
-  ffmpeg re-encodes it (`libx264` CRF 28, `scale='min(1280,iw)':-2`, AAC 96k, `+faststart`) and the result is
-  streamed to the `videos` bucket; the temp dir is removed in a `finally` on every path. All tunables are env
-  vars (`config.ts`) grouped into a typed `VideoConfig`; failures are a closed `VIDEO_*` code union that the
-  client maps to translated sentences. The graph (`SpawnFfmpegRunner` → `VideoCompressor` → `VideoService`) is
-  assembled in `container.ts` so each layer is testable with fakes.
+- **Exercise media:** a GIF is uploaded via presigned PUT; the demo **video is a pasted link only**
+  (YouTube/Aparat/anything), stored in the same `Exercise.videoUrl` the viewer and PDF already read.
+  Uploading clips was **removed**: transcoding needs ffmpeg on the host, and a managed Node service has none,
+  so the binaries had to ship in `node_modules` — ~140 MB downloaded on every deploy, for a job a link does at
+  zero infrastructure cost. The `videos` bucket stays for clips uploaded before the removal; `ExercisesService`
+  still clears them on replace/delete (`deleteByPublicUrl` no-ops on anything outside our own bucket, so an
+  external link is never touched). `videoUrl` is validated by `utils/url.ts` `externalUrl()` — it reaches an
+  `<a href>`, so only `http(s)` is accepted.
 - **PDF:** Puppeteer renders an RTL-aware HTML template (`src/server/pdf/template.ts`) to a PDF cached on
   `Program.pdfUrl`, invalidated via `pdfStaleAt` on every program edit. The cache **key carries the locale**
   (`<coach>/<program>-<fa|en>.pdf`) — one column holds the last-generated locale, so asking for the other one

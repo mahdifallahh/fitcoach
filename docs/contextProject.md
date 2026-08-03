@@ -413,8 +413,8 @@ e2e `logout()` helper opens it first.
   name the coach actually set, so raw phone-number default names are never exposed; capped at 24).
 - **categories** (COACH): `GET /coach/categories`, `POST` *(gated)*, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
 - **exercises** (COACH): `GET /coach/exercises?search=&categoryId=`, `POST` *(gated)*,
-  `POST /coach/exercises/gif-upload-url`, `POST /coach/exercises/video-upload?filename=` *(gated; raw video
-  body → transcoded MP4, see §8 key flows)*, `GET/:id`, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
+  `POST /coach/exercises/gif-upload-url`, `GET/:id`, `PATCH/:id` *(gated)*, `DELETE/:id` *(gated)*.
+  (The demo video is a pasted link on the exercise itself — there is no video-upload endpoint; see §8.)
 - **programs** (COACH): `GET /coach/programs`, `POST` *(gated; `requestId?` → marks that request ACCEPTED)*,
   `GET/:id`, `PATCH/:id` *(gated)*, `PATCH/:id/status` *(gated)*, `DELETE/:id` *(gated)*,
   `GET /coach/programs/:id/pdf?locale=fa|en`.
@@ -467,36 +467,20 @@ a lapsed *legacy* paid row or an EXPIRED/CANCELED one; a FREE coach always passe
   browser PUTs to MinIO → client saves the `publicUrl`. Buckets `avatars/gifs/pdfs/videos` public-read;
   **`requests`** (intake photos) **private** — request stores object **keys**, coach inbox returns presigned
   GET URLs.
-- **Exercise video — the one upload that bypasses the presigned pattern** (`src/server/video/*`): the bytes
-  have to reach the server because they get transcoded. `POST /api/coach/exercises/video-upload?filename=…`
-  (COACH + `requiresSub`) takes the **raw file as the request body**:
-  - **Streaming, not buffering.** `req.formData()` would pull the whole upload into the heap, which defeats the
-    point of a 100 MB limit — the handler pipes `req.body` straight to a temp file and counts bytes as they
-    arrive, destroying the stream the moment it passes the cap. `Content-Length` is checked too, but only as a
-    courtesy: a client can lie about or omit it, so the stream cap is the real control.
-  - **Validation is layered:** MIME type *and* filename extension must agree (`VIDEO_FORMATS` maps one to the
-    other — a `.zip` renamed `.mp4` fails the pair check), then **`ffprobe` proves the bytes are actually a
-    video**. Only the last one is trustworthy; the first two just avoid wasting an upload.
-  - **Encoding recipe** (`buildCompressArgs`, pure + unit-tested): `libx264` CRF 28 / preset `veryfast`,
-    `scale='min(1280,iw)':-2` (downscale only, even height for yuv420p), AAC 96k or `-an` when silent,
-    `-pix_fmt yuv420p`, **`-movflags +faststart`** so playback starts before the file finishes downloading.
-    Measured: a 15 MB 1080p clip → 550 KB at 1280×720 in ~6 s.
-  - **Resources:** one UUID temp dir per request (no collisions between concurrent uploads), removed in a
-    `finally` on *every* path; the read stream handed to S3 is explicitly destroyed, because an open handle
-    makes the cleanup fail on Windows and leaks a temp file per upload.
-  - **Errors** are a closed `VIDEO_*` union (`video/errors.ts`) with per-code HTTP status (413 too large,
-    504 timeout, 503 tooling/encoding, 400 the rest); `lib/api/video-upload.ts` + `exercise-video-field.tsx`
-    map each code to a translated sentence, so the coach never sees a raw 500.
-  - **DI:** `SpawnFfmpegRunner` (binary lookup: `FFMPEG_PATH` if it exists on disk → PATH → platform
-    locations, same idea as the Chromium lookup) → `VideoCompressor` → `VideoService`, wired in
-    `container.ts` via `getVideo()`. The runner is an interface, so the compressor's specs drive it with a
-    fake and need no ffmpeg installed.
-  - **Client:** `XMLHttpRequest`, not `fetch` — `fetch` still has no upload-progress event and a 100 MB
-    upload with no progress bar looks frozen. Two distinct waits are shown: a determinate bar while bytes
-    are in flight, then an indeterminate one while the server transcodes.
-  - Uploaded clips and pasted external links (YouTube/Aparat) share the single `Exercise.videoUrl` column;
-    `deleteByPublicUrl` no-ops on anything outside our bucket, so replacing an upload cleans up the old
-    object while a YouTube link is never touched.
+- **Exercise media — GIF is uploaded, video is a link.** The GIF follows the presigned-PUT pattern above. The
+  demo video is **a URL the coach pastes** (YouTube / Aparat / anything), stored in `Exercise.videoUrl` and
+  read by both the student viewer and the PDF.
+  - **Uploading clips was removed.** Transcoding needs ffmpeg on the host; a managed Node service has none and
+    cannot `apt install` one, so the binaries had to ship inside `node_modules` — about **140 MB pulled on
+    every deploy**, on a network where that is already the slowest part of the build. A pasted link gives the
+    student the same thing at zero infrastructure cost. If server-side transcoding is ever wanted back, the
+    honest prerequisite is deploying the Docker image, not re-adding the npm binaries.
+  - **The `videos` bucket stays.** Clips uploaded before the removal still play, and
+    `ExercisesService.update/remove` still calls `deleteByPublicUrl('videos', …)` so they are collected as
+    coaches edit. That call no-ops on anything outside our own bucket, so an external link is never touched.
+  - **Validation:** `videoUrl` goes through `utils/url.ts` → `externalUrl()`. It lands in an `<a href>` on
+    pages strangers open, so only `http(s)` is accepted; a scheme-less `instagram.com/x` is normalised to
+    https rather than rejected.
 - **PDF:** `server/pdf/` renders an RTL HTML template with Puppeteer → uploads to `pdfs` → caches
   `Program.pdfUrl`. Three things decide whether it re-renders: no cached file, `pdfStaleAt` set (every edit),
   or **the cached file is in the other locale**. The object key is `<coachId>/<programId>-<fa|en>.pdf` and a
@@ -628,8 +612,11 @@ the host directories, so verify build artifacts inside the container and install
 | API call from UI | `src/lib/api/<feature>.ts` + `src/lib/query/use-<feature>.ts` |
 | Auth / cookies / JWT | `src/server/auth/*`, `src/server/http/route.ts` (`getSession`, `withRoute`) |
 | Uploads | `src/server/storage.ts` + `src/lib/api/upload.ts` |
-| Exercise video upload / compression | `src/server/video/{config,errors,ffmpeg,validation,compressor,service}.ts` (+ 3 spec files) → `getVideo()` in `container.ts`; route `api/coach/exercises/video-upload`; UI `components/coach/exercise-video-field.tsx` + `lib/api/video-upload.ts`. Tunables are env vars in `server/config.ts` |
-| PDF export | `src/server/pdf/{service,template}.ts` (+ `service.spec.ts` for the locale cache & browser discovery); routes `api/{coach,student}/programs/[id]/pdf`; UI `components/coach/download-pdf-button.tsx` |
+| Exercise demo video (pasted link) | `components/coach/exercise-video-field.tsx` (a plain URL input); validated server-side by `server/utils/url.ts` `externalUrl()` in `server/exercises/schemas.ts`. There is no upload pipeline — see §8 |
+| Coach → students | `server/students/service.ts` (`list`, `getForCoach`); routes `api/coach/students[/[id]]`; UI `app/[locale]/coach/students/*` + `components/coach/{student-list,student-detail}.tsx`; hooks `lib/query/use-coach-students.ts` |
+| Save a program as a template | `ProgramTemplatesService.createFromProgram` (delegates to `create`, so exercise-ownership checks are shared); route `api/coach/program-templates/from-program`; UI `components/coach/save-as-template-button.tsx` in the program builder |
+| Student cap enforcement | `SubscriptionsService.{countBillableStudents,assertCanAddStudent}` + `QUOTA_WINDOW_DAYS`; called from `ProgramsService.create` inside its transaction (the only place a coach *chooses* a student) |
+| PDF export | `src/server/pdf/{service,template}.ts` (+ `service.spec.ts` for the locale cache & browser discovery); routes `api/{coach,student}/programs/[id]/pdf`; **browser-print fallback** `api/{coach,student}/programs/[id]/print` + `server/pdf/print-response.ts`; UI `components/coach/download-pdf-button.tsx` |
 | Program builder | `src/components/coach/program-builder/*` (prefill student via `?student=`, request via `?request=` on `/coach/programs/new`) |
 | Program templates ("برنامه‌های آماده") | `src/server/program-templates/*` + `src/app/api/coach/program-templates/*`; UI `src/app/[locale]/coach/templates/*`, `components/coach/{template-list,assign-template-dialog}.tsx` + `components/coach/template-builder/*` (reuses program-builder sub-components + `daysToBuilderDays`); **assign** delegates to `ProgramsService.create` |
 | Subscription / tier gating | `withRoute({ requiresSub: true })` + `src/server/subscriptions/*`; caps in `src/lib/plans.ts` `TIER_MAX_STUDENTS`; tier grants in `src/server/admin/service.ts` `setCoachTier`. No trial exists — coaches are provisioned FREE at signup in `users/service.ts` |

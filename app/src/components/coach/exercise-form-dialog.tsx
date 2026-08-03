@@ -64,7 +64,6 @@ export function ExerciseFormDialog({
   const fileRef = React.useRef<HTMLInputElement>(null);
   const gifAbortRef = React.useRef<AbortController | null>(null);
   const [uploading, setUploading] = React.useState(false);
-  const [videoBusy, setVideoBusy] = React.useState(false);
 
   // A GIF still in flight must not outlive the dialog: without this the upload
   // finishes into a bucket nothing references, and `setValue` runs against a
@@ -90,7 +89,6 @@ export function ExerciseFormDialog({
   // Sync form whenever the dialog opens (for create vs edit).
   React.useEffect(() => {
     if (!open) return;
-    setVideoBusy(false); // a previous session's upload never carries over
     reset({
       name: exercise?.name ?? "",
       categoryId: exercise?.categoryId ?? "",
@@ -263,7 +261,6 @@ export function ExerciseFormDialog({
           <ExerciseVideoField
             value={videoUrl ?? ""}
             onChange={(url) => setValue("videoUrl", url, { shouldDirty: true })}
-            onBusyChange={setVideoBusy}
             disabled={pending}
           />
 
@@ -275,9 +272,7 @@ export function ExerciseFormDialog({
             >
               {t("cancel")}
             </Button>
-            {/* videoBusy matters as much as the other two: it is the only one
-                whose upload the coach actually waited minutes for. */}
-            <Button type="submit" disabled={pending || uploading || videoBusy}>
+            <Button type="submit" disabled={pending || uploading}>
               {pending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (

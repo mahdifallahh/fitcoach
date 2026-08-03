@@ -29,14 +29,7 @@ const nextConfig = {
   },
   // Keep native/server-only packages out of the bundle so their runtime engines
   // (Prisma query engine, Chromium launcher) load from node_modules at runtime.
-  // The ffmpeg/ffprobe installers derive their binary path from their own
-  // location on disk, so bundling them would hand back a path that doesn't exist.
-  serverExternalPackages: [
-    '@prisma/client',
-    'puppeteer-core',
-    '@ffmpeg-installer/ffmpeg',
-    '@ffprobe-installer/ffprobe',
-  ],
+  serverExternalPackages: ['@prisma/client', 'puppeteer-core'],
   images: {
     formats: ['image/avif', 'image/webp'],
     // Optimized remote images (avatars/GIF posters) can be re-served from the

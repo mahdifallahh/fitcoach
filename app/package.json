@@ -21,12 +21,8 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "pnpm": {
-    "//onlyBuiltDependencies": "pnpm 10 blocks postinstall scripts by default. These two ship a bare binary and use their install script to mark it executable — without it ffprobe lands as mode 644 and every video upload dies with EACCES on Linux, which is invisible on Windows where the exec bit does not exist.",
+    "//onlyBuiltDependencies": "pnpm 10 blocks postinstall scripts by default; Prisma needs its own to generate the client and fetch engines.",
     "onlyBuiltDependencies": [
-      "@ffmpeg-installer/ffmpeg",
-      "@ffprobe-installer/ffprobe",
-      "@ffmpeg-installer/linux-x64",
-      "@ffprobe-installer/linux-x64",
       "@prisma/client",
       "@prisma/engines",
       "prisma"
@@ -46,8 +42,6 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "@ffprobe-installer/ffprobe": "^2.1.2",
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.4",
