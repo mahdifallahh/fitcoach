@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Apple, CheckCircle2, Download, Info, Monitor, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { isIos, usePwaInstall } from '@/lib/hooks/use-pwa-install';
+import { useManualInstallKey, usePwaInstall } from '@/lib/hooks/use-pwa-install';
 
 /**
  * Permanent "install the app" section on the landing page — the fallback for
@@ -18,13 +18,10 @@ export function PwaInstallSection() {
   const t = useTranslations('landing.pwaSection');
   const { installed, canPrompt, install } = usePwaInstall();
 
-  // Which manual instruction fits this device (used when there's no native prompt).
-  const manualKey = React.useMemo<'manualIos' | 'manualAndroid' | 'manualDesktop'>(() => {
-    if (typeof navigator === 'undefined') return 'manualDesktop';
-    if (isIos()) return 'manualIos';
-    if (/android/i.test(navigator.userAgent)) return 'manualAndroid';
-    return 'manualDesktop';
-  }, []);
+  // Which manual instruction fits this device (used when there's no native
+  // prompt). Resolved after mount — this section is prerendered, so reading the
+  // user agent during render would break hydration.
+  const manualKey = useManualInstallKey();
 
   const platforms = [
     { icon: Apple, label: t('iphone') },

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
-import { manualInstallKey, usePwaInstall } from '@/lib/hooks/use-pwa-install';
+import { useManualInstallKey, usePwaInstall } from '@/lib/hooks/use-pwa-install';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ export function InstallDialog({
 }) {
   const t = useTranslations('pwa');
   const { canPrompt, install } = usePwaInstall();
-  const manualKey = React.useMemo(manualInstallKey, []);
+  const manualKey = useManualInstallKey();
 
   async function onInstall() {
     const outcome = await install();

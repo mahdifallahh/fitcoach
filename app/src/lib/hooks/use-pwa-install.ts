@@ -27,11 +27,36 @@ export function isAndroid(): boolean {
   return /android/i.test(navigator.userAgent);
 }
 
-/** Which manual-install message fits this device — shared by every install entry point. */
-export function manualInstallKey(): 'manualIos' | 'manualAndroid' | 'manualDesktop' {
+export type ManualInstallKey = 'manualIos' | 'manualAndroid' | 'manualDesktop';
+
+/**
+ * Which manual-install message fits this device. Safe to call from an event
+ * handler or an effect — see `useManualInstallKey` for rendering.
+ */
+export function manualInstallKey(): ManualInstallKey {
   if (isIos()) return 'manualIos';
   if (isAndroid()) return 'manualAndroid';
   return 'manualDesktop';
+}
+
+/**
+ * The same answer, but safe to *render*.
+ *
+ * Calling `manualInstallKey()` during render is a hydration bug: `navigator`
+ * does not exist while the server prerenders, so the server always writes the
+ * desktop text, and an Android or iOS browser then renders different text on its
+ * very first pass. React sees the two disagree and throws away the server's tree
+ * (the minified #418 "server rendered text didn't match"), which costs the whole
+ * page its prerender and flashes the wrong instructions on the way.
+ *
+ * Starting from the server's own value and correcting after mount keeps the
+ * first render identical on both sides; the right platform arrives one render
+ * later, long before anyone could read the wrong one.
+ */
+export function useManualInstallKey(): ManualInstallKey {
+  const [key, setKey] = React.useState<ManualInstallKey>('manualDesktop');
+  React.useEffect(() => setKey(manualInstallKey()), []);
+  return key;
 }
 
 /**

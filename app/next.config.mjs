@@ -51,6 +51,32 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Security headers, on every response. None of these were set before, so
+        // the browser was falling back to its most permissive defaults.
+        source: '/:path*',
+        headers: [
+          // Stop content-type sniffing — an uploaded file that a browser decides
+          // is HTML would run as HTML on our origin.
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // The panels show a student's data; keep it out of other sites' frames.
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          // Send the origin, never the full path: program URLs carry ids we do
+          // not want handed to a coach's linked Instagram or an embedded video.
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Nothing here uses these, and silence is the safest default.
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+          },
+          // Two years, subdomains included, preload-eligible. Only ever sent over
+          // HTTPS, so this is inert on a local http:// run.
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+        ],
+      },
+      {
         // App icons are referenced by fixed paths from the manifest/metadata and
         // effectively never change without a rebrand.
         source: '/icons/:path*',

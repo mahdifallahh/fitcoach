@@ -32,6 +32,11 @@ export function EnamadSeal({ label }: { label: string }) {
         src={`https://trustseal.enamad.ir/logo.aspx?id=${ENAMAD_ID}&Code=${ENAMAD_CODE}`}
         alt={label}
         referrerPolicy="origin"
+        // Third-party host we don't control, sitting in the footer: never let it
+        // hold up first paint, and if it is slow or unreachable the page has
+        // already rendered without it.
+        loading="lazy"
+        decoding="async"
         width={90}
         height={90}
         style={{ cursor: 'pointer' }}
