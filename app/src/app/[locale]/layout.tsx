@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
-import { Inter, Vazirmatn } from 'next/font/google';
+import localFont from 'next/font/local';
 import { getMessages, getTimeZone, setRequestLocale } from 'next-intl/server';
 import { routing, localeDirection, type Locale } from '@/i18n/routing';
 import { PUBLIC_CLIENT_NAMESPACES, pickMessages } from '@/i18n/client-messages';
@@ -25,15 +25,32 @@ import '../globals.css';
 // the text-LCP paints at FCP (~0.9s). The font still preloads + caches, so it
 // shows on fast connections and every repeat visit; only a cold, throttled
 // first load renders in the fallback.
-const vazirmatn = Vazirmatn({
-  subsets: ['arabic', 'latin'],
+// Self-hosted, NOT `next/font/google`.
+//
+// next/font/google downloads the face from Google at *build* time. The
+// production build runs on a host in Iran, where fonts.gstatic.com is
+// unreachable — so the build spent minutes on "Retrying 1/3…3/3", failed with
+// ECONNREFUSED, left no .next behind, and `next start` then had nothing to
+// serve. A committed font file removes the network from the build entirely.
+//
+// These are the same upstream faces, as single variable files so one @font-face
+// covers every weight (both scripts live in the Vazirmatn file).
+const vazirmatn = localFont({
+  src: '../../fonts/Vazirmatn-wght.woff2',
+  weight: '100 900',
   variable: '--font-vazir',
   display: 'optional',
   fallback: ['Tahoma', 'Arial', 'sans-serif'],
 });
 // Inter is only the en-locale face (Vazirmatn covers Latin on fa pages), so don't
 // spend the default locale's critical path preloading it; `swap` hides the cost on /en.
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap', preload: false });
+const inter = localFont({
+  src: '../../fonts/Inter-wght.woff2',
+  weight: '100 900',
+  variable: '--font-inter',
+  display: 'swap',
+  preload: false,
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

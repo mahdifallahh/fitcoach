@@ -18,6 +18,11 @@ const nextConfig = {
   // Tree-shake per-icon/component imports from big barrel packages → smaller bundles.
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    // The production builder is memory-constrained: a build there died with
+    // "Ineffective mark-compacts near heap limit" at ~250 MB of heap. This trades
+    // some build speed for a much smaller peak by letting webpack release cached
+    // module data as it goes.
+    webpackMemoryOptimizations: true,
     // Ship the compiled Tailwind CSS as an inline <style> instead of a
     // render-blocking <link>. The whole sheet is ~8 KB gzipped while the
     // request for it was the entire LCP critical path in production
