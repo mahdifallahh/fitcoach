@@ -1,0 +1,45 @@
+# Read by `chabok deploy`, which uploads THIS directory.
+#
+# The CLI picks exactly one ignore file, in this order:
+#   .chabokignore  →  else .dockerignore  →  else .gitignore
+# It is an else-if chain, not a merge — so while this file exists, .dockerignore
+# and .gitignore are both skipped, and everything the upload must leave out has
+# to be listed here.
+#
+# What went wrong without it: .dockerignore won, and it covers node_modules and
+# .next but not .pnpm-store — 2.7 GB of pnpm's content-addressed cache, quietly
+# the largest thing in this directory. The upload was rejected against the 100 MB
+# limit while the actual source is about 2 MB.
+
+# Dependencies and package-manager caches
+node_modules/
+.pnpm-store/
+.npm/
+.cache/
+
+# Build output — the host builds from source, so none of this belongs in the upload.
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Local environment. `.env.local` holds real development credentials and has no
+# business on the production host; the *.example templates are documentation and
+# are deliberately kept.
+.env
+.env.local
+.env.*.local
+
+# Test + tooling output
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+*.log
+
+# VCS / editor
+.git/
+.vscode/
+.idea/
+.DS_Store
