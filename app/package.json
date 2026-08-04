@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "//build": "The heap flag is scoped to this one process on purpose: the production builder let Node cap itself near 250 MB and `next build` died with 'Ineffective mark-compacts near heap limit', leaving no .next. Measured here: 256 MB fails, 512 MB fails, 768 MB works. Invoking next's bin through `node` keeps it cross-platform — an inline NODE_OPTIONS= prefix is not valid on Windows.",
+    "build": "prisma generate && node --max-old-space-size=768 ./node_modules/next/dist/bin/next build",
     "start": "prisma migrate deploy && next start",
     "lint": "next lint",
     "test": "jest",
