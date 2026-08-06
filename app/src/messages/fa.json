@@ -283,7 +283,9 @@
     "requests": "درخواست‌ها",
     "intake": "فرم شاگرد",
     "help": "راهنما",
-    "students": "شاگردان"
+    "students": "شاگردان",
+    "more": "بیشتر",
+    "sectionsLabel": "بخش‌های پنل"
   },
   "coachHelp": {
     "title": "راهنمای مربیان",

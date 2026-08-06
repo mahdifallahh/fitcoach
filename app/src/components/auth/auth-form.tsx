@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { ArrowRight, Eye, EyeOff, KeyRound, Loader2, ShieldCheck } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { authApi, roleHome } from '@/lib/api/auth';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, apiErrorMessage } from '@/lib/api/client';
 import type { CurrentUser, Role } from '@/lib/api/types';
 import { ME_QUERY_KEY } from '@/lib/query/use-auth';
 import { Button } from '@/components/ui/button';
@@ -61,7 +61,10 @@ export function AuthForm({ role, next }: { role: Role; next?: string }) {
     return () => clearTimeout(timer);
   }, [resendIn]);
 
-  const errMsg = (err: unknown) => (err instanceof ApiError ? err.message : t('errorGeneric'));
+  // Via apiErrorMessage, not `err.message`: the raw field is the server's own
+  // English sentence, and this is the sign-in screen — the one place a user
+  // cannot fall back on knowing the app to work out what went wrong.
+  const errMsg = (err: unknown) => apiErrorMessage(err, t('errorGeneric'));
 
   /** Land the user in their panel once we hold a session. */
   async function finish(user: CurrentUser) {

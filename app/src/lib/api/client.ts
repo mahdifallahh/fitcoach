@@ -106,6 +106,39 @@ const KNOWN_ERROR_MESSAGES: Record<string, { fa: string; en: string }> = {
     fa: 'پلن فعلی‌ات {max} شاگرد را پوشش می‌دهد و در {windowDays} روز گذشته {counted} شاگرد فعال داشته‌ای. برای شاگرد جدید، پلن را ارتقا بده.',
     en: 'Your plan covers {max} students and {counted} have been active in the last {windowDays} days. Upgrade to take on someone new.',
   },
+
+  // ── Sign-in ───────────────────────────────────────────────────────────────
+  // These reach the very first screen a user ever sees, so they cannot arrive in
+  // the server's English. Each one also says what to do next, because "invalid"
+  // on its own leaves someone tapping the same wrong thing again.
+  BAD_CREDENTIALS: {
+    fa: 'شماره موبایل یا رمز عبور درست نیست. اگر رمزت را فراموش کرده‌ای، با کد پیامکی وارد شو.',
+    en: 'That phone number or password is not right. If you have forgotten it, sign in with an SMS code instead.',
+  },
+  OTP_INVALID: {
+    fa: 'کد وارد‌شده درست نیست یا منقضی شده. کد تازه بگیر و دوباره امتحان کن.',
+    en: 'That code is wrong or has expired. Request a new one and try again.',
+  },
+  OTP_LOCKED: {
+    fa: 'چند بار پشت‌سرهم اشتباه وارد شد. یک کد تازه بگیر.',
+    en: 'Too many wrong attempts. Request a new code.',
+  },
+  OTP_COOLDOWN: {
+    fa: 'کد تازه فرستاده شده. {retryAfter} ثانیه صبر کن و دوباره بزن.',
+    en: 'A code was just sent. Wait {retryAfter} seconds before asking for another.',
+  },
+  RATE_LIMITED: {
+    fa: 'درخواست‌های زیادی فرستادی. کمی صبر کن و دوباره تلاش کن.',
+    en: 'Too many requests. Wait a moment and try again.',
+  },
+  ROLE_REQUIRED: {
+    fa: 'برای ساخت حساب، اول انتخاب کن مربی هستی یا شاگرد.',
+    en: 'Choose whether you are a coach or a student before creating an account.',
+  },
+  UNAUTHENTICATED: {
+    fa: 'نشست تو تمام شده. دوباره وارد شو.',
+    en: 'Your session has ended. Please sign in again.',
+  },
 };
 
 function currentLocale(): 'fa' | 'en' {

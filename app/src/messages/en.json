@@ -283,7 +283,9 @@
     "requests": "Requests",
     "intake": "Student form",
     "help": "Help",
-    "students": "Students"
+    "students": "Students",
+    "more": "More",
+    "sectionsLabel": "Panel sections"
   },
   "coachHelp": {
     "title": "Coach help center",
