@@ -458,7 +458,8 @@
     "openPublic": "Open",
     "handleTaken": "That link is already taken.",
     "loadError": "Could not load your profile",
-    "copyError": "Could not copy the link"
+    "copyError": "Could not copy the link",
+    "removeLink": "Remove link"
   },
   "publicPage": {
     "title": "Your public page",
@@ -528,7 +529,10 @@
     "help3": "Attach a GIF and a video link to any exercise so your students can see the correct form.",
     "categoryHint": "Optional — used to organize and quickly filter your exercises.",
     "categoryHintEmpty": "You haven't created any categories yet. It's optional — add them from \"Manage categories\" on the exercises page.",
-    "videoLinkHint": "A YouTube, Aparat or any other video link. Shown to the student and in the PDF."
+    "videoLinkHint": "A YouTube, Aparat or any other video link. Shown to the student and in the PDF.",
+    "deletedNamed": "Deleted “{name}”",
+    "createdNamed": "Added “{name}”",
+    "updatedNamed": "Updated “{name}”"
   },
   "categories": {
     "title": "Categories",
@@ -557,7 +561,9 @@
       "Arms",
       "Core",
       "Cardio"
-    ]
+    ],
+    "deleteConfirmTitle": "Delete category?",
+    "deletedNamed": "Deleted “{name}”"
   },
   "programs": {
     "title": "Programs",

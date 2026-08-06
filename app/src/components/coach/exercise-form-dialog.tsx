@@ -139,7 +139,13 @@ export function ExerciseFormDialog({
     };
     const opts = {
       onSuccess: () => {
-        toast.success(isEdit ? t("updated") : t("created"));
+        // Named, so the confirmation is about the thing the coach just typed
+        // rather than a generic "saved" that could belong to any action.
+        toast.success(
+          isEdit
+            ? t("updatedNamed", { name: input.name })
+            : t("createdNamed", { name: input.name }),
+        );
         onOpenChange(false);
       },
       onError: (err: unknown) =>

@@ -40,7 +40,11 @@ export function AppProviders({
         disableTransitionOnChange
       >
         {children}
-        <Toaster richColors position="top-center" />
+        {/* bottom-center, not top-center: this is a mobile-first app and the
+            coach panel has a sticky header + nav tabs, so a toast at the top
+            landed behind them — the confirmation fired but was never seen.
+            The bottom is clear, and closer to the thumb for the close button. */}
+        <Toaster richColors closeButton position="bottom-center" duration={4000} />
       </ThemeProvider>
     </NextIntlClientProvider>
   );

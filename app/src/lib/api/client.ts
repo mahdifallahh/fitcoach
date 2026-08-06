@@ -98,6 +98,14 @@ const KNOWN_ERROR_MESSAGES: Record<string, { fa: string; en: string }> = {
     fa: 'برای ساخت یا ویرایش، اشتراک فعال لازم است.',
     en: 'An active subscription is required to create or edit.',
   },
+  // The tier cap. This is the single most important error in the product — it is
+  // the moment a coach is asked to pay — so it has to say what the limit is, how
+  // many are counted, and what to do next. `{...}` are filled from the error's
+  // `details`, which the server sends precisely so the number is never guessed.
+  STUDENT_QUOTA_EXCEEDED: {
+    fa: 'پلن فعلی‌ات {max} شاگرد را پوشش می‌دهد و در {windowDays} روز گذشته {counted} شاگرد فعال داشته‌ای. برای شاگرد جدید، پلن را ارتقا بده.',
+    en: 'Your plan covers {max} students and {counted} have been active in the last {windowDays} days. Upgrade to take on someone new.',
+  },
 };
 
 function currentLocale(): 'fa' | 'en' {
@@ -113,5 +121,30 @@ function currentLocale(): 'fa' | 'en' {
 export function apiErrorMessage(err: unknown, fallback: string): string {
   if (!(err instanceof ApiError)) return fallback;
   const known = KNOWN_ERROR_MESSAGES[err.code];
-  return known ? known[currentLocale()] : err.message;
+  if (!known) return err.message;
+  const locale = currentLocale();
+  return fillPlaceholders(known[locale], err.details, locale);
+}
+
+/**
+ * Substitute `{name}` tokens from the error's `details`.
+ *
+ * Numbers go through `Intl.NumberFormat` rather than string concatenation: a
+ * Persian sentence with a bare 12 in it reads as broken, and this text sits
+ * beside dates and counts that are already rendered as ۱۲.
+ */
+function fillPlaceholders(
+  template: string,
+  details: unknown,
+  locale: 'fa' | 'en',
+): string {
+  if (!details || typeof details !== 'object') return template;
+  const values = details as Record<string, unknown>;
+  return template.replace(/\{(\w+)\}/g, (token, key) => {
+    const value = values[key];
+    if (value == null) return token;
+    return typeof value === 'number'
+      ? new Intl.NumberFormat(locale).format(value)
+      : String(value);
+  });
 }

@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/shared/error-state";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export function CategoryManager({
   open,
@@ -38,6 +39,11 @@ export function CategoryManager({
 
   const [newName, setNewName] = React.useState("");
   const [editing, setEditing] = React.useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  /** The category awaiting delete confirmation; null when the dialog is closed. */
+  const [deleting, setDeleting] = React.useState<{
     id: string;
     name: string;
   } | null>(null);
@@ -80,10 +86,14 @@ export function CategoryManager({
     );
   }
 
-  function remove_(id: string) {
-    if (!confirm(t("deleteConfirm"))) return;
+  function confirmDelete() {
+    if (!deleting) return;
+    const { id, name } = deleting;
     remove.mutate(id, {
-      onSuccess: () => toast.success(t("deleted")),
+      onSuccess: () => {
+        setDeleting(null);
+        toast.success(t("deletedNamed", { name }));
+      },
       onError: (e) => toast.error(apiErrorMessage(e, t("deleteError"))),
     });
   }
@@ -191,6 +201,7 @@ export function CategoryManager({
                       variant="ghost"
                       onClick={saveRename}
                       disabled={rename.isPending}
+                      aria-label={tc("save")}
                     >
                       <Check className="size-4 text-primary" />
                     </Button>
@@ -198,6 +209,7 @@ export function CategoryManager({
                       size="icon"
                       variant="ghost"
                       onClick={() => setEditing(null)}
+                      aria-label={tc("cancel")}
                     >
                       <X className="size-4" />
                     </Button>
@@ -205,17 +217,21 @@ export function CategoryManager({
                 ) : (
                   <>
                     <span className="flex-1 text-sm">{cat.name}</span>
+                    {/* Named, so a screen reader running down the category list
+                        hears which one each control acts on. */}
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => setEditing({ id: cat.id, name: cat.name })}
+                      aria-label={`${t("rename")} — ${cat.name}`}
                     >
                       <Pencil className="size-4" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => remove_(cat.id)}
+                      onClick={() => setDeleting(cat)}
+                      aria-label={`${tc("delete")} — ${cat.name}`}
                     >
                       <Trash2 className="size-4 text-destructive" />
                     </Button>
@@ -226,6 +242,18 @@ export function CategoryManager({
           </ul>
         )}
       </DialogContent>
+
+      {/* Nested inside the manager dialog on purpose: closing the confirmation
+          must return the coach to the category list, not dismiss both. */}
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(next) => !next && setDeleting(null)}
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirm")}
+        confirmLabel={tc("delete")}
+        onConfirm={confirmDelete}
+        pending={remove.isPending}
+      />
     </Dialog>
   );
 }

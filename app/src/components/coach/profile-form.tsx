@@ -289,6 +289,7 @@ export function ProfileForm({ profile }: { profile: CoachProfile }) {
                 variant="ghost"
                 size="icon"
                 onClick={() => remove(i)}
+                aria-label={t("removeLink")}
               >
                 <Trash2 className="size-4 text-destructive" />
               </Button>

@@ -29,6 +29,7 @@ import { GifLightbox } from "@/components/shared/gif-lightbox";
 import { ErrorState } from "@/components/shared/error-state";
 import { Pagination } from "@/components/shared/pagination";
 import { HelpCallout } from "@/components/shared/help-callout";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ExerciseFormDialog } from "./exercise-form-dialog";
 import { CategoryManager } from "./category-manager";
 
@@ -58,6 +59,8 @@ export function ExerciseLibrary() {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Exercise | null>(null);
   const [catOpen, setCatOpen] = React.useState(false);
+  /** The exercise awaiting confirmation; null when the dialog is closed. */
+  const [deleting, setDeleting] = React.useState<Exercise | null>(null);
 
   const isFiltered = !!debouncedSearch || !!categoryId;
 
@@ -69,10 +72,16 @@ export function ExerciseLibrary() {
     setEditing(ex);
     setFormOpen(true);
   }
-  function onDelete(ex: Exercise) {
-    if (!confirm(t("deleteConfirmBody", { name: ex.name }))) return;
-    remove.mutate(ex.id, {
-      onSuccess: () => toast.success(t("deleted")),
+  function confirmDelete() {
+    if (!deleting) return;
+    const { id, name } = deleting;
+    remove.mutate(id, {
+      onSuccess: () => {
+        setDeleting(null);
+        // Name it: after the row disappears, "deleted" alone leaves the coach
+        // checking the list to work out *which* one went.
+        toast.success(t("deletedNamed", { name }));
+      },
       onError: (err) => toast.error(apiErrorMessage(err, t("deleteError"))),
     });
   }
@@ -178,8 +187,10 @@ export function ExerciseLibrary() {
               })}
               canWrite={canWrite}
               lockedTitle={tb("lockedTitle")}
+              editLabel={tc("edit")}
+              deleteLabel={tc("delete")}
               onEdit={() => openEdit(ex)}
-              onDelete={() => onDelete(ex)}
+              onDelete={() => setDeleting(ex)}
             />
           ))}
         </div>
@@ -200,6 +211,16 @@ export function ExerciseLibrary() {
         exercise={editing}
       />
       <CategoryManager open={catOpen} onOpenChange={setCatOpen} />
+
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirmBody", { name: deleting?.name ?? "" })}
+        confirmLabel={tc("delete")}
+        onConfirm={confirmDelete}
+        pending={remove.isPending}
+      />
     </div>
   );
 }
@@ -209,6 +230,8 @@ function ExerciseCard({
   setsReps,
   canWrite,
   lockedTitle,
+  editLabel,
+  deleteLabel,
   onEdit,
   onDelete,
 }: {
@@ -216,6 +239,8 @@ function ExerciseCard({
   setsReps: string;
   canWrite: boolean;
   lockedTitle: string;
+  editLabel: string;
+  deleteLabel: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -239,19 +264,30 @@ function ExerciseCard({
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <p className="truncate font-medium">{ex.name}</p>
-          <p className="text-sm text-muted-foreground">{setsReps}</p>
+          {/* Wraps instead of truncating: on a phone the name column is only
+              ~250px wide, and a real exercise name ("پرس بالاسینه دمبل روی میز
+              شیب‌دار") lost its second half to an ellipsis — the one piece of
+              text on the card that has to be readable. `break-words` keeps a
+              single long token from overflowing the card. */}
+          <p className="font-medium leading-snug break-words" title={ex.name}>
+            {ex.name}
+          </p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{setsReps}</p>
           {ex.category && (
             <Badge variant="secondary" className="mt-1 w-fit">
               {ex.category.name}
             </Badge>
           )}
           <div className="mt-auto flex justify-end gap-1 pt-1">
+            {/* The name is in the label, not just "edit": a screen reader on
+                this grid otherwise reads "button, button, button" down the page
+                with no way to tell which exercise each one belongs to. */}
             <Button
               size="icon"
               variant="ghost"
               onClick={onEdit}
               disabled={!canWrite}
+              aria-label={`${editLabel} — ${ex.name}`}
               title={canWrite ? undefined : lockedTitle}
             >
               <Pencil className="size-4" />
@@ -261,6 +297,7 @@ function ExerciseCard({
               variant="ghost"
               onClick={onDelete}
               disabled={!canWrite}
+              aria-label={`${deleteLabel} — ${ex.name}`}
               title={canWrite ? undefined : lockedTitle}
             >
               <Trash2 className="size-4 text-destructive" />
