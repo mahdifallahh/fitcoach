@@ -2,7 +2,11 @@
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
-  testMatch: ['<rootDir>/src/server/**/*.spec.ts'],
+  testMatch: [
+    '<rootDir>/src/server/**/*.spec.ts',
+    // Project-level invariants (lockfile sync) that are not server code.
+    '<rootDir>/test/**/*.spec.ts',
+  ],
   transform: {
     '^.+\\.(t|j)s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.jest.json' }],
   },
