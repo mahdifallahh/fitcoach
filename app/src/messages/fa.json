@@ -534,7 +534,10 @@
     "videoLinkHint": "لینک یوتیوب، آپارات یا هر ویدیوی دیگر. برای شاگرد و در PDF نمایش داده می‌شود.",
     "deletedNamed": "«{name}» حذف شد",
     "createdNamed": "«{name}» اضافه شد",
-    "updatedNamed": "«{name}» به‌روزرسانی شد"
+    "updatedNamed": "«{name}» به‌روزرسانی شد",
+    "converting": "در حال تبدیل… {percent}٪",
+    "videoConvertFailed": "تبدیل این ویدیو ممکن نشد. یک فیلم کوتاه‌تر یا فرمت دیگری امتحان کن.",
+    "gifHint": "یک عکس/گیف بفرست، یا فیلم بگیر — خودش به گیف تبدیل می‌شود ({seconds} ثانیهٔ اول)."
   },
   "categories": {
     "title": "دسته‌ها",

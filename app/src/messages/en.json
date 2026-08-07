@@ -534,7 +534,10 @@
     "videoLinkHint": "A YouTube, Aparat or any other video link. Shown to the student and in the PDF.",
     "deletedNamed": "Deleted “{name}”",
     "createdNamed": "Added “{name}”",
-    "updatedNamed": "Updated “{name}”"
+    "updatedNamed": "Updated “{name}”",
+    "converting": "Converting… {percent}%",
+    "videoConvertFailed": "Could not convert that video. Try a shorter clip or another format.",
+    "gifHint": "Send an image or GIF, or pick a video — it is converted automatically (first {seconds} seconds)."
   },
   "categories": {
     "title": "Categories",

@@ -3,6 +3,7 @@
  * stores a student's contact and when that student later registers, so the
  * linking rule matches reliably. Phones → E.164 (Iran-aware), emails → lowercased.
  */
+import { toLatinDigits } from "./digits";
 export type IdentifierChannel = "SMS" | "EMAIL";
 
 export interface NormalizedIdentifier {
@@ -20,7 +21,7 @@ export function normalizeEmail(input: string): string {
 
 /** Best-effort E.164 normalization, biased toward Iranian mobile formats. */
 export function normalizePhone(input: string): string {
-  const trimmed = input.trim();
+  const trimmed = toLatinDigits(input).trim();
   const hasPlus = trimmed.startsWith("+");
   const digits = trimmed.replace(/\D/g, "");
 
@@ -34,6 +35,11 @@ export function normalizePhone(input: string): string {
 }
 
 export function normalizeIdentifier(input: string): NormalizedIdentifier {
-  if (isEmail(input)) return { channel: "EMAIL", value: normalizeEmail(input) };
-  return { channel: "SMS", value: normalizePhone(input) };
+  // Fold digits first, for both channels: whichever keyboard someone used, the
+  // same number has to resolve to the same stored value — that identity is what
+  // the linking rule depends on.
+  const folded = toLatinDigits(input);
+  if (isEmail(folded))
+    return { channel: "EMAIL", value: normalizeEmail(folded) };
+  return { channel: "SMS", value: normalizePhone(folded) };
 }

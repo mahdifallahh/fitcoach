@@ -7,6 +7,7 @@ import {
   hashSecret,
   safeCompareHash,
 } from "../utils/crypto";
+import { toLatinDigits } from "../utils/digits";
 
 const MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -39,7 +40,11 @@ export class OtpService {
   }
 
   /** Verify a login OTP. Throws on invalid/expired/locked; consumes on success. */
-  async verifyLoginCode(identifier: string, code: string): Promise<void> {
+  async verifyLoginCode(identifier: string, rawCode: string): Promise<void> {
+    // Same keyboard problem as the phone number, one screen later: the code is
+    // compared as a hashed string, so ۱۲۳۴۵۶ and 123456 are different secrets
+    // and the coach is told their correct code is wrong.
+    const code = toLatinDigits(rawCode).trim();
     const token = await this.prisma.otpToken.findFirst({
       where: {
         identifier,

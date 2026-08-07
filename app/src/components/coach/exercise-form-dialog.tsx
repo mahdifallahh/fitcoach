@@ -21,6 +21,12 @@ import {
   uploadFile,
 } from "@/lib/api/upload";
 import {
+  ACCEPTED_VIDEO_TYPES,
+  GIF_MAX_SECONDS,
+  isVideoFile,
+} from "@/lib/media/gif-settings";
+import { VideoConversionError, videoToGif } from "@/lib/media/video-to-gif";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -64,6 +70,8 @@ export function ExerciseFormDialog({
   const fileRef = React.useRef<HTMLInputElement>(null);
   const gifAbortRef = React.useRef<AbortController | null>(null);
   const [uploading, setUploading] = React.useState(false);
+  /** 0→1 while a picked video is being turned into a GIF; null when idle. */
+  const [converting, setConverting] = React.useState<number | null>(null);
 
   // A GIF still in flight must not outlive the dialog: without this the upload
   // finishes into a bucket nothing references, and `setValue` runs against a
@@ -104,27 +112,55 @@ export function ExerciseFormDialog({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type))
+
+    const video = isVideoFile(file);
+    if (!video && !ACCEPTED_IMAGE_TYPES.includes(file.type))
       return toast.error(t("invalidFile"));
-    if (file.size > MAX_UPLOAD_BYTES) return toast.error(t("fileTooLarge"));
+    // Only the *image* path is size-checked here. A phone clip is routinely tens
+    // of megabytes and never leaves the device at that size — it is converted
+    // first, and what gets uploaded is the few-hundred-kilobyte result.
+    if (!video && file.size > MAX_UPLOAD_BYTES)
+      return toast.error(t("fileTooLarge"));
 
     const controller = new AbortController();
     gifAbortRef.current = controller;
     setUploading(true);
     try {
+      let upload = file;
+      if (video) {
+        setConverting(0);
+        const gif = await videoToGif(file, {
+          signal: controller.signal,
+          onProgress: setConverting,
+        });
+        setConverting(null);
+        upload = new File([gif], replaceExtension(file.name, "gif"), {
+          type: "image/gif",
+        });
+      }
       const url = await uploadFile(
         exercisesApi.gifUploadUrl,
-        file,
+        upload,
         controller.signal,
       );
       setValue("gifUrl", url, { shouldDirty: true });
     } catch (err) {
       if (controller.signal.aborted) return; // dialog closed mid-upload
-      toast.error(apiErrorMessage(err, t("saveError")));
+      toast.error(
+        err instanceof VideoConversionError
+          ? t("videoConvertFailed")
+          : apiErrorMessage(err, t("saveError")),
+      );
     } finally {
       gifAbortRef.current = null;
+      setConverting(null);
       setUploading(false);
     }
+  }
+
+  /** "squat.mov" → "squat.gif", so the stored object is not misleadingly named. */
+  function replaceExtension(name: string, extension: string): string {
+    return `${name.replace(/\.[^.]+$/, "")}.${extension}`;
   }
 
   function onSubmit(values: FormValues) {
@@ -181,12 +217,15 @@ export function ExerciseFormDialog({
                 <Upload className="size-6 text-muted-foreground" />
               )}
             </div>
-            <div className="flex flex-col justify-center">
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
               <Label className="mb-1 block">{t("gif")}</Label>
               <input
                 ref={fileRef}
                 type="file"
-                accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                // Videos too: most coaches have no GIF, they have a clip they
+                // just filmed. `capture` is left off deliberately so the picker
+                // offers the camera roll as well as the camera.
+                accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(",")}
                 className="hidden"
                 onChange={onPickGif}
               />
@@ -194,6 +233,7 @@ export function ExerciseFormDialog({
                 type="button"
                 variant="outline"
                 size="sm"
+                className="w-fit"
                 disabled={uploading}
                 onClick={() => fileRef.current?.click()}
               >
@@ -202,8 +242,15 @@ export function ExerciseFormDialog({
                 ) : (
                   <Upload className="size-4" />
                 )}
-                {uploading ? t("uploading") : t("uploadGif")}
+                {converting !== null
+                  ? t("converting", { percent: Math.round(converting * 100) })
+                  : uploading
+                    ? t("uploading")
+                    : t("uploadGif")}
               </Button>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {t("gifHint", { seconds: GIF_MAX_SECONDS })}
+              </p>
             </div>
           </div>
 

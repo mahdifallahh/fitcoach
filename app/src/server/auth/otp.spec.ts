@@ -94,3 +94,27 @@ describe("OtpService.createLoginCode", () => {
     expect(createArg.purpose).toBe(OtpPurpose.LOGIN);
   });
 });
+
+describe('OTP codes typed on a Persian keyboard', () => {
+  it('accepts the same code in Persian digits', async () => {
+    const prisma: any = {
+      otpToken: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 't1',
+          codeHash: require('../utils/crypto').hashSecret('123456'),
+          attempts: 0,
+        }),
+        update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        create: jest.fn(),
+      },
+    };
+    const config: any = { get: () => 300 };
+    const { OtpService } = require('./otp');
+    const service = new OtpService(prisma, config);
+
+    // ۱۲۳۴۵۶ is the same code the server issued as "123456".
+    await expect(service.verifyLoginCode('+989917148353', '۱۲۳۴۵۶')).resolves.toBeUndefined();
+    expect(prisma.otpToken.update).toHaveBeenCalled(); // consumed, not rejected
+  });
+});
